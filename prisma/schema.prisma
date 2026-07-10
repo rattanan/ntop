@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role { ADMIN SALES VIEWER }
+enum CustomerType { B2G B2B }
+enum CustomerStatus { PROSPECT ACTIVE INACTIVE }
+enum OpportunityStage { QUALIFY DISCOVER SOLUTION PROPOSAL NEGOTIATION WON LOST }
+enum SalesApproach { DIRECT PARTNER DISPLACE }
+
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  name           String
+  passwordHash   String
+  role           Role          @default(SALES)
+  ownedCustomers Customer[]    @relation("CustomerOwner")
+  ownedDeals     Opportunity[] @relation("OpportunityOwner")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Customer {
+  id              String         @id @default(cuid())
+  name            String
+  taxId           String         @unique
+  type            CustomerType
+  segment         String
+  province        String
+  address         String?        @db.Text
+  status          CustomerStatus @default(PROSPECT)
+  ownerId         String
+  owner           User           @relation("CustomerOwner", fields: [ownerId], references: [id])
+  contacts        Contact[]
+  opportunities   Opportunity[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name        String
+  title       String?
+  phone       String?
+  email       String?
+  relationship String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Opportunity {
+  id              String           @id @default(cuid())
+  name            String
+  customerId      String
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  flow            String
+  stage           OpportunityStage @default(QUALIFY)
+  estimatedValue  Decimal          @db.Decimal(15, 2)
+  probability     Int
+  expectedCloseAt DateTime?
+  ownerId         String
+  owner           User             @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  nextAction      String?
+  requirements    String?          @db.Text
+  vendorAssessment VendorAssessment?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model VendorAssessment {
+  id              String        @id @default(cuid())
+  opportunityId   String        @unique
+  opportunity     Opportunity   @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  incumbentVendor String?
+  competitors     String?       @db.Text
+  approach        SalesApproach
+  confidence      Int
+  rationale       String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
