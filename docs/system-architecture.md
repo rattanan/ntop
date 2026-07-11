@@ -88,7 +88,7 @@ flowchart TB
 - MySQL 3 members ใน failure domains ต่างกัน; Router/ProxySQL ตาม approved platform
 - Search/queue/cache ใช้ HA topology และ resource quotas แยก workload
 - Network deny-by-default; administration ผ่าน management zone และ audited bastion
-- DR มี encrypted backups นอก primary failure domain; RPO ≤15m/RTO ≤4h ยังเป็น OD-005
+- DR มี encrypted backups นอก primary failure domain; approved targets are RPO ≤15m and RTO ≤4h; detailed topology remains ADR-016
 
 ## 5. Data flow and consistency
 

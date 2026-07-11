@@ -18,10 +18,10 @@ Every ADR includes Context, Decision Drivers, Options, Evidence/Benchmark, Decis
 
 | ADR | Topic | Provisional direction | Evidence required | Requirements/FND | Authority | Status |
 |---|---|---|---|---|---|---|
-| ADR-001 | Architecture style | Modular monolith with enforced boundaries | dependency model, team/deploy tradeoff | BR-002, FND-002/003 | Architecture Board | Proposed |
-| ADR-002 | Production relational DB | MySQL 8 InnoDB Cluster | compatibility, HA, migration and support benchmark | DATA-002, OPS-003, FND-010/011 | Architecture + Operations | Proposed |
+| [ADR-001](adrs/ADR-001-modular-monolith.md) | Architecture style | Modular monolith with enforced boundaries | dependency model, team/deploy tradeoff | BR-002, FND-002/003 | Architecture Board | Accepted 2026-07-11 |
+| [ADR-002](adrs/ADR-002-mysql8-innodb-cluster.md) | Production relational DB | MySQL 8 InnoDB Cluster | compatibility, HA, migration and support benchmark | DATA-002, OPS-003, FND-010/011 | Architecture + Operations | Accepted 2026-07-11 |
 | ADR-003 | Internal ID format | sortable opaque UUIDv7/ULID candidate | index/storage/collision/pagination at scale | DATA-001, NFR-001, FND-012 | Data/Architecture | Proposed |
-| ADR-004 | API style/versioning | REST `/api/v1` + OpenAPI | client/integration/governance tradeoff | NFR-004, FND-019 | Architecture Board | Proposed |
+| [ADR-004](adrs/ADR-004-rest-api-openapi.md) | API style/versioning | REST `/api/v1` + OpenAPI | client/integration/governance tradeoff | NFR-004, FND-019 | Architecture Board | Accepted 2026-07-11 |
 | ADR-005 | Async consistency | transactional outbox/inbox | failure/replay/atomicity spike | INT-003, OPS-002, FND-020 | Architecture Board | Proposed |
 | ADR-006 | Queue product | RabbitMQ candidate | HA, DLQ, operations, security, throughput | OPS-002, FND-013/020 | Platform/Operations | Proposed |
 | ADR-007 | Search product | OpenSearch candidate | 2.5M query/facet/index/rebuild benchmark | FR-010, DATA-002, FND-013/026/027 | Platform/Architecture | Proposed |
@@ -34,6 +34,17 @@ Every ADR includes Context, Decision Drivers, Options, Evidence/Benchmark, Decis
 | ADR-014 | Deployment platform | Kubernetes vs managed VMs/private platform | team skill, HA, security, cost, support | OPS-001/003, FND-013/023 | IT Architecture/Operations | Proposed |
 | ADR-015 | Observability stack | structured logs/metrics/traces | private-cloud products, retention, redaction | OPS-001/004, FND-022 | SRE/Security | Proposed |
 | ADR-016 | Backup/DR topology | multi-failure-domain backups and rehearsed restore | BIA, RPO/RTO, site/network/cost | OPS-003, FND-023/024 | Operations + Steering OD-005 | Proposed |
+| [ADR-017](adrs/ADR-017-opportunity-single-contracting-customer.md) | Opportunity ownership boundary | one Contracting Customer per Opportunity; group related pursuits | domain consistency and forecast attribution | FR-004, FR-006, FR-008 | Product/Domain Architecture | Accepted 2026-07-11 |
+| [ADR-018](adrs/ADR-018-quote-requires-opportunity.md) | Quote ownership boundary | every Quote belongs to one Opportunity and inherits Customer | pipeline, forecast and approval integrity | FR-006, FR-007 | Product/Domain Architecture | Accepted 2026-07-11 |
+| [ADR-019](adrs/ADR-019-immutable-quote-versions.md) | Quote versioning | submitted Quote Versions are immutable; policy changes supersede approval | commercial evidence integrity | FR-006, FR-007, COMP-001 | Product/Commercial Architecture | Accepted 2026-07-11 |
+| [ADR-020](adrs/ADR-020-forecast-amount-source.md) | Forecast amount source | estimated value until Primary Quote evidence exists; never sum alternatives | forecast explainability and no double count | BR-003, FR-009, DATA-004 | Sales/Product Architecture | Accepted 2026-07-11 |
+| [ADR-021](adrs/ADR-021-ai-proposes-human-decides.md) | AI autonomy boundary | AI suggests/drafts; authorized human confirms all business mutations | AI safety, audit and commercial control | SEC-002, COMP-001, FR-002–009 | Product/Security Architecture | Accepted 2026-07-11 |
+| [ADR-022](adrs/ADR-022-ai-data-boundary.md) | AI data boundary | least-privilege input scope, ACL-preserving retrieval and no secrets | customer/commercial data protection | SEC-002, SEC-003, COMP-001 | Security/Data Architecture | Accepted 2026-07-11 |
+| [ADR-023](adrs/ADR-023-grounded-ai-source-conflicts.md) | AI grounding | cite sources, expose conflicts and abstain when evidence is insufficient | trustworthy customer research and recommendations | BR-001, DATA-003, COMP-001 | Product/Data Architecture | Accepted 2026-07-11 |
+| [ADR-024](adrs/ADR-024-ai-confidence-calibration.md) | AI confidence | confidence bands until representative calibration; official values remain human-confirmed | prevent misleading forecast precision | BR-003, FR-009, DATA-004 | Product/AI Governance | Accepted 2026-07-11 |
+| [ADR-025](adrs/ADR-025-long-documents-authored-outside-ntop.md) | Long-form documents | authored externally and uploaded as governed evidence | keep NTOP focused on sales control/workflow | FR-004, FR-006, COMP-001 | Product/Document Governance | Accepted 2026-07-11 |
+| [ADR-026](adrs/ADR-026-ai-document-analysis-read-only.md) | AI document analysis | read-only, ACL-preserving, page/section-cited findings | useful TOR/proposal assistance without evidence mutation | SEC-002, SEC-003, COMP-001 | Product/Security/Document Governance | Accepted 2026-07-11 |
+| [ADR-027](adrs/ADR-027-ai-capability-release-sequence.md) | AI rollout | phase capabilities by risk, data and evaluation readiness | prevent unsafe scope expansion | OPS-004, SEC-002, COMP-001 | Product/AI Governance | Accepted 2026-07-11 |
 
 ## Decision sequence
 
@@ -42,4 +53,4 @@ Every ADR includes Context, Decision Drivers, Options, Evidence/Benchmark, Decis
 3. ADR-006–009/014/015 require product evaluation and private-cloud constraints
 4. ADR-013 waits for OD-001 evidence; ADR-016 waits for OD-005 approval
 
-No ADR may convert a simulated policy value into approved business policy
+Business policy values in Requirements Baseline 1.0 are approved; ADRs determine technical realization and may not silently change those values

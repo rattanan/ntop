@@ -10,7 +10,7 @@
 
 ## Sprint goal
 
-ทำให้ Foundation implementation สามารถเริ่มได้อย่างมี governance โดยปิดเอกสาร/contract/experiment ที่ reversible และสร้าง evidence สำหรับ Architecture/Security/Data/Operations review โดยไม่ฝัง OD-001–006 จำลองลง code/configuration
+ทำให้ Foundation implementation สามารถเริ่มได้อย่างมี governance โดยปิดเอกสาร/contract/experiment ที่ reversible และสร้าง evidence สำหรับ Architecture/Security/Data/Operations review ค่า OD-001–006 ที่อนุมัติแล้วต้องเป็น versioned configuration/policy และห้ามฝังใน domain logic
 
 ## Committed work
 
@@ -26,10 +26,10 @@
 
 ## Discovery/stretch only
 
-- FND-012 ID benchmark design
-- FND-013 platform evaluation scorecard
-- FND-020 outbox/inbox spike design
-- FND-022 telemetry catalog
+- [FND-012 ID benchmark design](discovery/id-benchmark-plan.md)
+- [FND-013 platform evaluation scorecard](discovery/platform-evaluation-scorecard.md)
+- [FND-020 outbox/inbox spike design](discovery/outbox-inbox-spike-plan.md)
+- [FND-022 telemetry catalog](discovery/telemetry-catalog.md)
 
 Stretch work cannot displace committed governance/security/data outputs
 
@@ -64,6 +64,8 @@ Use one status:
 
 Any unresolved Critical threat, missing accountable owner, broken requirement trace, or attempted activation of simulated policy results in `Not Ready`
 
+ADR-001/002/004 decisions use the [Architecture Review Pack](reviews/architecture-review-pack.md); Sprint 0 cannot mark them Accepted without recorded authority and review minutes.
+
 ## Exit evidence
 
 - RTM 38/38 mapped
@@ -71,4 +73,4 @@ Any unresolved Critical threat, missing accountable owner, broken requirement tr
 - committed outputs reviewed with findings/actions
 - DoR applied to next candidate stories
 - OD-dependent stories remain conditional/blocked
-- no code/schema/infrastructure mutation occurred during Sprint 0 planning
+- no feature code/schema/infrastructure mutation occurred during Sprint 0 planning
