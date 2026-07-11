@@ -2,14 +2,14 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Data Architecture |
 | Reviewers | Domain Architecture, DBA, Security, Data Governance, Integration, QA |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Requirements](product-requirements.md), [Architecture](system-architecture.md), [Domain](domain-model.md), [API](api-design.md), [Testing](testing-strategy.md) |
 | Assumptions | MySQL 8 InnoDB Cluster production; UTC storage; UUIDv7/ULID-style sortable opaque IDs selected during implementation ADR |
-| Open Decisions | Final ID encoding; partition thresholds; retention periods; approved online migration tool; encryption/KMS product |
+| Open Decisions | Final ID encoding; partition thresholds; approved online migration tool; encryption/KMS product (retention periods approved) |
 
 ## 1. Design principles
 
@@ -56,6 +56,8 @@
 - Historical forecast และ commercial evidence ย้าย archive ได้แต่ต้อง query ผ่าน governed service
 - ทุก archive job มี reconciliation count/checksum และ legal-hold bypass
 
+Approved lifecycle baseline: commercial records/quotes/approvals/orders/audit evidence 7 years; sales activities/meeting records 3 years; security/session/technical access logs 1 year. Legal hold suspends archive/delete; credentials and secrets follow immediate lifecycle revocation/rotation rather than business retention. Activation still requires tested governed jobs, backup handling and maker-checker controls (OD-002, COMP-002)
+
 ## 6. Migration strategy
 
 1. MariaDB 5.5 เป็น local compatibility environment เท่านั้น; ห้ามใช้เป็น production schema authority
@@ -87,4 +89,3 @@
 - Migration upgrade/rollback compatibility ผ่าน rehearsal
 - Restore/failover และ data consistency ผ่าน test strategy
 - Domain-to-table mapping ใน [domain-model.md](domain-model.md) และ API optimistic concurrency ใช้ `version`
-

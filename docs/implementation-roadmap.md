@@ -2,14 +2,14 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Program Sponsor / Product Director |
 | Reviewers | Business Owners, Architecture, Security, Data, Operations, Delivery Leads, QA |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Requirements](product-requirements.md), [Architecture](system-architecture.md), [Integration](integration-design.md), [Testing](testing-strategy.md), [Historical Roadmap](nt-salesforce-roadmap.md) |
 | Assumptions | Enterprise team; 12 months; private cloud; phased production rollout; no full migration before gates |
-| Open Decisions | Budget/team names; pilot unit; integration priorities; procurement lead times; release calendar |
+| Open Decisions | Named pilot division and people, budget/team allocation, procurement lead times and release calendar; year-one no-live-integration posture approved |
 
 ## 1. Delivery model
 
@@ -63,9 +63,8 @@ Full production customer migration ถูก defer จน Customer gate + Produc
 
 ## 7. Rollout
 
-Internal alpha → selected enterprise-sales pilot → phased organization units → wider rollout แต่ละ wave มี data readiness, training, support, usage metrics, rollback criteria และ 2–4 week hypercare Shadow spreadsheet ถูกติดตามเป็น adoption signal (R-15)
+Internal alpha → one representative enterprise-sales division pilot (75 named users, four weeks) → two-week hypercare → phased organization units → wider rollout แต่ละ wave มี data readiness, training, support, usage metrics และ rollback criteria Approved pilot targets: ≥80% weekly active users, ≥90% required opportunity completeness, ≥95% lead/opportunity transitions through NTOP, 100% commercial decisions with audit evidence and zero Critical security/data-loss defects (OD-006, R-15)
 
 ## 8. Business acceptance gates
 
 ใช้ 6 gates ใน [product-requirements.md](product-requirements.md) โดย Production gate ต้องมี UAT ทุก critical role, penetration/security approval, 2.5M/100-user capacity evidence, failover/restore/DR, integration fallback, support/on-call, training และ executive approval
-

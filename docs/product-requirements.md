@@ -2,14 +2,14 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Product Owner — Enterprise Sales |
 | Reviewers | Sales, Presales, Pricing, Order Operations, Enterprise Architecture, Security, Data Governance, IT Operations |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Architecture](system-architecture.md), [Domain Model](domain-model.md), [Database](database-design.md), [API](api-design.md), [Permissions](roles-and-permissions.md), [Roadmap](implementation-roadmap.md), [Testing](testing-strategy.md) |
 | Assumptions | Private cloud; >2M customers; 100 concurrent users; MySQL 8 InnoDB Cluster production target; local identity initially |
-| Open Decisions | Data owner and retention periods; first live integrations; approval thresholds; production RPO/RTO confirmation |
+| Open Decisions | OD-001–OD-006 closed on 2026-07-11; remaining implementation ADRs are tracked separately |
 
 ## 1. Vision and outcomes
 
@@ -113,12 +113,13 @@ Severity พิจารณาจาก Probability × Impact; Critical/High ต
 5. **Integration gate:** outage/replay/reconciliation และ manual fallback pass
 6. **Production gate:** security, DR, capacity, UAT, operations และ executive approval complete
 
-## 6. Open decisions
+## 6. Approved decisions
 
-- OD-001: ใครเป็น Customer Data Owner และกติกา merge/duplicate ที่อนุมัติ
-- OD-002: retention/masking/deletion periods แยกตาม data class
-- OD-003: pricing thresholds, approver authority และ delegation policy
-- OD-004: รายชื่อ 1–2 integrations แรกและ system of record ต่อ field
-- OD-005: ยืนยัน RPO 15 นาที/RTO 4 ชั่วโมงกับ IT Operations
-- OD-006: pilot division, user count และ adoption baseline
+- **OD-001:** Central Customer Data Governance; stable internal ID; external ID unique per source; deterministic/scored duplicate candidates; Data Steward-approved merge with history/audit
+- **OD-002:** Commercial/audit evidence 7 years, sales activities 3 years, security/technical logs 1 year; legal hold overrides deletion; governed export/anonymization/deletion
+- **OD-003:** Risk-based approval: T1 ≤10M THB, T2 >10M–100M THB, T3 >100M THB; discount >10%, margin <15% and defined exceptions escalate; maker-checker and no auto-approval
+- **OD-004:** No live integrations in year one; adapter/outbox/inbox/reconciliation foundations plus versioned manual handoff for OM, CRM, Billing and Coverage/GIS
+- **OD-005:** 99.9% monthly availability excluding approved maintenance, RPO ≤15 minutes, RTO ≤4 hours, quarterly restore and pre-production failover/DR rehearsal
+- **OD-006:** One representative enterprise-sales division, 75 named users, four-week pilot plus two-week hypercare; capacity target remains 100 concurrent users +30% headroom
 
+Approval source: project owner confirmation in the Codex task on 2026-07-11. Named Steering Committee signatures remain an administrative evidence item and are not fabricated in this repository.

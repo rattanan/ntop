@@ -2,20 +2,28 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Pricing and Commercial Governance |
 | Reviewers | Finance, Sales Director, Legal, Security, Auditor, Product, QA |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Requirements](product-requirements.md), [Domain](domain-model.md), [Permissions](roles-and-permissions.md), [Opportunity](opportunity-workflow.md), [API](api-design.md) |
 | Assumptions | Policy versioned; maker-checker mandatory for exceptional commercial terms |
-| Open Decisions | Monetary/discount/margin thresholds; exact authority chain; delegation and SLA values; legal approval triggers |
+| Open Decisions | Named Commercial Committee members; operational reminder/escalation timing; detailed legal trigger catalog |
 
 ## 1. Policy inputs
 
 Routing พิจารณา quote total, discount, gross margin, product/category, customer segment, opportunity risk, non-standard terms, partner cost, contract duration และ exception type Policy evaluator คืน required steps + execution mode + SLA โดย snapshot policy version และ input values ไว้กับ request (BR-004, FR-007)
 
-ค่าตัวเลขทุก threshold เป็น `Open Decision OD-003`; implementation ห้าม hard-code จน Commercial Governance อนุมัติ version 1
+Approved OD-003 thresholds are configuration data and must not be hard-coded in application logic:
+
+| Tier | Quote total | Mandatory authority |
+|---|---:|---|
+| T1 | ≤10M THB | Team Manager + independent maker-checker |
+| T2 | >10M and ≤100M THB | Sales Director + Pricing Approver |
+| T3 | >100M THB | Commercial Committee/authorized executives |
+
+Discount >10%, gross margin <15%, non-standard legal terms, unconfirmed coverage/cost, conflict of interest or policy override escalate at least one authority level and never reduce approval. No eligible approver causes escalation, never automatic approval.
 
 ## 2. States
 
@@ -74,4 +82,3 @@ Decision records append-only; request status เป็นผล derivation จ�
 - Duplicate decision key ไม่สร้าง decision ซ้ำ
 - Queue/email outage ไม่สูญ assignment และ replay notification ได้
 - ทุก approved/rejected request reconstruct policy/input/actor evidence ได้
-

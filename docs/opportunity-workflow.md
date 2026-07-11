@@ -2,8 +2,8 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Sales Director / Sales Operations |
 | Reviewers | KAM, Team Manager, Presales, Coverage, Pricing, Order Operations, Audit, QA |
 | Last Updated | 2026-07-11 |
@@ -83,4 +83,3 @@ stateDiagram-v2
 - Won ถูก deny เมื่อ quote ยังไม่ accepted/approved
 - Lost→reopen เก็บ snapshot/history เดิมและ risk signal ถูกคำนวณใหม่
 - Duplicate retry ด้วย idempotency key สร้าง transition ครั้งเดียว
-

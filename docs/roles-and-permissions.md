@@ -2,14 +2,14 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Product Owner / Information Security |
 | Reviewers | Business Role Owners, HR/Identity Operations, Auditor, Architecture, QA |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Requirements](product-requirements.md), [API](api-design.md), [Opportunity Workflow](opportunity-workflow.md), [Approval Workflow](approval-workflow.md), [Testing](testing-strategy.md) |
 | Assumptions | Local identity initially; deny by default; organization and ownership scopes |
-| Open Decisions | Named role owners; delegation limits; break-glass process; sensitive field classification; SSO schedule |
+| Open Decisions | Named persons for approved role owners; break-glass process; detailed sensitive field classification; SSO schedule |
 
 ## 1. Access model
 
@@ -30,6 +30,8 @@ Scopes: `SELF`, `TEAM`, `ORG_UNIT`, `ENTERPRISE`, `ASSIGNED_TASK`, `AUDIT_READ`.
 - **Order Operations:** approved handoff/order state และ external references
 - **Viewer:** scoped read-only
 - **Auditor:** immutable audit/commercial evidence read; ไม่มี business mutation
+- **Customer Data Owner/Data Steward:** approved customer identity governance, duplicate review and merge authority; cross-unit conflicts escalate to Customer Data Owner
+- **Commercial Committee:** T3 approval authority for quotes above 100M THB and approved escalated exceptions; membership must be recorded per decision
 
 ## 3. Permission matrix
 
@@ -84,4 +86,3 @@ Audit event สำหรับ login/admin grant, ownership, export, transition,
 - Cross-org/customer guessing ต้องไม่เปิดเผย existence
 - Maker-checker, delegated/expired authority, admin self-escalation และ export limits ต้องถูก deny
 - Break-glass (เมื่ออนุมัติ OD) ต้อง alert แบบ real time และ review หลังเหตุการณ์
-

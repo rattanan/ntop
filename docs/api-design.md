@@ -2,8 +2,8 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Application Architecture |
 | Reviewers | Domain, Integration, Security, Frontend, QA |
 | Last Updated | 2026-07-11 |
@@ -124,4 +124,3 @@ Consumer deduplicate ด้วย `eventId`; breaking payload ใช้ event ve
 - Deprecation มี owner, usage evidence, migration guide และ approved sunset
 - OpenAPI เป็น contract source; CI lint + backward compatibility + generated contract tests
 - API audit ระบุ actor/client, scope, target, outcome และ correlation ID โดย redact secrets/PII
-

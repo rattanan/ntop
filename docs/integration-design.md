@@ -2,14 +2,14 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Integration Architecture |
 | Reviewers | System Owners, Data Governance, Security, Operations, Product, QA |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Requirements](product-requirements.md), [Architecture](system-architecture.md), [API](api-design.md), [Database](database-design.md), [Testing](testing-strategy.md) |
-| Assumptions | Adapter-first; 1–2 prioritized live integrations in year one; manual fallback mandatory |
-| Open Decisions | Prioritized systems; field-level source of truth; protocols/authentication; SLAs; operational owners |
+| Assumptions | Adapter-first; no live integrations in year one; manual handoff mandatory |
+| Open Decisions | Future live-integration selection, field-level source of truth, protocols/authentication, SLAs and named operational owners require a later Steering decision |
 
 ## 1. Principles
 
@@ -19,7 +19,11 @@
 - Asynchronous by default สำหรับ handoff/sync; synchronous เฉพาะ user ต้องได้ immediate validation และ dependency มี SLA
 - ทุก critical flow มี manual fallback และ recovery/reconcile (BR-005)
 
-## 2. Draft source-of-truth matrix
+## 2. Approved year-one integration posture
+
+No external system is live-integrated in year one. NTOP builds canonical adapter contracts, outbox/inbox, idempotency and reconciliation foundations while OM, CRM, Billing and Coverage/GIS use versioned manual handoff packages with checksum, external reference and maker-checker. UI/reporting must not claim synchronized or integrated status. Future live integration requires the contract approval checklist and a new Steering decision (OD-004).
+
+## 3. Future source-of-truth hypothesis
 
 | Data area | Draft authority | NTOP role | Direction | Status |
 |---|---|---|---|---|
@@ -34,7 +38,7 @@
 
 ตารางนี้เป็น hypothesis; ห้ามใช้ตัดสิน field overwrite จน OD-004 sign-off
 
-## 3. Adapter contract
+## 4. Adapter contract
 
 Adapter ต้อง expose capability/version, submit/fetch/poll หรือ consume event, health, idempotency key, external reference, retry classification, reconciliation query และ manual replay การ map canonical↔external แยก version และทดสอบด้วย contract fixtures
 
@@ -54,7 +58,7 @@ sequenceDiagram
   W->>DB: Inbox receipt/status/reference
 ```
 
-## 4. Reliability
+## 5. Reliability
 
 - Outbox claimed with lease; inbox unique `(source,eventId)`; business idempotency unique per operation
 - Retry exponential backoff + jitter สำหรับ transient error; validation/auth/contract error ไป dead-letter ทันทีพร้อม redacted diagnostic
@@ -62,11 +66,11 @@ sequenceDiagram
 - Circuit breaker ลด cascading failure; queue age/depth และ oldest message alert
 - Schema/event version compatibility tested ก่อน deploy (INT-003)
 
-## 5. Reconciliation
+## 6. Reconciliation
 
 Scheduled run เทียบ counts, IDs, versions/status และ financial totals ตาม interface เก็บ `runId`, cutoff, source/target totals, mismatches, resolution owner/status Repair ใช้ command ใหม่ ไม่แก้ database ตรง Dashboard แสดง last success, lag, mismatch และ dead letters (INT-004)
 
-## 6. Manual fallback
+## 7. Manual fallback
 
 เมื่อ adapter unavailable:
 
@@ -76,11 +80,11 @@ Scheduled run เทียบ counts, IDs, versions/status และ financial t
 4. Mark record `MANUAL_PENDING/ACKNOWLEDGED`; ไม่ปลอมเป็น integrated success
 5. เมื่อระบบกลับมา reconcile ก่อน replay เพื่อป้องกัน duplicate
 
-## 7. Security and privacy
+## 8. Security and privacy
 
 Mutual TLS/OAuth2/service credential ตาม approved system; secrets ใน vault, rotation และ least privilege Allowlist fields และ minimize PII; encrypt payload/storage; redact logs; verify webhook signature/replay window; export expiry/download audit (SEC-003)
 
-## 8. Contract approval checklist
+## 9. Contract approval checklist
 
 - Named business/data/technical/operations owners
 - Purpose, source of truth และ field ownership
@@ -91,7 +95,6 @@ Mutual TLS/OAuth2/service credential ตาม approved system; secrets ใน v
 - Reconciliation, manual fallback, support/escalation และ test environment
 - Security/architecture/data governance sign-off
 
-## 9. Acceptance scenarios
+## 10. Acceptance scenarios
 
 Duplicate/out-of-order event, timeout after external success, invalid payload, expired credential, rate limit, prolonged outage, DLQ replay, mismatch reconciliation และ manual fallback ต้องผ่านโดยไม่สร้าง duplicate business effect หรือสูญ audit trail
-

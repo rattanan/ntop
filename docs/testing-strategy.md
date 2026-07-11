@@ -2,8 +2,8 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | QA and Quality Engineering Lead |
 | Reviewers | Product, Architecture, Security, Data, Integration, SRE, Business SMEs |
 | Last Updated | 2026-07-11 |

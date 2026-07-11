@@ -2,14 +2,14 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Enterprise Architecture |
 | Reviewers | Product, Security, Data Architecture, Integration, IT Operations, QA |
 | Last Updated | 2026-07-11 |
 | Related Documents | [Requirements](product-requirements.md), [Domain](domain-model.md), [Database](database-design.md), [API](api-design.md), [Integration](integration-design.md), [Testing](testing-strategy.md) |
 | Assumptions | Private cloud; MySQL 8 InnoDB Cluster; 100 concurrent users; modular monolith first |
-| Open Decisions | Private-cloud products/SKUs; Kubernetes vs VM platform; search and queue product approval; DR site topology |
+| Open Decisions | Private-cloud products/SKUs; Kubernetes vs VM platform; search and queue product approval; detailed DR site topology (OD-005 targets approved) |
 
 ## 1. Current-state assessment
 
@@ -125,4 +125,3 @@ flowchart TB
 ## 9. Architecture gates
 
 ก่อน implementation ต้องอนุมัติ module boundaries, product SKUs, network diagram, HA/DR topology, threat model และ capacity model; ก่อน production ต้องผ่าน NFR/SEC/OPS tests ที่ระบุใน [testing-strategy.md](testing-strategy.md)
-

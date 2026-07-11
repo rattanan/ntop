@@ -2,8 +2,8 @@
 
 | Metadata | Value |
 |---|---|
-| Status | Draft for Review |
-| Version | 0.1 |
+| Status | Approved Baseline |
+| Version | 1.0 |
 | Owner | Sales Director / Sales Analytics |
 | Reviewers | Finance, Team Managers, Data Governance, Architecture, QA |
 | Last Updated | 2026-07-11 |
@@ -87,4 +87,3 @@ Filters: snapshot/period, org/team/owner, segment, flow, stage, category, risk C
 - Slippage/aging/timezone boundary ผ่าน approved test vectors
 - Snapshot retry ไม่สร้าง duplicate
 - Incomplete/FX-unknown data แสดง quality warning ไม่ silently aggregate
-
