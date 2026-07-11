@@ -208,8 +208,8 @@ Exact governed lookup ควรยังทำงานได้เมื่อ 
 
 ไม่เปิดพร้อมกัน:
 
-- **Release 1:** Meeting/Visit Summary Draft, Next Action, Grounded Customer Research และ rule-based Deal/Pipeline Risk explanation
-- **Release 2:** Opportunity Finder/Territory Planning, Opportunity Draft, read-only Document/TOR Analysis และ Pricing Recommendation
+- **Release 1:** Meeting/Visit Summary Draft จากข้อมูลหลังประชุมที่ผู้ใช้ให้, Next Action และ rule-based Deal/Pipeline Risk explanation โดยไม่ทำ recording/transcription หรือ public-web research
+- **Release 2:** Research Connector/Grounded Customer Research, Opportunity Finder/Territory Planning, Opportunity Draft, read-only Document/TOR Analysis และ Pricing Recommendation
 - **Release 3:** calibrated Forecast probability, Revenue Forecast และ Provisioning/Customer Success/Renewal prediction
 
 Capability จะเปิดได้เมื่อผ่าน data allowlist, security, evaluation, human-confirmation, provenance, monitoring และ rollback gate ของตนเอง ไม่ใช่เพียงเพราะ AI endpoint พร้อม
@@ -238,6 +238,42 @@ AI ห้ามเปลี่ยน Opportunity stage, submit Quote, approve/ov
 
 ไม่สร้างทันที AI สร้าง **AI Draft** พร้อมค่าที่แนะนำ เช่น stage, revenue, probability และ close date ผู้ใช้ต้องตรวจ Customer identity, ownership และ required fields แล้วกดยืนยัน
 
+### Meeting AI บันทึกเสียงอัตโนมัติหรือไม่?
+
+ไม่บันทึกอัตโนมัติ และ Phase 1 ไม่มี recording หรือ transcription ระหว่าง meeting หากมี audio/transcript capability ในอนาคตต้องผ่าน approval ใหม่ ใช้ explicit input และยืนยันสิทธิ์/consent
+
+### Phase 1 ใส่ข้อมูลประชุมให้ AI อย่างไร?
+
+รับเฉพาะข้อความที่ผู้ใช้พิมพ์หรือ paste หลังประชุม ผู้ใช้ paste transcript ที่ทำจากภายนอกได้โดยระบบถือเป็น user-provided text และผู้ใช้ต้องรับรองสิทธิ์ใช้งาน Phase 1 ไม่รับ audio, video หรือ transcript file
+
+### Phase 1 Meeting AI สร้างอะไรให้บ้าง?
+
+สร้าง Meeting Summary, Key Requirements, Decisions/Agreements, Action Items พร้อม suggested owner/due date, Risks/Concerns, Suggested Next Action และ Suggested Activity type/date ผู้ใช้แก้ไขและเลือกบันทึกแต่ละส่วนได้
+
+### Meeting AI สร้าง Opportunity หรือเปลี่ยน Stage ให้เลยหรือไม่?
+
+ไม่ทำใน Phase 1 Meeting capability ไม่สร้าง Opportunity, Quote, Proposal หรือเปลี่ยน Stage การกระทำเหล่านี้ต้องอยู่ใน workflow และ release ที่ได้รับอนุมัติแยกต่างหาก
+
+### กดยืนยัน AI Next Action แล้วเกิดอะไรขึ้น?
+
+ระบบสร้าง Activity หรือ Task จริงหนึ่งรายการ ผูก Customer/Opportunity ตาม context Owner เป็นผู้ยืนยันโดย default หรือผู้รับผิดชอบอื่นที่ผู้ใช้มีสิทธิ์เลือก Due date แสดง Asia/Bangkok และเก็บเวลาอย่างถูกต้อง
+
+### กดยืนยันซ้ำจะเกิดงานซ้ำหรือไม่?
+
+ไม่ควรเกิด ระบบใช้ idempotency เพื่อให้คำแนะนำหนึ่งรายการสร้าง task ได้ครั้งเดียว AI Suggestion ที่ไม่ยืนยันไม่สร้างงานและอาจหมดอายุ
+
+### ข้อความประชุมถูกส่งให้ AI ทุกกรณีหรือไม่?
+
+ไม่ส่งหากเกินขนาดที่กำหนดหรือพบ credential/secret ที่ต้องห้าม ระบบต้องแจ้งให้ผู้ใช้แก้ไขก่อน Core Activity workflow ต้องยังใช้งานได้เมื่อ AI unavailable
+
+### ผู้ที่เห็น Activity จะเปิด audio/transcript ได้ทุกคนหรือไม่?
+
+ไม่ได้ Meeting Source มี ACL และ classification แยกจาก Activity การเห็น summary ไม่ได้ให้สิทธิ์เห็น source artifact โดยอัตโนมัติ
+
+### ถ้า transcript ไม่ชัดหรือแยกผู้พูดไม่ได้ทำอย่างไร?
+
+AI ต้อง mark `Requires Review` และห้ามเปลี่ยน Draft เป็นข้อมูลทางการจนผู้ใช้ตรวจแก้และยืนยัน
+
 ### AI Pricing Recommendation เป็นราคาที่อนุมัติแล้วหรือไม่?
 
 ไม่ใช่ เป็นคำแนะนำพร้อมเหตุผล/confidence เท่านั้น Quote ยังต้องผ่าน approval policy และ maker-checker ตามปกติ
@@ -246,9 +282,64 @@ AI ห้ามเปลี่ยน Opportunity stage, submit Quote, approve/ov
 
 ได้ AI output ต้องมี **AI Provenance** เช่น model/version, prompt/template version, input sources, timestamp และ confidence พร้อมผู้ยืนยันเมื่อ Draft ถูกนำไปใช้ ห้ามเก็บ API key, token หรือ secret ใน provenance, prompt log หรือ audit
 
+### ระบบเก็บ AI Draft และ prompt นานเท่าใด?
+
+- Draft ที่ผู้ใช้ยืนยันแล้วเก็บตาม retention ของ business record
+- Draft ที่ reject/abandon เก็บเฉพาะ redacted metadata/เหตุผลไม่เกิน 30 วัน แล้วลบ
+- Raw prompt และ full model response ไม่เก็บโดย default
+- Provenance, latency, token usage, error และ safety result เก็บแบบ redact PII/secrets
+
+### การกด Helpful/Incorrect/Unsafe หมายถึงยินยอมให้นำข้อมูลไป train หรือไม่?
+
+ไม่ใช่ AI Feedback ใช้ quality monitoring และแยกจาก training consent การสร้าง evaluation/training dataset ต้องผ่าน Data Governance approval และ de-identification ต่างหาก
+
 ### ตั้งค่า AI provider อย่างไร?
 
 ผู้ดูแลระบบกำหนดผ่าน `OPENAI_API_URL`, `OPENAI_API_KEY` และ `OPENAI_MODEL` โดย key ต้องอยู่ใน secret manager หรือ environment ที่ไม่ commit ลง source control หาก AI provider ใช้งานไม่ได้ core workflow ต้องยังทำงานได้โดยไม่บังคับใช้ AI
+
+### Admin เปลี่ยน AI endpoint หรือ model ได้หรือไม่?
+
+ได้ หน้าจอ Admin มี AI Enabled, API URL, Model, API Key แบบ write-only และ Request Timeout พร้อมปุ่ม Test Connection การเปลี่ยนแปลงต้องถูก audit และตรวจ authorization ฝั่ง server
+
+### Admin ดู API key เดิมได้หรือไม่?
+
+ไม่ได้ API key เป็น write-only secret หน้าจอแสดงได้เฉพาะ configured/not configured เมื่อต้องเปลี่ยนให้กรอกค่าใหม่ ห้ามแสดง key เดิมใน UI, API, log หรือ audit
+
+### API key เก็บไว้ที่ใด?
+
+เก็บเป็นค่า encrypted ใน database โดยใช้ `AI_CONFIG_MASTER_KEY` จาก environment เป็น master key ค่า master key ห้ามอยู่ใน database หรือ source control หาก decrypt ไม่ได้ ระบบถือว่า AI key unavailable และให้ Admin กรอกใหม่
+
+### การเปลี่ยน API key ถูก audit อย่างไร?
+
+เก็บเฉพาะผู้เปลี่ยน เวลา และ configuration version ห้ามเก็บค่า key เดิม ค่า key ใหม่ หรือ ciphertext ใน audit/log
+
+### Test Connection แสดงข้อมูลอะไร?
+
+แสดงเพียงสำเร็จหรือ sanitized error เช่น timeout/authentication failed ห้ามแสดง API key, request headers, raw provider response หรือข้อมูลผู้ใช้
+
+### หากเปลี่ยน model แล้วคำตอบเปลี่ยนไปทำอย่างไร?
+
+ระยะแรกยอมรับได้โดยไม่บังคับ shadow/canary Admin สามารถเปลี่ยนกลับหรือเลือก model อื่นได้ หาก AI ใช้งานไม่ได้ให้ผู้ใช้ทำงาน manual ต่อ ระบบไม่ fallback ไป public provider อัตโนมัติ
+
+### ถ้า AI ช้าหรือล่ม ผู้ใช้ยังทำงานได้หรือไม่?
+
+ได้ AI เป็น optional capability Core create/update/transition workflow ห้ามรอ AI งานสั้น timeout แล้วแจ้ง AI unavailable งานยาวทำเป็น AI Job ที่ดูสถานะ ยกเลิก หรือ retry แบบควบคุมได้ ผู้ใช้กรอกข้อมูลและทำงานต่อเองได้เสมอ
+
+### ระบบจะส่งข้อมูลไป public AI provider สำรองอัตโนมัติหรือไม่?
+
+ไม่ส่ง ห้าม automatic fallback ไป provider ที่ไม่ได้อนุมัติ หาก endpoint ปัจจุบันใช้ไม่ได้ให้ปิด capability/fallback เป็น manual workflow
+
+### AI มีการจำกัดการใช้งานหรือไม่?
+
+มี concurrency และ quota ต่อ user/team/capability เพื่อป้องกัน overload พร้อม metrics ด้าน latency, error, queue age และ token/cost โดยไม่เก็บ raw prompt content
+
+### Phase 1 AI ค้นอินเทอร์เน็ตได้หรือไม่?
+
+ไม่ได้ Public-web Research Connector ถูกเลื่อนไป Release 2 Phase 1 ใช้เฉพาะ approved internal หรือ user-provided sources และต้องแจ้งตามจริงว่า web research unavailable
+
+### เมื่อเปิด public-web research แล้ว AI จะเข้าเว็บโดยตรงหรือไม่?
+
+ไม่เข้าโดยตรง ระบบใช้ server-side Research Connector ที่บังคับ approved sources, URL/content limits, sanitization และ citation metadata เพื่อลด SSRF, data leakage และข้อมูลที่ไม่มีแหล่งอ้างอิง
 
 ### ระบบส่งข้อมูลอะไรให้ AI ได้บ้าง?
 
@@ -289,6 +380,14 @@ AI ต้องแสดง **Conflicting Evidence** โดยระบุแต
 ### “ไม่มี Follow-up 21 วัน” เป็น AI prediction หรือไม่?
 
 ไม่ใช่ เป็น Rule-based Signal ที่คำนวณจากกติกา deterministic ระบบต้อง label ให้ชัดและไม่อ้างว่าเป็น model prediction AI อาจช่วยอธิบายผลกระทบหรือแนะนำ Next Action ได้
+
+### ใครกำหนดว่า Deal Risk ต้องเตือนเมื่อกี่วัน?
+
+Admin ตั้งค่า versioned Risk Rules ตาม risk type, Opportunity stage และ segment ได้ เช่น no follow-up, overdue close date และ missing next action Threshold ไม่ถูก hard-code ใน application logic
+
+### AI เป็นผู้ตัดสินว่า Deal Risk trigger หรือไม่?
+
+ไม่ใช่ Deterministic rule เป็นผู้ตัดสินและแสดง rule/version, threshold และ facts ที่ trigger AI มีหน้าที่อธิบายและแนะนำ action เท่านั้น หาก AI unavailable risk signal ยังต้องแสดงได้
 
 ## Pilot และการขอความช่วยเหลือ
 

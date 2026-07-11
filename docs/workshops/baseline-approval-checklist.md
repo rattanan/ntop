@@ -38,7 +38,7 @@
 | # | Check | Blocking | Result | Evidence/notes |
 |---|---|---:|---|---|
 | C1 | Requirement catalog มี owner, priority, acceptance และ responsible design | Yes | Pass | Product Requirements 1.0 |
-| C2 | 36 Must requirements มี test coverage baseline | Yes | Pass | Testing Strategy 1.0 / RTM 1.0 |
+| C2 | 44 Must requirements มี test coverage baseline | Yes | Pass | Testing Strategy 1.1 / RTM 1.1 |
 | C3 | Critical/High risks ทุกข้อมี accountable owner, mitigation, contingency, trigger | Yes | Pass by role | Product Requirements risk register |
 | C4 | Architecture assumptions ไม่ขัดกับ decisions และ private-cloud constraints | Yes | Pass | System Architecture 1.0 |
 | C5 | MySQL 8 production/MariaDB 5.5 development boundary ได้รับการยืนยัน | Yes | Pass | OD-005 / Database Design 1.0 |

@@ -3,7 +3,7 @@
 | Metadata | Value |
 |---|---|
 | Status | Approved Baseline |
-| Version | 1.0 |
+| Version | 1.1 |
 | Owner | Program Sponsor / Product Director |
 | Reviewers | Business Owners, Architecture, Security, Data, Operations, Delivery Leads, QA |
 | Last Updated | 2026-07-11 |
@@ -25,6 +25,15 @@ Workstreams: Product/Change, Platform/SRE, Customer/Data, Sales/Forecast, Presal
 | M7–M8 Commercial | Product, Coverage, Solution, Quote versions, policy approval, notifications | BR-004, FR-005–007/012 | coverage→approved quote passes; no approval bypass in negative tests |
 | M9–M10 Order & Integration | Internal Order, handoff, 1–2 approved adapters, reconciliation/manual fallback | BR-005, FR-008, INT-* | normal/outage/replay/reconcile scenarios pass; external owners accept |
 | M11–M12 Production Readiness | hardening, DR/load/security/UAT, training, phased rollout, hypercare | All Must | production acceptance evidence and executive go-live approval |
+
+### AI delivery overlay
+
+- **Foundation/M3–M4:** AI provider administration, encrypted key/configuration design, provenance/audit, feature flags, quota/timeout/circuit-breaker and evaluation harness
+- **M5–M6 — AI Release 1:** typed/pasted-text Meeting Draft, confirmed Next Action and deterministic Deal Risk/Pipeline Health with optional explanation
+- **M7–M10 — AI Release 2 candidate:** Research Connector, Opportunity Finder/Territory Planning, Opportunity Draft, read-only Document/TOR Analysis and Pricing Recommendation; each requires separate DoR/security/data/evaluation gate
+- **Post evidence / Release 3:** calibrated numeric Forecast/Revenue and Provisioning/Customer Success/Renewal prediction; not a year-one go-live dependency
+
+Phase 1 explicitly excludes recording/transcription, public-web research, long-document authoring, document analysis, AI Opportunity creation, Pricing Recommendation and numeric AI forecast
 
 Full production customer migration ถูก defer จน Customer gate + Production gate ผ่านและ OD-001/002 ได้รับอนุมัติ
 

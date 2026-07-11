@@ -3,7 +3,7 @@
 | Metadata | Value |
 |---|---|
 | Status | Approved Baseline |
-| Version | 1.0 |
+| Version | 1.1 |
 | Owner | QA and Quality Engineering Lead |
 | Reviewers | Product, Architecture, Security, Data, Integration, SRE, Business SMEs |
 | Last Updated | 2026-07-11 |
@@ -90,8 +90,23 @@ Block release เมื่อ Critical/High security defect, Must acceptance fai
 
 ทุก Must requirement ต้องมี linked automated test IDs และ acceptance evidence ใน release record; ตารางนี้เป็น coverage baseline ไม่แทน detailed test cases
 
-**Must requirement coverage index:** BR-001, BR-002, BR-003, BR-004, BR-005; FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010; NFR-001, NFR-002, NFR-003, NFR-004; SEC-001, SEC-002, SEC-003; DATA-001, DATA-002, DATA-003, DATA-004; INT-001, INT-002, INT-003, INT-004; OPS-001, OPS-002, OPS-003, OPS-004; COMP-001, COMP-002. รายการนี้ต้องถูกแทนด้วย test case IDs จริงใน test management system ก่อน Production gate
+**Must requirement coverage index:** BR-001, BR-002, BR-003, BR-004, BR-005; FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-013, FR-014, FR-015, FR-016; NFR-001, NFR-002, NFR-003, NFR-004, NFR-005; SEC-001, SEC-002, SEC-003, SEC-004; DATA-001, DATA-002, DATA-003, DATA-004, DATA-005; INT-001, INT-002, INT-003, INT-004; OPS-001, OPS-002, OPS-003, OPS-004, OPS-005; COMP-001, COMP-002. รายการนี้ต้องถูกแทนด้วย test case IDs จริงใน test management system ก่อน Production gate
 
 ## 10. Exit evidence
 
 Test summary, requirement trace, defect/risk disposition, performance report, security report, migration/reconciliation, DR timestamps, UAT sign-off และ operational readiness ต้องเก็บแบบ versioned/auditable ต่อ phase gate
+
+## 11. AI Release 1 testing
+
+| Area | Required scenarios/evidence |
+|---|---|
+| Provider admin | Admin positive/non-Admin negative; endpoint/model/timeout validation; write-only encrypted key; wrong master key/tamper fail closed; sanitized Test Connection; audit without secret |
+| Scope exclusion | no web fetch/browser, audio/video/transcription, transcript-file, document-analysis, Opportunity/Quote/Stage mutation routes in Release 1 |
+| Meeting Draft | typed/pasted input only; size/secret/prompt-injection rejection; strict schema; unknown fields; edit/select/confirm; AI outage manual Activity path |
+| Next Action | authorization, Customer/Opportunity context, owner resolution, timezone round-trip, idempotent duplicate confirmation and provenance |
+| Deal Risk | deterministic same facts/version; configurable thresholds; history unchanged after rule change; explanation optional when AI unavailable |
+| Safety/data | least-privilege allowlist, cross-scope denial, secret/PII redaction, no raw prompt storage, no public provider fallback |
+| Governance | provenance completeness, Helpful/Incorrect/Unsafe feedback, abandoned metadata purge at 30 days, no training-consent implication |
+| Operations | timeout, transient/non-retryable error, bounded retry, concurrency/quota, circuit breaker, feature flag, cancel/retry AI Job and telemetry redaction |
+
+AI acceptance blocks capability enablement, not core application release Core regression suite must prove all manual workflows remain operational with AI disabled and provider unavailable

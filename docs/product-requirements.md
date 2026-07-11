@@ -3,7 +3,7 @@
 | Metadata | Value |
 |---|---|
 | Status | Approved Baseline |
-| Version | 1.0 |
+| Version | 1.1 |
 | Owner | Product Owner — Enterprise Sales |
 | Reviewers | Sales, Presales, Pricing, Order Operations, Enterprise Architecture, Security, Data Governance, IT Operations |
 | Last Updated | 2026-07-11 |
@@ -33,9 +33,9 @@ NTOP เป็นระบบควบคุมงานขายลูกค้
 
 ผู้ใช้ปีแรกประกอบด้วย Admin, Executive, Sales Director, Team Manager, KAM, Presales, Coverage, Pricing Approver, Order Operations, Viewer และ Auditor รายละเอียดสิทธิ์อยู่ใน [roles-and-permissions.md](roles-and-permissions.md)
 
-**In scope:** Customer 360, hierarchy/contact/ownership, Lead, Activity, Opportunity, Forecast, Product, Coverage, Solution, Quote, Approval, Internal Order Handoff, document references, bulk jobs, search, audit, administration, adapter framework และ prioritized integrations
+**In scope:** Customer 360, hierarchy/contact/ownership, Lead, Activity, Opportunity, Forecast, Product, Coverage, Solution, Quote, Approval, Internal Order Handoff, document references, bulk jobs, search, audit, administration, adapter framework และ Phase 1 AI assistance ตาม [AI Design](ai-design.md)
 
-**Out of scope:** full customer migration ก่อน readiness gate, automated provisioning, billing ledger, after-sale ticketing, corporate SSO cutover, generative AI และ broad enterprise integration ที่ยังไม่มี approved contract
+**Out of scope:** full customer migration ก่อน readiness gate, automated provisioning, billing ledger, after-sale ticketing, corporate SSO cutover, broad enterprise integration ที่ยังไม่มี approved contract และ AI capabilities ที่ถูก defer ใน AI Release 2/3
 
 ## 3. Requirement catalog
 
@@ -81,6 +81,14 @@ Priority ใช้ Must/Should/Could; Source `Roadmap` หมายถึง [hi
 | OPS-004 | มี runbook, incident ownership, release/rollback และ support model | Must | Service Owner | operational acceptance evidence ครบ | OPS-001 | Risk | Service Management |
 | COMP-001 | Audit log แบบ append-only สำหรับ privileged/commercial/workflow actions | Must | Auditor/Security | audit coverage 100% และตรวจ tamper evidence ได้ | SEC-002 | Risk | Audit |
 | COMP-002 | Retention, masking, export และ deletion policy ต้องได้รับอนุมัติ | Must | Data Governance | policy matrix และ test evidence พร้อมก่อน production data | DATA-001 | Open Decision | Data Lifecycle |
+| FR-013 | Admin จัดการ OpenAI-compatible provider และ Test Connection ได้โดยไม่เปิดเผย secret | Must | System Admin/Security | server authorization, encrypted key, sanitized test และ audit tests ผ่าน | SEC-004, OPS-005 | Approved AI scope | AI Administration |
+| FR-014 | AI สร้าง Meeting/Visit Draft จาก typed/pasted text ตาม schema ที่กำหนด | Must | Sales Operations | user-confirmed selected fields เท่านั้นที่เป็น business record; ไม่มี audio/transcription/autonomous mutation | FR-003, SEC-004 | Approved AI scope | AI Meeting Assistance |
+| FR-015 | AI Next Action สร้าง Activity/Task หลัง Human Confirmation แบบ idempotent | Must | Sales Operations | duplicate confirmation สร้าง task เดียว; owner/scope/timezone/audit ถูกต้อง | FR-003, NFR-004 | Approved AI scope | AI Next Action |
+| FR-016 | Deal Risk ใช้ versioned deterministic rules และ AI อธิบายได้โดยไม่เป็น trigger authority | Must | Sales Director | same facts/rule version ให้ผลเดิมและ signal ใช้ได้เมื่อ AI unavailable | FR-009, DATA-004 | Approved AI scope | Pipeline Risk |
+| NFR-005 | AI outage/timeout ต้องไม่ block core workflow และไม่มี automatic public fallback | Must | IT Operations | timeout/circuit-open tests ผ่าน; manual path ใช้ได้ | OPS-005 | Approved AI scope | AI Resilience |
+| SEC-004 | AI input ใช้ least privilege, ห้าม secrets และทุก business mutation ต้อง Human Confirmation | Must | Security/Product | data-boundary, authorization, secret-redaction และ autonomy-negative tests ผ่าน | SEC-002/003 | Approved AI scope | AI Safety |
+| DATA-005 | AI output มี provenance/confidence/retention และ feedback ไม่เป็น training consent | Must | Data Governance/AI Governance | provenance completeness, 30-day purge และ no-raw-prompt-default tests ผ่าน | COMP-001/002 | Approved AI scope | AI Governance |
+| OPS-005 | AI configuration, quota, timeout, retry, circuit breaker, feature flag และ telemetry ต้อง configurable | Must | SRE/System Admin | provider failure/rotation/quota/retry/disable scenarios ผ่าน | NFR-005 | Approved AI scope | AI Operations |
 
 ## 4. Consolidated risk register
 

@@ -3,7 +3,7 @@
 | Metadata | Value |
 |---|---|
 | Status | Approved Baseline |
-| Version | 1.0 |
+| Version | 1.1 |
 | Owner | Product Owner / QA Lead |
 | Last updated | 2026-07-11 |
 | Source | [Product Requirements](../product-requirements.md) |
@@ -59,9 +59,17 @@
 | OPS-004 Runbook/release/support | Roadmap, Testing | FND-001, 022–025, 028 | all phases | operational rehearsal | Production gate |
 | COMP-001 Append-only audit | Permissions, Database | FND-007–009, 025/030 | Foundation + all modules | tamper/audit completeness | Security/Audit gate |
 | COMP-002 Lifecycle approval | Requirements, Database | FND-017/018, 025 | Foundation + Customer | VS-02, policy evidence | OD-002 approved; safety gate |
+| FR-013 AI provider administration | AI Design, Permissions | new AI foundation backlog | Foundation/M3–M4 | admin/auth/encryption/test-connection tests | AI security DoR |
+| FR-014 Meeting Draft | AI Design, Activity | new AI Release 1 backlog | Sales M5–M6 | strict-schema/input-boundary/human-confirmation tests | AI Release 1 gate |
+| FR-015 AI Next Action | AI Design, Activity | new AI Release 1 backlog | Sales M5–M6 | idempotency/owner/timezone/audit tests | AI Release 1 gate |
+| FR-016 Deal Risk | AI Design, Forecast | new AI Release 1 backlog | Sales M5–M6 | deterministic rule/config/history tests | AI Release 1 gate |
+| NFR-005 AI optional resilience | AI Design, Architecture | new AI foundation backlog | Foundation/M5–M6 | outage/circuit/manual-fallback tests | Operations gate |
+| SEC-004 AI least privilege/autonomy | AI Design, Permissions | new AI foundation backlog | Foundation/all AI | authorization/secret/autonomy negative tests | Security gate |
+| DATA-005 AI provenance/retention | AI Design, Database | new AI foundation backlog | Foundation/all AI | provenance/purge/no-raw-prompt tests | Data Governance gate |
+| OPS-005 AI operations | AI Design, Architecture | new AI foundation backlog | Foundation/all AI | quota/retry/feature-flag/telemetry tests | Operations gate |
 
 ## Coverage summary
 
-- 38/38 requirements mapped to design, foundation enabler, delivery phase, evidence and gate
+- 46/46 requirements mapped to design, foundation enabler, delivery phase, evidence and gate
 - OD-001–OD-006 are approved; implementation still requires story-level DoR, ADR and safety/readiness evidence
 - Release traceability must replace FND ranges with actual story/test/ADR IDs and evidence links as work is implemented

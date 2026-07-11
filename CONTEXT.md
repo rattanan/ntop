@@ -125,3 +125,35 @@ _Avoid_: Document Edit, Final Approval
 **Compliance Finding**:
 รายการเชื่อม requirement ใน TOR/Proposal กับ NT capability, evidence และ gap พร้อม source location เพื่อให้ผู้ใช้ตรวจยืนยัน
 _Avoid_: Automatic Compliance, Legal Approval
+
+**Meeting Source**:
+Phase 1 คือข้อความที่ผู้ใช้พิมพ์หรือ paste หลังประชุมเพื่อสร้าง Meeting Draft; pasted transcript ถือเป็น user-provided text ที่ผู้ใช้รับรองสิทธิ์ใช้งาน
+_Avoid_: Audio, Video, Transcript File, Ambient Recording, Automatic Transcription
+
+**Meeting Draft**:
+AI Draft จาก Meeting Source ที่มี Summary, Key Requirements, Decisions/Agreements, Action Items, Risks/Concerns, Suggested Next Action และ Suggested Activity โดยผู้ใช้เลือกตรวจแก้และยืนยันก่อนเป็น business record
+_Avoid_: Final Meeting Record, Auto-created Activity
+
+**Research Connector**:
+ส่วนเชื่อมต่อฝั่ง server ที่ดึงข้อมูลจาก approved public sources พร้อม citation metadata ให้ AI Research โดย model ไม่ fetch URL โดยตรง; capability นี้อยู่นอก Phase 1
+_Avoid_: Model Web Access, Direct URL Fetch
+
+**AI Feedback**:
+การที่ผู้ใช้จัดประเภท AI output เป็น Helpful, Incorrect หรือ Unsafe พร้อม optional comment เพื่อ quality monitoring โดยไม่ถือเป็น training consent
+_Avoid_: Model Training Consent, Business Approval
+
+**AI Job**:
+งาน AI แบบ asynchronous ที่มีสถานะ progress, cancellation, bounded retry และ idempotency โดยไม่ block core business workflow
+_Avoid_: Business Transaction, Synchronous Workflow Gate
+
+**Confirmed Next Action**:
+Activity หรือ Task ที่สร้างหลังผู้ใช้ยืนยัน AI Suggestion โดยผูก Customer/Opportunity, owner และ timezone-correct due date พร้อม audit/provenance
+_Avoid_: AI Suggestion, Automatic Task
+
+**Deal Risk Signal**:
+ผลจาก versioned deterministic rule ที่ระบุ rule, threshold และ facts ที่ทำให้ trigger โดย AI อาจอธิบายและแนะนำ action แต่ไม่เป็นผู้ตัดสินว่า trigger หรือไม่
+_Avoid_: AI Risk Prediction, Unexplained Alert
+
+**AI Provider Configuration**:
+ค่าที่ Admin จัดการเพื่อระบุ OpenAI-compatible endpoint, model และ secret credential โดย AI failure ต้อง fallback ไปยัง manual user input
+_Avoid_: Hard-coded Endpoint, Automatic Public Fallback
