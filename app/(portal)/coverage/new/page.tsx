@@ -1,0 +1,2 @@
+import{CoverageForm}from"@/components/forms";import{prisma}from"@/lib/prisma";import{requireSession}from"@/lib/auth";
+export default async function NewCoverage(){const s=await requireSession();const opportunities=await prisma.opportunity.findMany({where:s.role==="ADMIN"?{}:{ownerId:s.id},select:{id:true,name:true},orderBy:{name:"asc"}});return <><div className="page-head"><div><p className="eyebrow">Pre-sale Gate</p><h1>สร้างคำขอ Coverage</h1></div></div><CoverageForm opportunities={opportunities}/></>}

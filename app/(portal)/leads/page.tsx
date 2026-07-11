@@ -1,0 +1,7 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/auth";
+
+const source:{[key:string]:string}={IMPORT:"Import",WEBSITE:"Website",EVENT:"Event",PARTNER:"Partner",REFERRAL:"Referral",EXISTING_CUSTOMER:"Existing Customer"};
+const status:{[key:string]:string}={NEW:"ใหม่",CONTACTED:"ติดต่อแล้ว",QUALIFIED:"ผ่านการคัดกรอง",NURTURING:"กำลังติดตาม",CONVERTED:"แปลงเป็นลูกค้า",DISQUALIFIED:"ไม่ผ่าน"};
+export default async function LeadsPage(){const session=await requireSession();const leads=await prisma.lead.findMany({where:session.role==="ADMIN"?{}:{ownerId:session.id},include:{owner:true,customer:true},orderBy:{updatedAt:"desc"}});return <><div className="page-head"><div><p className="eyebrow">Lead Management</p><h1>รายชื่อผู้มุ่งหวัง</h1></div>{session.role!=="VIEWER"&&<Link href="/leads/new" className="primary">สร้าง Lead</Link>}</div><section className="card"><div className="table-wrap"><table className="table"><thead><tr><th>บริษัท / ผู้ติดต่อ</th><th>แหล่งที่มา</th><th>สถานะ</th><th>Score</th><th>สินค้าที่แนะนำ</th><th>ผู้รับผิดชอบ</th></tr></thead><tbody>{leads.map(l=><tr key={l.id}><td><strong>{l.company}</strong><br/><small>{l.contactName}</small></td><td>{source[l.source]}</td><td><span className="badge">{status[l.status]}</span></td><td>{l.score}</td><td>{l.recommendedProducts||"—"}</td><td>{l.owner.name}</td></tr>)}</tbody></table>{!leads.length&&<div className="empty">ยังไม่มี Lead เริ่มต้นจาก Website, Event, Partner หรือสร้างรายการใหม่</div>}</div></section></>}

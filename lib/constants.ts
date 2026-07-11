@@ -6,3 +6,6 @@ export const STAGES = [
 ] as const;
 export const APPROACHES = [["DIRECT", "Direct"], ["PARTNER", "Partner"], ["DISPLACE", "Displace"]] as const;
 export const ROLE_LABELS = { ADMIN: "ผู้ดูแลระบบ", SALES: "ฝ่ายขาย", VIEWER: "ผู้ดูข้อมูล" } as const;
+export const LEAD_SOURCES = [["IMPORT", "Import Lead"], ["WEBSITE", "Website Lead"], ["EVENT", "Event"], ["PARTNER", "Partner"], ["REFERRAL", "Referral"], ["EXISTING_CUSTOMER", "Existing Customer"]] as const;
+export const LEAD_STATUSES = [["NEW", "ใหม่"], ["CONTACTED", "ติดต่อแล้ว"], ["QUALIFIED", "ผ่านการคัดกรอง"], ["NURTURING", "กำลังติดตาม"], ["CONVERTED", "แปลงเป็นลูกค้า"], ["DISQUALIFIED", "ไม่ผ่าน"]] as const;
+export const ACTIVITY_TYPES = [["CALL", "โทรศัพท์"], ["MEETING", "ประชุม"], ["FOLLOW_UP", "ติดตาม"], ["TASK", "งาน"]] as const;

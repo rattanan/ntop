@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/auth";
+import { OpportunityList } from "@/components/record-list";
+export default async function OpportunitiesPage() { const session=await requireSession(); const records=await prisma.opportunity.findMany({where:session.role === "ADMIN"?{}:{ownerId:session.id},include:{owner:true,customer:true},orderBy:{updatedAt:"desc"}}); const stage:{[key:string]:string}={QUALIFY:"คัดกรอง",DISCOVER:"ค้นหาความต้องการ",SOLUTION:"ออกแบบโซลูชัน",PROPOSAL:"ยื่นข้อเสนอ",NEGOTIATION:"เจรจา",WON:"ชนะ",LOST:"ไม่ชนะ"}; return <><div className="page-head"><div><p className="eyebrow">Pipeline</p><h1>โอกาสขาย</h1></div>{session.role!=="VIEWER"&&<Link className="primary" href="/opportunities/new">สร้างโอกาสขาย</Link>}</div><OpportunityList rows={records.map(r=>({id:r.id,name:r.name,customer:r.customer.name,flow:r.flow,stage:stage[r.stage],value:new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:0}).format(Number(r.estimatedValue)),probability:r.probability,owner:r.owner.name}))}/></>; }

@@ -7,11 +7,90 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role { ADMIN SALES VIEWER }
-enum CustomerType { B2G B2B }
-enum CustomerStatus { PROSPECT ACTIVE INACTIVE }
-enum OpportunityStage { QUALIFY DISCOVER SOLUTION PROPOSAL NEGOTIATION WON LOST }
-enum SalesApproach { DIRECT PARTNER DISPLACE }
+enum Role {
+  ADMIN
+  SALES
+  VIEWER
+}
+
+enum CustomerType {
+  B2G
+  B2B
+}
+
+enum CustomerStatus {
+  PROSPECT
+  ACTIVE
+  INACTIVE
+}
+
+enum OpportunityStage {
+  QUALIFY
+  DISCOVER
+  SOLUTION
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum SalesApproach {
+  DIRECT
+  PARTNER
+  DISPLACE
+}
+
+enum LeadSource {
+  IMPORT
+  WEBSITE
+  EVENT
+  PARTNER
+  REFERRAL
+  EXISTING_CUSTOMER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  NURTURING
+  CONVERTED
+  DISQUALIFIED
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  FOLLOW_UP
+  TASK
+}
+
+enum QuoteStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  SENT
+  ACCEPTED
+  EXPIRED
+}
+
+enum CoverageStatus {
+  DRAFT
+  REQUESTED
+  CONFIRMED
+  UNAVAILABLE
+  RETURNED
+}
+
+enum InternalOrderStatus {
+  DRAFT
+  READY_FOR_HANDOFF
+  SENT
+  ACKNOWLEDGED
+  RETURNED
+  COMPLETED
+}
 
 model User {
   id             String        @id @default(cuid())
@@ -21,6 +100,8 @@ model User {
   role           Role          @default(SALES)
   ownedCustomers Customer[]    @relation("CustomerOwner")
   ownedDeals     Opportunity[] @relation("OpportunityOwner")
+  ownedLeads     Lead[]        @relation("LeadOwner")
+  activities     Activity[]    @relation("ActivityOwner")
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -38,8 +119,48 @@ model Customer {
   owner           User           @relation("CustomerOwner", fields: [ownerId], references: [id])
   contacts        Contact[]
   opportunities   Opportunity[]
+  leads           Lead[]
+  activities      Activity[]
+  quotes          Quote[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+}
+
+model Lead {
+  id                  String     @id @default(cuid())
+  company             String
+  contactName         String
+  contactEmail        String?
+  contactPhone        String?
+  source              LeadSource
+  status              LeadStatus @default(NEW)
+  score               Int        @default(0)
+  recommendedProducts String?    @db.Text
+  notes               String?    @db.Text
+  ownerId             String
+  owner               User       @relation("LeadOwner", fields: [ownerId], references: [id])
+  customerId          String?
+  customer            Customer?  @relation(fields: [customerId], references: [id])
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+}
+
+model Activity {
+  id            String       @id @default(cuid())
+  subject       String
+  type          ActivityType
+  dueAt         DateTime?
+  notes         String?      @db.Text
+  aiSummary     String?      @db.Text
+  actionItems   String?      @db.Text
+  ownerId       String
+  owner         User         @relation("ActivityOwner", fields: [ownerId], references: [id])
+  customerId    String?
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  opportunityId String?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Contact {
@@ -70,8 +191,118 @@ model Opportunity {
   nextAction      String?
   requirements    String?          @db.Text
   vendorAssessment VendorAssessment?
+  activities      Activity[]
+  quotes          Quote[]
+  coverageChecks  CoverageCheck[]
+  solutionDesign  SolutionDesign?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  category    String
+  description String?  @db.Text
+  listPrice   Decimal  @db.Decimal(15, 2)
+  active      Boolean  @default(true)
+  quoteItems  QuoteItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Quote {
+  id            String      @id @default(cuid())
+  quoteNo       String      @unique
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  opportunityId String?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+  status        QuoteStatus @default(DRAFT)
+  discountPct   Int         @default(0)
+  subtotal      Decimal     @db.Decimal(15, 2)
+  discountValue Decimal     @db.Decimal(15, 2) @default(0)
+  total         Decimal     @db.Decimal(15, 2)
+  validUntil    DateTime?
+  notes         String?     @db.Text
+  items         QuoteItem[]
+  approvals     Approval[]
+  internalOrder InternalOrder?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model CoverageCheck {
+  id                  String         @id @default(cuid())
+  opportunityId       String
+  opportunity         Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  siteAddress         String         @db.Text
+  circuitCount        Int            @default(1)
+  status              CoverageStatus @default(DRAFT)
+  fiberAvailable      Boolean?
+  olt                 String?
+  distanceKm          Decimal?       @db.Decimal(10,2)
+  capacityMbps        Int?
+  availablePorts      Int?
+  expectedInstallDate DateTime?
+  confirmedCost       Decimal?       @db.Decimal(15,2)
+  responderNotes      String?        @db.Text
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model SolutionDesign {
+  id             String      @id @default(cuid())
+  opportunityId  String      @unique
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  ntWorkValue    Decimal     @db.Decimal(15,2)
+  partnerCost    Decimal     @db.Decimal(15,2) @default(0)
+  estimatedCost  Decimal     @db.Decimal(15,2)
+  estimatedPrice Decimal     @db.Decimal(15,2)
+  marginPct      Decimal     @db.Decimal(6,2)
+  riskNotes      String?     @db.Text
+  assumptions    String?     @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model InternalOrder {
+  id              String              @id @default(cuid())
+  orderNo         String              @unique
+  quoteId         String              @unique
+  quote           Quote               @relation(fields: [quoteId], references: [id])
+  status          InternalOrderStatus @default(DRAFT)
+  omReference     String?
+  crmReference    String?
+  billingReference String?
+  handoffNotes    String?             @db.Text
+  sentAt          DateTime?
+  acknowledgedAt  DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model QuoteItem {
+  id        String  @id @default(cuid())
+  quoteId   String
+  quote     Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  unitPrice Decimal @db.Decimal(15, 2)
+  createdAt DateTime @default(now())
+}
+
+model Approval {
+  id        String   @id @default(cuid())
+  quoteId   String
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  level     Int
+  status    String   @default("PENDING")
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model VendorAssessment {

@@ -2,6 +2,17 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+## NTOP database setup
+
+1. Copy `.env.example` to `.env` and provide a **test** MySQL connection plus a 32+ character `AUTH_SECRET`.
+2. Run `npm run db:generate`.
+3. Run `npm run db:migrate` only against the test database; do not use a production connection for initial validation.
+4. Set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`, then run `npm run db:seed` to create the first administrator.
+
+The provided database currently runs MariaDB 5.5, which Prisma Migrate cannot manage. Apply `prisma/legacy-mariadb-5.5.sql` with the MySQL CLI for that server, then use Prisma only as the application client.
+
+Never commit `.env` or database credentials.
+
 First, run the development server:
 
 ```bash

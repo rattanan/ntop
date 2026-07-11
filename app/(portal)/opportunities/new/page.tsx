@@ -1,0 +1,4 @@
+import { OpportunityForm } from "@/components/forms";
+import { prisma } from "@/lib/prisma";
+import { requireSession } from "@/lib/auth";
+export default async function NewOpportunityPage() { const session=await requireSession(); const [customers,users]=await Promise.all([prisma.customer.findMany({where:session.role==="ADMIN"?{}:{ownerId:session.id},select:{id:true,name:true,taxId:true},orderBy:{name:"asc"}}),session.role==="ADMIN"?prisma.user.findMany({select:{id:true,name:true,email:true},orderBy:{name:"asc"}}):Promise.resolve([])]); return <><div className="page-head"><div><p className="eyebrow">Pipeline</p><h1>สร้างโอกาสขายใหม่</h1></div></div>{customers.length?<OpportunityForm customers={customers} users={users} role={session.role}/>:<section className="card"><div className="empty">ยังไม่มีลูกค้าในความรับผิดชอบ กรุณาสร้างลูกค้าก่อน</div></section>}</>; }

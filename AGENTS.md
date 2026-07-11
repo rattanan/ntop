@@ -1,5 +1,21 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+- อ่าน requirement และ architecture ก่อนแก้โค้ด
+- ห้ามลบหรือเปลี่ยนพฤติกรรมเดิมโดยไม่ได้รับคำสั่ง
+- ทุก feature ต้องมี acceptance criteria
+- ทุกการแก้ไขต้องมี unit test หรือ integration test ที่เหมาะสม
+- ต้องรัน lint, typecheck และ test ก่อนสรุปงาน
+- ห้ามแก้หลาย module ที่ไม่เกี่ยวข้องใน task เดียว
+- ห้ามเปลี่ยน database schema โดยไม่มี migration
+- ห้าม hard-code role, workflow status, product หรือ approval level
+- ต้องรักษา backward compatibility ของ API
+- ต้องตรวจ authorization ฝั่ง server ทุกครั้ง
+- การซ่อนปุ่มใน UI ไม่ถือว่าเป็น security control
+- ต้องใช้ transaction สำหรับการแก้ไขข้อมูลหลายตาราง
+- ทุกสถานะสำคัญต้องเขียน audit log
+- เงินต้องเก็บเป็น decimal ห้ามใช้ floating point
+- วันที่ต้องเก็บ timezone อย่างถูกต้อง
+- ห้ามใช้ mock data ใน production path
+- ห้ามทำ feature นอก scope
+- ก่อนแก้ไขให้ระบุไฟล์ที่จะเปลี่ยน
+- หลังแก้ไขให้สรุปไฟล์ ผลทดสอบ และความเสี่ยง
+- Do not remove existing features, ask before if necessary
+ 
