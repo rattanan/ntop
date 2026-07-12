@@ -13,6 +13,19 @@ The provided database currently runs MariaDB 5.5, which Prisma Migrate cannot ma
 
 Never commit `.env` or database credentials.
 
+## Quality checks
+
+Run the local quality gate before submitting a change:
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Use `npm run test:watch` while developing unit tests. Tests run in a Node environment and are discovered from `tests/**/*.test.ts`.
+
 First, run the development server:
 
 ```bash

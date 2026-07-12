@@ -59,14 +59,14 @@
 | OPS-004 Runbook/release/support | Roadmap, Testing | FND-001, 022–025, 028 | all phases | operational rehearsal | Production gate |
 | COMP-001 Append-only audit | Permissions, Database | FND-007–009, 025/030 | Foundation + all modules | tamper/audit completeness | Security/Audit gate |
 | COMP-002 Lifecycle approval | Requirements, Database | FND-017/018, 025 | Foundation + Customer | VS-02, policy evidence | OD-002 approved; safety gate |
-| FR-013 AI provider administration | AI Design, Permissions | new AI foundation backlog | Foundation/M3–M4 | admin/auth/encryption/test-connection tests | AI security DoR |
-| FR-014 Meeting Draft | AI Design, Activity | new AI Release 1 backlog | Sales M5–M6 | strict-schema/input-boundary/human-confirmation tests | AI Release 1 gate |
-| FR-015 AI Next Action | AI Design, Activity | new AI Release 1 backlog | Sales M5–M6 | idempotency/owner/timezone/audit tests | AI Release 1 gate |
-| FR-016 Deal Risk | AI Design, Forecast | new AI Release 1 backlog | Sales M5–M6 | deterministic rule/config/history tests | AI Release 1 gate |
-| NFR-005 AI optional resilience | AI Design, Architecture | new AI foundation backlog | Foundation/M5–M6 | outage/circuit/manual-fallback tests | Operations gate |
-| SEC-004 AI least privilege/autonomy | AI Design, Permissions | new AI foundation backlog | Foundation/all AI | authorization/secret/autonomy negative tests | Security gate |
-| DATA-005 AI provenance/retention | AI Design, Database | new AI foundation backlog | Foundation/all AI | provenance/purge/no-raw-prompt tests | Data Governance gate |
-| OPS-005 AI operations | AI Design, Architecture | new AI foundation backlog | Foundation/all AI | quota/retry/feature-flag/telemetry tests | Operations gate |
+| FR-013 AI provider administration | AI Design, Permissions | AI-001–014 | Foundation/M3–M4 | admin/auth/encryption/test-connection tests | AI security DoR |
+| FR-014 Meeting Draft | AI Design, Activity | AI-020–033 | Sales M5–M6 | strict-schema/input-boundary/human-confirmation tests | AI Release 1 gate |
+| FR-015 AI Next Action | AI Design, Activity | AI-020–024, AI-034 | Sales M5–M6 | idempotency/owner/timezone/audit tests | AI Release 1 gate |
+| FR-016 Deal Risk | AI Design, Forecast | AI-040–044 | Sales M5–M6 | deterministic rule/config/history tests | AI Release 1 gate |
+| NFR-005 AI optional resilience | AI Design, Architecture | AI-013, AI-021, AI-024, AI-031/044 | Foundation/M5–M6 | outage/circuit/manual-fallback tests | Operations gate |
+| SEC-004 AI least privilege/autonomy | AI Design, Permissions | AI-002/003, AI-011/012, AI-022, AI-033/034/042 | Foundation/all AI | authorization/secret/autonomy negative tests | Security gate |
+| DATA-005 AI provenance/retention | AI Design, Database | AI-020/023, AI-033/034/044 | Foundation/all AI | provenance/purge/no-raw-prompt tests | Data Governance gate |
+| OPS-005 AI operations | AI Design, Architecture | AI-013, AI-021/024 | Foundation/all AI | quota/retry/feature-flag/telemetry tests | Operations gate |
 
 ## Coverage summary
 

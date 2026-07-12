@@ -92,6 +92,40 @@ enum InternalOrderStatus {
   COMPLETED
 }
 
+enum AiJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum AiOutputStatus {
+  DRAFT
+  CONFIRMED
+  REJECTED
+  ABANDONED
+}
+
+enum AiSafetyResult {
+  PASSED
+  REJECTED
+  REVIEW_REQUIRED
+}
+
+enum AiConfidenceBand {
+  LOW
+  MEDIUM
+  HIGH
+  UNKNOWN
+}
+
+enum AiFeedbackRating {
+  HELPFUL
+  INCORRECT
+  UNSAFE
+}
+
 model User {
   id             String        @id @default(cuid())
   email          String        @unique
@@ -102,6 +136,12 @@ model User {
   ownedDeals     Opportunity[] @relation("OpportunityOwner")
   ownedLeads     Lead[]        @relation("LeadOwner")
   activities     Activity[]    @relation("ActivityOwner")
+  requestedAiJobs AiJob[]      @relation("AiJobRequester")
+  confirmedAiOutputs AiOutput[] @relation("AiOutputConfirmer")
+  aiFeedback     AiFeedback[]   @relation("AiFeedbackActor")
+  createdRiskRuleVersions DealRiskRuleVersion[] @relation("DealRiskRuleVersionCreator")
+  confirmedMeetingDrafts MeetingDraftConfirmation[] @relation("MeetingDraftConfirmer")
+  enterpriseRoleAssignments UserRoleAssignment[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -117,6 +157,8 @@ model Customer {
   status          CustomerStatus @default(PROSPECT)
   ownerId         String
   owner           User           @relation("CustomerOwner", fields: [ownerId], references: [id])
+  organizationUnitId String?
+  organizationUnit OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
   contacts        Contact[]
   opportunities   Opportunity[]
   leads           Lead[]
@@ -124,6 +166,44 @@ model Customer {
   quotes          Quote[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  @@index([organizationUnitId, updatedAt])
+  @@index([ownerId, updatedAt])
+}
+
+model OrganizationUnit {
+  id        String   @id @default(cuid())
+  code      String   @unique @db.VarChar(100)
+  name      String   @db.VarChar(255)
+  parentId  String?
+  parent    OrganizationUnit?  @relation("OrganizationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  OrganizationUnit[] @relation("OrganizationHierarchy")
+  active    Boolean  @default(true)
+  roleAssignments UserRoleAssignment[]
+  customers Customer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId, active])
+}
+
+model UserRoleAssignment {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  roleCode           String   @db.VarChar(100)
+  scopeCode          String   @db.VarChar(32)
+  organizationUnitId String?
+  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: Restrict)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([userId, roleCode, scopeCode, organizationUnitId, effectiveFrom])
+  @@index([userId, active, effectiveFrom, effectiveTo])
+  @@index([organizationUnitId, roleCode, active])
 }
 
 model Lead {
@@ -161,6 +241,8 @@ model Activity {
   opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  meetingDraftConfirmation MeetingDraftConfirmation? @relation("MeetingConfirmationActivity")
+  meetingDraftNextActionConfirmation MeetingDraftConfirmation? @relation("MeetingConfirmationNextAction")
 }
 
 model Contact {
@@ -195,6 +277,7 @@ model Opportunity {
   quotes          Quote[]
   coverageChecks  CoverageCheck[]
   solutionDesign  SolutionDesign?
+  riskSignals     DealRiskSignal[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -316,4 +399,201 @@ model VendorAssessment {
   rationale       String?       @db.Text
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model AiProviderConfiguration {
+  id              String                           @id @db.VarChar(64)
+  activeVersionId String?                          @unique
+  activeVersion   AiProviderConfigurationVersion? @relation("ActiveAiProviderVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+  versions        AiProviderConfigurationVersion[] @relation("AiProviderVersionHistory")
+  createdAt       DateTime                         @default(now())
+  updatedAt       DateTime                         @updatedAt
+}
+
+model AiProviderConfigurationVersion {
+  id               String                   @id @default(cuid())
+  configurationId  String                   @db.VarChar(64)
+  configuration    AiProviderConfiguration  @relation("AiProviderVersionHistory", fields: [configurationId], references: [id], onDelete: Restrict)
+  activeFor         AiProviderConfiguration? @relation("ActiveAiProviderVersion")
+  version           Int
+  enabled           Boolean                  @default(false)
+  apiUrl            String                   @db.VarChar(2048)
+  model             String                   @db.VarChar(255)
+  requestTimeoutMs  Int
+  apiKeyCiphertext  Bytes?                   @db.VarBinary(4096)
+  apiKeyNonce       Bytes?                   @db.VarBinary(12)
+  apiKeyAuthTag     Bytes?                   @db.VarBinary(16)
+  createdAt         DateTime                 @default(now())
+  aiOutputs         AiOutput[]
+
+  @@unique([configurationId, version])
+  @@index([configurationId, createdAt])
+}
+
+model AiJob {
+  id              String       @id @default(cuid())
+  idempotencyKey  String       @unique @db.VarChar(191)
+  capability      String       @db.VarChar(100)
+  requestedById   String
+  requestedBy     User         @relation("AiJobRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  status          AiJobStatus  @default(QUEUED)
+  attemptCount    Int          @default(0)
+  maxAttempts     Int
+  availableAt     DateTime     @default(now())
+  leaseExpiresAt  DateTime?
+  errorCode       String?      @db.VarChar(100)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  output          AiOutput?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, availableAt])
+  @@index([requestedById, capability, createdAt])
+}
+
+model AiOutput {
+  id                             String                         @id @default(cuid())
+  jobId                          String                         @unique
+  job                            AiJob                          @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  providerConfigurationVersionId String
+  providerConfigurationVersion   AiProviderConfigurationVersion @relation(fields: [providerConfigurationVersionId], references: [id], onDelete: Restrict)
+  capability                     String                         @db.VarChar(100)
+  outputSchemaVersion            String                         @db.VarChar(100)
+  providerModel                  String                         @db.VarChar(255)
+  promptTemplateVersion          String                         @db.VarChar(100)
+  inputSourceReferences          Json
+  validatedOutput                Json?
+  status                         AiOutputStatus                 @default(DRAFT)
+  safetyResult                   AiSafetyResult
+  confidenceBand                 AiConfidenceBand              @default(UNKNOWN)
+  latencyMs                      Int?
+  inputTokens                    Int?
+  outputTokens                   Int?
+  totalTokens                    Int?
+  expiresAt                      DateTime?
+  legalHold                      Boolean                        @default(false)
+  abandonedReason                String?                        @db.VarChar(255)
+  confirmedById                  String?
+  confirmedBy                    User?                          @relation("AiOutputConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt                    DateTime?
+  feedback                       AiFeedback[]
+  meetingDraftConfirmation       MeetingDraftConfirmation?
+  createdAt                      DateTime                       @default(now())
+  updatedAt                      DateTime                       @updatedAt
+
+  @@index([status, expiresAt, legalHold])
+  @@index([capability, createdAt])
+  @@index([providerConfigurationVersionId])
+}
+
+model AiFeedback {
+  id        String           @id @default(cuid())
+  outputId  String
+  output    AiOutput         @relation(fields: [outputId], references: [id], onDelete: Restrict)
+  actorId   String
+  actor     User             @relation("AiFeedbackActor", fields: [actorId], references: [id], onDelete: Restrict)
+  rating    AiFeedbackRating
+  comment   String?          @db.VarChar(1000)
+  createdAt DateTime         @default(now())
+
+  @@index([outputId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model MeetingDraftConfirmation {
+  id             String    @id @default(cuid())
+  idempotencyKey String    @unique @db.VarChar(191)
+  aiOutputId     String    @unique
+  aiOutput       AiOutput  @relation(fields: [aiOutputId], references: [id], onDelete: Restrict)
+  activityId     String    @unique
+  activity       Activity  @relation("MeetingConfirmationActivity", fields: [activityId], references: [id], onDelete: Restrict)
+  nextActionActivityId String?   @unique
+  nextActionActivity   Activity? @relation("MeetingConfirmationNextAction", fields: [nextActionActivityId], references: [id], onDelete: Restrict)
+  selectedFields Json
+  finalContent   Json
+  confirmedById  String
+  confirmedBy    User      @relation("MeetingDraftConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt    DateTime
+  createdAt      DateTime  @default(now())
+
+  @@index([confirmedById, confirmedAt])
+}
+
+model AuditLedger {
+  id           String   @id @db.VarChar(64)
+  lastSequence BigInt   @default(0)
+  lastHash     String   @db.Char(64)
+  revision     Int      @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  sequence      BigInt   @unique
+  actorId       String   @db.VarChar(191)
+  action        String   @db.VarChar(191)
+  targetType    String   @db.VarChar(191)
+  targetId      String   @db.VarChar(191)
+  targetVersion String?  @db.VarChar(191)
+  outcome       String   @db.VarChar(32)
+  correlationId String   @db.VarChar(191)
+  reason        String?  @db.VarChar(1000)
+  data          Json?
+  previousHash  String   @db.Char(64)
+  eventHash     String   @db.Char(64)
+  recordedAt    DateTime @default(now())
+
+  @@index([targetType, targetId, recordedAt])
+  @@index([actorId, recordedAt])
+  @@index([correlationId])
+}
+
+model DealRiskRule {
+  id        String                @id @default(cuid())
+  code      String                @unique @db.VarChar(100)
+  versions  DealRiskRuleVersion[]
+  createdAt DateTime              @default(now())
+}
+
+model DealRiskRuleVersion {
+  id                String            @id @default(cuid())
+  ruleId            String
+  rule              DealRiskRule      @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  version           Int
+  riskType          String            @db.VarChar(100)
+  enabled           Boolean           @default(false)
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  conditionConfig   Json
+  thresholdConfig   Json
+  scopeConfig       Json
+  severityConfig    Json
+  createdById       String
+  createdBy         User              @relation("DealRiskRuleVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  signals           DealRiskSignal[]
+  createdAt         DateTime          @default(now())
+
+  @@unique([ruleId, version])
+  @@index([ruleId, enabled, effectiveFrom, effectiveTo])
+  @@index([riskType, enabled, effectiveFrom, effectiveTo])
+}
+
+model DealRiskSignal {
+  id                   String               @id @default(cuid())
+  opportunityId        String
+  opportunity          Opportunity          @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  ruleVersionId        String
+  ruleVersion          DealRiskRuleVersion  @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+  evaluationKey        String               @db.VarChar(191)
+  riskType             String               @db.VarChar(100)
+  thresholdSnapshot    Json
+  triggeringFacts      Json
+  severitySnapshot     Json
+  evaluatedAt          DateTime
+  createdAt            DateTime             @default(now())
+
+  @@unique([opportunityId, ruleVersionId, evaluationKey])
+  @@index([opportunityId, evaluatedAt])
+  @@index([ruleVersionId, evaluatedAt])
 }
