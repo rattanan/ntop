@@ -1,0 +1,8 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getHelpArticle, getRelatedHelpArticles, helpAudienceLabels } from "@/lib/help-center";
+
+export default async function HelpArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const article = getHelpArticle((await params).slug); if (!article) notFound(); const related = getRelatedHelpArticles(article);
+  return <><div className="help-article-head"><Link href="/help">← กลับ Help Center</Link><div><span className="badge">{article.category}</span><small>{article.readingMinutes} นาที · อัปเดต {article.updatedAt}</small></div><h1>{article.title}</h1><p>{article.summary}</p><div className="help-audiences">{article.audience.map((item)=><span key={item}>{helpAudienceLabels[item]}</span>)}</div></div><div className="help-article-layout"><article className="card help-article"><div className="card-body">{article.sections.map((section)=><section key={section.title}><h2>{section.title}</h2>{section.body.map((paragraph)=><p key={paragraph}>{paragraph}</p>)}</section>)}<section className="help-faq"><h2>คำถามที่พบบ่อย</h2>{article.faqs.map((faq)=><details key={faq.question}><summary>{faq.question}<span>+</span></summary><p>{faq.answer}</p></details>)}</section></div></article><aside><section className="card"><div className="card-body"><h2>Tags</h2><div className="help-tags">{article.tags.map((tag)=><span key={tag}>{tag}</span>)}</div></div></section>{related.length>0&&<section className="card related-help"><div className="card-body"><h2>บทความที่เกี่ยวข้อง</h2>{related.map((item)=><Link href={`/help/${item.slug}`} key={item.slug}><strong>{item.title}</strong><small>{item.summary}</small></Link>)}</div></section>}</aside></div></>;
+}

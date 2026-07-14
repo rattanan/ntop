@@ -35,7 +35,7 @@ export async function updateAiProviderConfiguration(
       { correlationId: crypto.randomUUID(), reason: "Admin configuration update" },
     );
     revalidatePath("/admin/ai-settings");
-    return { message: "บันทึกการตั้งค่า AI แล้ว" };
+    return { message: "บันทึกการตั้งค่า AI แล้ว", status: "success" };
   } catch (error) {
     if (error instanceof ProviderConfigurationValidationError) {
       return { errors: error.issues };
@@ -48,7 +48,7 @@ export async function testAiProviderConnection(): Promise<FormState> {
   const actor = await requirePermission(PERMISSIONS.aiConfigManage);
   try {
     const result = await testActiveProviderConnection(actor.id, crypto.randomUUID());
-    return { message: result.message };
+    return { message: result.message, status: "success" };
   } catch (error) {
     if (error instanceof AiConfigurationRuntimeError) {
       return { message: "ยังไม่มี AI configuration ที่พร้อมใช้งาน" };

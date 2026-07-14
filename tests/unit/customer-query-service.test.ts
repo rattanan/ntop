@@ -22,7 +22,7 @@ describe("Customer query policy", () => {
 
   it("uses bounded indexed-style filters instead of unbounded contains", () => {
     expect(buildCustomerFilterWhere({query:"0123456789012"})).toEqual({AND:[{OR:[{taxId:"0123456789012"}]}]});
-    expect(buildCustomerFilterWhere({query:"Acme",segment:"Enterprise"})).toEqual({AND:[{OR:[{name:{startsWith:"Acme"}},{province:"Acme"}]},{segment:"Enterprise"}]});
+    expect(buildCustomerFilterWhere({query:"Acme",segment:"Enterprise"})).toEqual({AND:[{OR:[{name:{startsWith:"Acme"}},{province:"Acme"},{externalIds:{some:{externalId:"Acme"}}}]},{segment:"Enterprise"}]});
   });
 
   it("rejects oversized query and produces opaque cursor text", () => {

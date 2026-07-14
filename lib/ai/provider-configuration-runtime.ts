@@ -106,3 +106,13 @@ export async function testActiveProviderConnection(
   });
   return result;
 }
+
+export async function createActiveProviderClient() {
+  const { repository } = createProviderConfigurationRuntime();
+  const configuration = await repository.getActiveSecretConfiguration();
+  if (!configuration?.enabled || !configuration.apiKeyCiphertext || !configuration.apiKeyNonce || !configuration.apiKeyAuthTag) throw new AiConfigurationRuntimeError();
+  try {
+    const apiKey = decryptProviderKey({ ciphertext: configuration.apiKeyCiphertext, nonce: configuration.apiKeyNonce, authTag: configuration.apiKeyAuthTag }, masterKeyFromEnvironment());
+    return { client: new OpenAiCompatibleClient({ apiUrl: configuration.apiUrl, apiKey, model: configuration.model, timeoutMs: configuration.requestTimeoutMs }), configurationVersionId: configuration.id, model: configuration.model };
+  } catch { throw new AiConfigurationRuntimeError(); }
+}

@@ -27,6 +27,8 @@ describe("enterprise role compatibility bridge", () => {
 
   it("rejects unknown role and scope codes", () => {
     expect(isEnterpriseRole("PRICING_APPROVER")).toBe(true);
+    expect(isEnterpriseRole("MARKETING")).toBe(true);
+    expect(isEnterpriseRole("SOLUTION_ARCHITECT")).toBe(true);
     expect(isEnterpriseRole("SUPER_ADMIN")).toBe(false);
     expect(isAuthorizationScope("ORG_UNIT")).toBe(true);
     expect(isAuthorizationScope("GLOBAL_WRITE")).toBe(false);

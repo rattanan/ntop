@@ -1,2 +1,13 @@
-import{QuoteForm}from"@/components/forms";import{prisma}from"@/lib/prisma";import{requireSession}from"@/lib/auth";
-export default async function NewQuote(){const s=await requireSession();const where=s.role==="ADMIN"?{}:{ownerId:s.id};const[customers,products,opportunities]=await Promise.all([prisma.customer.findMany({where,select:{id:true,name:true,taxId:true}}),prisma.product.findMany({where:{active:true},select:{id:true,name:true,code:true,listPrice:true}}),prisma.opportunity.findMany({where,select:{id:true,name:true}})]);return <><div className="page-head"><div><p className="eyebrow">Quotation</p><h1>สร้างใบเสนอราคา</h1></div></div><QuoteForm customers={customers} products={products.map(p=>({...p,listPrice:Number(p.listPrice)}))} opportunities={opportunities}/></>}
+import { GovernedQuoteForm } from "@/components/workflow-forms";
+import { isAdmin, requireSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export default async function NewQuote() {
+  const session = await requireSession();
+  const where = isAdmin(session.role) ? {} : { ownerId: session.id };
+  const [products, opportunities] = await Promise.all([
+    prisma.product.findMany({ where: { active: true }, select: { id: true, name: true, code: true, listPrice: true, floorPrice: true }, orderBy: { code: "asc" } }),
+    prisma.opportunity.findMany({ where: { ...where, stage: { notIn: ["WON", "LOST", "CANCELLED"] } }, select: { id: true, name: true, customer: { select: { name: true } } }, orderBy: { updatedAt: "desc" }, take: 200 }),
+  ]);
+  return <><div className="page-head"><div><p className="eyebrow">Versioned Quotation</p><h1>สร้างใบเสนอราคา</h1><p>กรอกข้อมูล Header และเพิ่ม Product detail ได้หลายรายการ</p></div></div><GovernedQuoteForm products={products.map((item) => ({ id:item.id,code:item.code,name:item.name,listPrice:item.listPrice.toFixed(4),floorPrice:item.floorPrice?.toFixed(4)??null }))} opportunities={opportunities.map((item) => ({ id: item.id, name: item.name, customerName: item.customer.name }))}/></>;
+}

@@ -1,0 +1,1 @@
+import{test,expect}from"@playwright/test";test("Prospect routes require authentication and do not expose records",async({request})=>{const list=await request.get("/api/v1/prospects");expect(list.status()).toBe(401);const detail=await request.get("/api/v1/prospects/guessed-id");expect(detail.status()).toBe(401);});

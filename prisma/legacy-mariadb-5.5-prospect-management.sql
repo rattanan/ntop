@@ -1,0 +1,4 @@
+-- MariaDB 5.5 compatibility note.
+-- The versioned migration at 20260714220000_add_prospect_management/migration.sql is itself MariaDB 5.5 compatible:
+-- JSON-shaped payloads use LONGTEXT, timestamps avoid fractional CURRENT_TIMESTAMP defaults,
+-- and long document object keys use a hash-backed unique index.

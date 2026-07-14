@@ -41,11 +41,11 @@ These are prerequisites, not permission to rewrite unrelated modules
 
 | ID | Story | File/module scope | Dependencies | Acceptance criteria/tests | Status |
 |---|---|---|---|---|---|
-| AI-010 | Add versioned AI provider configuration persistence | Prisma AI config model + migration only | AI-003, ADR-033 | singleton/version invariant; enabled/url/model/timeout + ciphertext/nonce/tag; forward migration; no plaintext column | Implemented — MySQL 8 migration gate |
+| AI-010 | Add versioned AI provider configuration persistence | Prisma AI config model + migration only | AI-003, ADR-033 | singleton/version invariant; enabled/url/model/timeout + ciphertext/nonce/tag; forward migration; no plaintext column | Implemented — MySQL 8 forward migration plus MariaDB 5.5 development compatibility migration |
 | AI-011 | Implement AES-256-GCM configuration encryption | AI crypto helper only | AI-001, AI-010 | random nonce; authenticated encryption; wrong key/tamper fail closed; key never logged; unit tests | Implemented |
 | AI-012 | Implement Admin provider read/update service | AI application service only | AI-002/003/010/011 | non-secret read; write-only replacement key; timeout/url/model validation; transaction + audit; non-Admin denied | Implemented — runtime migration gate |
 | AI-013 | Implement OpenAI-compatible client and sanitized Test Connection | AI provider adapter only | AI-011/012 | bounded timeout; no public fallback; sanitized errors; no key/raw response logs; adapter unit/integration tests | Implemented |
-| AI-014 | Build Admin AI settings UI | Admin AI page/components only | AI-012/013 | fields: enabled/url/model/key/timeout; configured flag; connection result sanitized; server auth negative test | Implemented — requires `AI_CONFIG_MASTER_KEY` and MySQL 8 migration |
+| AI-014 | Build Admin AI settings UI | Admin AI page/components only | AI-012/013 | fields: enabled/url/model/key/timeout; configured flag; connection result sanitized; server auth negative test | Implemented — requires environment master key and the target-database migration |
 
 ## Epic C — AI execution and governance
 
@@ -73,9 +73,9 @@ These are prerequisites, not permission to rewrite unrelated modules
 |---|---|---|---|---|---|
 | AI-040 | Add versioned risk-rule configuration and signals | Prisma Risk models + migration only | AI-003, ADR-036 | no hard-coded role/stage/threshold; effective versions; immutable historical signal evidence; migration tests | Implemented — MySQL 8 migration gate |
 | AI-041 | Implement deterministic risk evaluator | Opportunity/Forecast risk module only | AI-001/040 | same facts/version same result; no-follow-up/overdue/missing-next-action fixtures; Decimal/timezone safe; unit tests | Implemented |
-| AI-042 | Build Admin risk-rule management | Admin Risk page/service only | AI-002/003/040/041 | server-authorized CRUD/version/activate; invalid config denied; audit; non-Admin tests | Backend implemented — UI pending |
-| AI-043 | Show risk signals in Opportunity/Pipeline | Opportunity read UI/query only | AI-041 | rule/version/threshold/facts visible; works without AI; no existing workflow mutation | Ready after AI-041 |
-| AI-044 | Add optional AI explanation/Next Action suggestion | AI Risk adapter/UI only | AI-021–024/041/043 | deterministic signal remains source of truth; explanation failure degrades cleanly; confirmation uses AI-034 | Ready after AI-043 |
+| AI-042 | Build Admin risk-rule management | Admin Risk page/service only | AI-002/003/040/041 | server-authorized CRUD/version/activate; invalid config denied; audit; non-Admin tests | Implemented — migration application gate |
+| AI-043 | Show risk signals in Opportunity/Pipeline | Opportunity read UI/query only | AI-041 | rule/version/threshold/facts visible; works without AI; no existing workflow mutation | Implemented — migration application gate |
+| AI-044 | Add optional AI explanation/Next Action suggestion | AI Risk adapter/UI only | AI-021–024/041/043 | deterministic signal remains source of truth; explanation failure degrades cleanly; confirmation uses AI-034 | Implemented — provider configuration/UAT gate |
 
 ## Explicit Release 1 negative scope tests
 

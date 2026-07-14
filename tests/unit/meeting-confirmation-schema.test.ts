@@ -22,10 +22,10 @@ const nextActionMigration = readFileSync(
 describe("Meeting Draft confirmation persistence", () => {
   it("links exactly one output to one confirmed Activity", () => {
     expect(schema).toContain("model MeetingDraftConfirmation {");
-    expect(schema).toContain("idempotencyKey String    @unique");
-    expect(schema).toContain("aiOutputId     String    @unique");
-    expect(schema).toContain("activityId     String    @unique");
-    expect(schema).toContain("nextActionActivityId String?   @unique");
+    expect(schema).toMatch(/idempotencyKey\s+String\s+@unique/);
+    expect(schema).toMatch(/aiOutputId\s+String\s+@unique/);
+    expect(schema).toMatch(/activityId\s+String\s+@unique/);
+    expect(schema).toMatch(/nextActionActivityId\s+String\?\s+@unique/);
   });
 
   it("stores selected and final content with actor/time evidence", () => {

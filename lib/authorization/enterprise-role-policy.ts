@@ -2,11 +2,14 @@ import type { Role } from "@prisma/client";
 
 export const ENTERPRISE_ROLES = [
   "ADMIN",
+  "SYSTEM_ADMIN",
   "EXECUTIVE",
   "SALES_DIRECTOR",
   "TEAM_MANAGER",
   "KAM",
   "PRESALES",
+  "SOLUTION_ARCHITECT",
+  "MARKETING",
   "COVERAGE",
   "PRICING_APPROVER",
   "ORDER_OPERATIONS",

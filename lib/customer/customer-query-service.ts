@@ -2,8 +2,8 @@ import type { Prisma } from "@prisma/client";
 
 import type { AuthorizationContext } from "../authorization/authorization-context";
 
-const DEFAULT_PAGE_SIZE = 25;
-const MAX_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
 
 export class CustomerQueryValidationError extends Error {
   constructor() {
@@ -73,6 +73,11 @@ export function buildCustomerFilterWhere(input: {
         : [
             { name: { startsWith: query } },
             { province: query },
+            {
+              externalIds: {
+                some: { externalId: query },
+              },
+            },
           ],
     });
   }
@@ -98,12 +103,14 @@ export async function listCustomers(
     prisma.customer.findMany({
       where: {
         AND: [
+          { mergedIntoCustomerId: null },
           buildCustomerScopeWhere(context),
           buildCustomerFilterWhere(input),
         ],
       },
       select: {
         id: true,
+        version: true,
         name: true,
         taxId: true,
         type: true,

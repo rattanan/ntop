@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { FormState } from "@/app/action-types";
+import {
+  BangkokDateTimeError,
+  parseBangkokDateTime,
+} from "@/lib/ai/bangkok-date-time";
 import { createMeetingConfirmationRuntime } from "@/lib/ai/meeting-confirmation-runtime";
 import { MeetingConfirmationError } from "@/lib/ai/meeting-confirmation-service";
 import { MEETING_DRAFT_SCHEMA_VERSION } from "@/lib/ai/meeting-draft-schema";
@@ -19,10 +23,14 @@ const lines = (value: string) =>
   value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
 function optionalIso(value: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) throw new MeetingConfirmationError();
-  return date.toISOString();
+  try {
+    return parseBangkokDateTime(value)?.toISOString() ?? null;
+  } catch (error) {
+    if (error instanceof BangkokDateTimeError) {
+      throw new MeetingConfirmationError();
+    }
+    throw error;
+  }
 }
 
 export async function confirmMeetingDraft(

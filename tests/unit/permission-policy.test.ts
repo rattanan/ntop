@@ -16,6 +16,10 @@ const expectedPermissions: Record<Role, readonly Permission[]> = {
     PERMISSIONS.recordCreate,
     PERMISSIONS.recordUpdate,
     PERMISSIONS.aiMeetingDraftConfirm,
+    PERMISSIONS.aiRiskExplain,
+    PERMISSIONS.opportunityTransition,
+    PERMISSIONS.quoteManage,
+    PERMISSIONS.quoteSubmit,
   ],
   VIEWER: [PERMISSIONS.recordViewOwned],
 };
@@ -51,6 +55,30 @@ describe("legacy role permission policy", () => {
         PERMISSIONS.aiConfigManage,
       ),
     ).toBe(false);
+  });
+
+  it("allows Sales to request optional risk explanations but denies Viewer", () => {
+    expect(
+      permissionPolicy.allows({ role: "SALES" }, PERMISSIONS.aiRiskExplain),
+    ).toBe(true);
+    expect(
+      permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.aiRiskExplain),
+    ).toBe(false);
+  });
+
+  it("restricts customer merge to the configured privileged permission", () => {
+    expect(
+      permissionPolicy.allows({ role: "ADMIN" }, PERMISSIONS.customerMerge),
+    ).toBe(true);
+    expect(
+      permissionPolicy.allows({ role: "SALES" }, PERMISSIONS.customerMerge),
+    ).toBe(false);
+  });
+
+  it("restricts audit history to the configured privileged permission", () => {
+    expect(permissionPolicy.allows({ role: "ADMIN" }, PERMISSIONS.auditRead)).toBe(true);
+    expect(permissionPolicy.allows({ role: "SALES" }, PERMISSIONS.auditRead)).toBe(false);
+    expect(permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.auditRead)).toBe(false);
   });
 
   it("fails closed with a permission-specific server error", () => {

@@ -10,10 +10,11 @@
 
 ## 1. Preconditions
 
-- Use a disposable MySQL 8 test database. Do not run these migrations against legacy MariaDB 5.5 or production.
+- Use a disposable MySQL 8 test database for production-target migration rehearsal. The development MariaDB 5.5 database uses only the explicitly named compatibility migrations.
 - Copy `.env.example` to `.env.local`; do not commit it.
 - Configure `DATABASE_URL`, `AUTH_SECRET`, `SEED_ADMIN_EMAIL`, and `SEED_ADMIN_PASSWORD`.
 - Generate a 32-byte master key with an approved secret-management process, Base64-encode it, and set `AI_CONFIG_MASTER_KEY`. Never reuse the AI provider API key for this value.
+- For local development only, `npm run ai:key:ensure` creates a random key in the ignored `.env` file without printing it. Production must inject the key from the approved secret store.
 - Store the OpenAI-compatible endpoint and provider key only through the Admin UI after migration; do not paste them into source, tests, logs, or documentation.
 
 ## 2. Local quality gate
@@ -36,6 +37,8 @@ Expected result: every command exits with code `0`.
 4. Confirm `AuditLedger` has exactly one `default` row with sequence `0` before the first audit event.
 5. Confirm the runtime database account has only `SELECT`/`INSERT` privileges on `AuditEvent`; administration accounts follow the DBA-controlled procedure.
 6. Exercise restore on the disposable database before any production approval.
+
+For the legacy development runtime, apply `prisma/legacy-mariadb-5.5-ai-provider-configuration.sql`; it is the additive compatibility counterpart of `20260711160000_add_ai_provider_configuration` and does not authorize applying the MySQL 8 migration.
 
 ## 4. Provider administration UAT
 

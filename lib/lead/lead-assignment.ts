@@ -1,0 +1,4 @@
+export type AssignmentCriteria={source?:string;companyContains?:string;productContains?:string};
+export type AssignmentFacts={source:string;company:string;recommendedProducts?:string};
+export function matchesAssignmentRule(criteria:AssignmentCriteria,facts:AssignmentFacts){return(!criteria.source||criteria.source===facts.source)&&(!criteria.companyContains||facts.company.toLocaleLowerCase("th-TH").includes(criteria.companyContains.toLocaleLowerCase("th-TH")))&&(!criteria.productContains||(facts.recommendedProducts??"").toLocaleLowerCase("th-TH").includes(criteria.productContains.toLocaleLowerCase("th-TH")));}
+export function nextRoundRobinUser(userIds:readonly string[],lastAssignedUserId:string|null){if(!userIds.length)return null;const index=lastAssignedUserId?userIds.indexOf(lastAssignedUserId):-1;return userIds[(index+1)%userIds.length];}

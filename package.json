@@ -9,7 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:db": "RUN_DB_INTEGRATION=1 vitest run tests/integration/workflow-real-db.test.ts tests/integration/identity-admin-real-db.test.ts tests/integration/prospect-real-db.test.ts --reporter=verbose --no-file-parallelism",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
+    "ai:key:ensure": "node scripts/ensure-ai-master-key.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed"
@@ -18,17 +21,21 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
+    "exceljs": "^4.4.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "prisma": "^6.19.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-hook-form": "^7.81.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

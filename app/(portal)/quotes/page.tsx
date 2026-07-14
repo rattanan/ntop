@@ -1,2 +1,13 @@
-import Link from "next/link";import {prisma}from"@/lib/prisma";import{requireSession}from"@/lib/auth";
-export default async function Quotes(){const s=await requireSession();const q=await prisma.quote.findMany({include:{customer:true,approvals:true},orderBy:{createdAt:"desc"}});return <><div className="page-head"><div><p className="eyebrow">Quotation</p><h1>ใบเสนอราคา</h1></div>{s.role!=="VIEWER"&&<Link href="/quotes/new" className="primary">สร้างใบเสนอราคา</Link>}</div><section className="card"><div className="table-wrap"><table className="table"><thead><tr><th>เลขที่</th><th>ลูกค้า</th><th>ยอดรวม</th><th>ส่วนลด</th><th>สถานะ</th></tr></thead><tbody>{q.map(x=><tr key={x.id}><td>{x.quoteNo}</td><td>{x.customer.name}</td><td>{Number(x.total).toLocaleString("th-TH",{style:"currency",currency:"THB"})}</td><td>{x.discountPct}%</td><td><span className="badge">{x.status}</span></td></tr>)}</tbody></table>{!q.length&&<div className="empty">ยังไม่มีใบเสนอราคา</div>}</div></section></>}
+import Link from "next/link";
+
+import { requireSession } from "@/lib/auth";
+import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildOpportunityScopeWhere } from "@/lib/opportunity/opportunity-query";
+import { prisma } from "@/lib/prisma";
+
+export default async function Quotes() {
+  const session = await requireSession();
+  const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
+  const quotes = await prisma.quote.findMany({ where: { OR: [{ opportunity: buildOpportunityScopeWhere(context) }, { makerId: session.id }] }, include: { customer: true, versions: { orderBy: { versionNumber: "desc" }, take: 1 } }, orderBy: { createdAt: "desc" }, take: 200 });
+  return <><div className="page-head"><div><p className="eyebrow">Versioned Quotation</p><h1>ใบเสนอราคา</h1></div>{session.role!=="VIEWER"&&<Link href="/quotes/new" className="primary">สร้างใบเสนอราคา</Link>}</div><section className="card"><div className="table-wrap"><table className="table"><thead><tr><th>เลขที่</th><th>ลูกค้า</th><th>Version</th><th>ยอดรวม</th><th>สถานะ</th></tr></thead><tbody>{quotes.map((quote) => { const version = quote.versions[0]; return <tr key={quote.id}><td><Link className="link" href={`/quotes/${quote.id}`}>{quote.quoteNo}</Link></td><td>{quote.customer.name}</td><td>{version ? `v${version.versionNumber}` : "Legacy"}</td><td>{(version?.total ?? quote.total).toFixed(2)} THB</td><td><span className="badge">{version?.status ?? quote.status}</span></td></tr>; })}</tbody></table>{!quotes.length&&<div className="empty">ยังไม่มีใบเสนอราคา</div>}</div></section></>;
+}

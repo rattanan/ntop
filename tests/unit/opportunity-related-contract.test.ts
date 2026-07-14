@@ -1,0 +1,7 @@
+import{readFileSync}from"node:fs";import{describe,expect,it}from"vitest";
+const schema=readFileSync("prisma/schema.prisma","utf8"),migration=readFileSync("prisma/migrations/20260715003000_add_opportunity_related_information/migration.sql","utf8"),api=readFileSync("app/api/v1/opportunities/[id]/[collection]/route.ts","utf8"),page=readFileSync("app/(portal)/opportunities/[id]/page.tsx","utf8"),css=readFileSync("app/globals.css","utf8");
+describe("Opportunity related information contracts",()=>{
+  it("defines structured indexed records and decimal competitor pricing",()=>{for(const model of ["OpportunityPainPoint","OpportunityRequirement","OpportunityStakeholder","OpportunityCompetitor","OpportunityRelatedCommandReceipt"])expect(schema).toContain(`model ${model}`);expect(schema).toContain("estimatedPrice    Decimal?");expect(migration).toContain("DECIMAL(19,4)");});
+  it("uses authenticated scoped idempotent REST mutations",()=>{expect(api).toContain("getSession()");expect(api).toContain("loadAuthorizationContext");expect(api).toContain("requireIdempotencyKey");expect(api).toContain("createOpportunityRelatedRuntime");});
+  it("renders all related sections and responsive forms",()=>{for(const value of ["Pain Points &amp; Requirements","Stakeholder Map","Competitors &amp; Win Strategy","OpportunityRelatedForms"])expect(page).toContain(value);expect(css).toContain(".related-information { display:grid");expect(css).toContain(".related-accordions form { grid-template-columns:1fr; }");});
+});

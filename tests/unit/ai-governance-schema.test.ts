@@ -15,7 +15,7 @@ const migration = readFileSync(
 describe("AI governance persistence", () => {
   it("defines job idempotency, leasing and bounded retry fields", () => {
     expect(schema).toContain("model AiJob {");
-    expect(schema).toContain("idempotencyKey  String       @unique");
+    expect(schema).toMatch(/idempotencyKey\s+String\s+@unique/);
     expect(schema).toContain("leaseExpiresAt");
     expect(migration).toContain("AiJob_retry_bounds_chk");
   });

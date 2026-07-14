@@ -1,5 +1,18 @@
+import { Eye, Pencil } from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+
 import { requireSession } from "@/lib/auth";
-const type:{[key:string]:string}={CALL:"โทรศัพท์",MEETING:"ประชุม",FOLLOW_UP:"ติดตาม",TASK:"งาน"};
-export default async function Activities(){const session=await requireSession();const activities=await prisma.activity.findMany({where:session.role==="ADMIN"?{}:{ownerId:session.id},include:{customer:true,opportunity:true,owner:true},orderBy:{createdAt:"desc"}});return <><div className="page-head"><div><p className="eyebrow">Activity & Meeting</p><h1>กิจกรรมและการประชุม</h1></div>{session.role!=="VIEWER"&&<Link href="/activities/new" className="primary">บันทึกกิจกรรม</Link>}</div><section className="card"><div className="table-wrap"><table className="table"><thead><tr><th>หัวข้อ</th><th>ประเภท</th><th>ลูกค้า</th><th>กำหนดเวลา</th><th>AI Summary</th><th>ผู้รับผิดชอบ</th></tr></thead><tbody>{activities.map(a=><tr key={a.id}><td><strong>{a.subject}</strong>{a.actionItems&&<><br/><small>Action: {a.actionItems}</small></>}</td><td><span className="badge">{type[a.type]}</span></td><td>{a.customer?.name||"—"}</td><td>{a.dueAt?.toLocaleString("th-TH")||"—"}</td><td>{a.aiSummary||"—"}</td><td>{a.owner.name}</td></tr>)}</tbody></table>{!activities.length&&<div className="empty">ยังไม่มีกิจกรรม บันทึกการประชุมเพื่อสร้าง AI Summary และ Action Items</div>}</div></section></>}
+import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildActivityScopeWhere } from "@/lib/activity/activity-authorization";
+import { ACTIVITY_TYPES } from "@/lib/constants";
+import { prisma } from "@/lib/prisma";
+
+const typeLabels = Object.fromEntries(ACTIVITY_TYPES);
+
+export default async function Activities() {
+  const session = await requireSession();
+  const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
+  const activities = await prisma.activity.findMany({ where: { deletedAt: null, ...buildActivityScopeWhere(authorization) }, include: { customer: true, opportunity: true, owner: true }, orderBy: { createdAt: "desc" } });
+  const canUpdate = session.role !== "VIEWER";
+  return <><div className="page-head"><div><p className="eyebrow">Activity & Meeting</p><h1>กิจกรรมและการประชุม</h1><p>ติดตามงาน ดูรายละเอียด และอัปเดตกิจกรรมจากจุดเดียว</p></div>{canUpdate && <Link href="/activities/new" className="primary">บันทึกกิจกรรม</Link>}</div><section className="card activity-list-card"><div className="table-wrap"><table className="table activity-table"><thead><tr><th>หัวข้อ</th><th>ประเภท</th><th>ลูกค้า / Opportunity</th><th>กำหนดเวลา</th><th>AI Summary</th><th>ผู้รับผิดชอบ</th><th className="action-column">การทำงาน</th></tr></thead><tbody>{activities.map((activity) => <tr key={activity.id}><td><strong>{activity.subject}</strong>{activity.actionItems && <><br /><small>Action: {activity.actionItems}</small></>}</td><td><span className="badge">{typeLabels[activity.type] ?? activity.type}</span></td><td><span className="activity-related">{activity.customer?.name || "—"}{activity.opportunity && <small>{activity.opportunity.name}</small>}</span></td><td>{activity.dueAt?.toLocaleString("th-TH", { timeZone: "Asia/Bangkok" }) || "—"}</td><td className="activity-summary-cell">{activity.aiSummary || "—"}</td><td>{activity.owner.name}</td><td><div className="row-actions"><Link className="row-action" href={`/activities/${activity.id}`} aria-label={`ดูรายละเอียด ${activity.subject}`}><Eye aria-hidden="true" />ดู</Link>{canUpdate && <Link className="row-action" href={`/activities/${activity.id}/edit`} aria-label={`แก้ไข ${activity.subject}`}><Pencil aria-hidden="true" />แก้ไข</Link>}</div></td></tr>)}</tbody></table>{!activities.length && <div className="empty">ยังไม่มีกิจกรรม บันทึกการประชุมเพื่อสร้าง AI Summary และ Action Items</div>}</div></section></>;
+}

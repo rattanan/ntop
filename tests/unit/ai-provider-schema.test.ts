@@ -11,6 +11,14 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const legacyMigration = readFileSync(
+  join(process.cwd(), "prisma/legacy-mariadb-5.5-ai-provider-configuration.sql"),
+  "utf8",
+);
+const keySetup = readFileSync(
+  join(process.cwd(), "scripts/ensure-ai-master-key.mjs"),
+  "utf8",
+);
 
 describe("AI provider configuration persistence", () => {
   it("defines singleton version history and an active-version pointer", () => {
@@ -34,5 +42,21 @@ describe("AI provider configuration persistence", () => {
     expect(migration).toContain("MySQL 8 production-target migration");
     expect(migration).toContain("requestTimeoutMs");
     expect(migration).not.toContain("DROP TABLE");
+  });
+
+  it("provides an additive MariaDB 5.5 compatibility migration", () => {
+    expect(legacyMigration).toContain("CREATE TABLE `AiProviderConfiguration`");
+    expect(legacyMigration).toContain("CREATE TABLE `AiProviderConfigurationVersion`");
+    expect(legacyMigration).toContain("`apiKeyCiphertext` VARBINARY(4096) NULL");
+    expect(legacyMigration).toContain("`createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+    expect(legacyMigration).toContain("20260711160000_add_ai_provider_configuration");
+    expect(legacyMigration).not.toContain("DROP TABLE");
+  });
+
+  it("generates a development key without printing or overwriting it", () => {
+    expect(keySetup).toContain('process.env.NODE_ENV === "production"');
+    expect(keySetup).toContain("randomBytes(32).toString(\"base64\")");
+    expect(keySetup).toContain("is already configured and valid");
+    expect(keySetup).not.toContain("console.log(generated)");
   });
 });

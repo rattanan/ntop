@@ -13,6 +13,12 @@ enum Role {
   VIEWER
 }
 
+enum LoginOutcome {
+  SUCCESS
+  INVALID_CREDENTIALS
+  DISABLED
+}
+
 enum CustomerType {
   B2G
   B2B
@@ -22,6 +28,8 @@ enum CustomerStatus {
   PROSPECT
   ACTIVE
   INACTIVE
+  BLACKLISTED
+  CLOSED
 }
 
 enum OpportunityStage {
@@ -32,6 +40,69 @@ enum OpportunityStage {
   NEGOTIATION
   WON
   LOST
+  CANCELLED
+  EXPIRED
+}
+
+enum ForecastCategory {
+  COMMIT
+  BEST_CASE
+  PIPELINE
+  OMITTED
+}
+
+enum FiscalPeriodType {
+  MONTH
+  QUARTER
+  YEAR
+}
+
+enum SalesTargetStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum RevenueType {
+  TOTAL_REVENUE
+  ONE_TIME_REVENUE
+  MONTHLY_RECURRING_REVENUE
+  ANNUAL_RECURRING_REVENUE
+  TOTAL_CONTRACT_VALUE
+  GROSS_PROFIT
+}
+
+enum QuoteVersionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RETURNED
+  SENT
+  ACCEPTED
+  SUPERSEDED
+}
+
+enum ApprovalRequestStatus {
+  PENDING
+  PENDING_ESCALATION
+  APPROVED
+  REJECTED
+  RETURNED
+  CANCELLED
+  EXPIRED
+  SUPERSEDED
+}
+
+enum ApprovalStepStatus {
+  WAITING
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+  DELEGATED
+  ESCALATED
+  SKIPPED
 }
 
 enum SalesApproach {
@@ -47,22 +118,141 @@ enum LeadSource {
   PARTNER
   REFERRAL
   EXISTING_CUSTOMER
+  MARKETING_CAMPAIGN
+  API
+  GOVERNMENT_TENDER
 }
 
 enum LeadStatus {
   NEW
+  ASSIGNED
   CONTACTED
   QUALIFIED
   NURTURING
   CONVERTED
   DISQUALIFIED
+  INVALID
+  DUPLICATE
+  NOT_INTERESTED
+  NO_BUDGET
+  ARCHIVED
+}
+
+enum LeadType {
+  CORPORATE
+  GOVERNMENT
+  SME
+  PARTNER
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadTemperature {
+  COLD
+  WARM
+  HOT
+}
+
+enum LeadAssignmentStrategy {
+  OWNER
+  ROUND_ROBIN
 }
 
 enum ActivityType {
   CALL
+  PHONE_CALL
+  EMAIL
+  LINE
   MEETING
+  SITE_VISIT
+  CUSTOMER_VISIT
+  ONLINE_MEETING
+  VIDEO_CONFERENCE
+  DEMO
+  PRESENTATION
+  NOTE
   FOLLOW_UP
   TASK
+  DOCUMENT_REQUEST
+  OTHER
+}
+
+enum ProspectStatus {
+  NEW
+  ASSIGNED
+  CONTACTED
+  INTERESTED
+  QUALIFYING
+  QUALIFIED
+  NOT_INTERESTED
+  UNREACHABLE
+  LOST
+  CONVERTED
+  ARCHIVED
+}
+
+enum ProspectSource {
+  MANUAL
+  WEBSITE
+  LINE_OA
+  CALL_CENTER
+  WALK_IN
+  EVENT
+  PARTNER
+  REFERRAL
+  EXISTING_CUSTOMER
+  TENDER
+  GOVERNMENT_PROJECT
+  WEB_SCRAPER
+  COMPANY_REGISTRY
+  IMPORT
+  OTHER
+}
+
+enum ProspectHeatLevel {
+  HOT
+  WARM
+  COLD
+}
+
+enum ProspectEnrichmentStatus {
+  NOT_REQUESTED
+  QUEUED
+  PROCESSING
+  READY
+  CONFIRMED
+  REJECTED
+  FAILED
+}
+
+enum ProspectContactChannel {
+  PHONE
+  MOBILE
+  EMAIL
+  LINE
+  MEETING
+  OTHER
+}
+
+enum ProspectImportRowStatus {
+  VALID
+  WARNING
+  DUPLICATE
+  ERROR
+  IMPORTED
+}
+
+enum ProspectImportBatchStatus {
+  PREVIEWED
+  PROCESSING
+  COMPLETED
+  PARTIAL
+  FAILED
 }
 
 enum QuoteStatus {
@@ -127,193 +317,1373 @@ enum AiFeedbackRating {
 }
 
 model User {
-  id             String        @id @default(cuid())
-  email          String        @unique
-  name           String
-  passwordHash   String
-  role           Role          @default(SALES)
-  ownedCustomers Customer[]    @relation("CustomerOwner")
-  ownedDeals     Opportunity[] @relation("OpportunityOwner")
-  ownedLeads     Lead[]        @relation("LeadOwner")
-  activities     Activity[]    @relation("ActivityOwner")
-  requestedAiJobs AiJob[]      @relation("AiJobRequester")
-  confirmedAiOutputs AiOutput[] @relation("AiOutputConfirmer")
-  aiFeedback     AiFeedback[]   @relation("AiFeedbackActor")
-  createdRiskRuleVersions DealRiskRuleVersion[] @relation("DealRiskRuleVersionCreator")
-  confirmedMeetingDrafts MeetingDraftConfirmation[] @relation("MeetingDraftConfirmer")
-  enterpriseRoleAssignments UserRoleAssignment[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                            String                             @id @default(cuid())
+  email                         String                             @unique
+  name                          String
+  passwordHash                  String
+  role                          Role                               @default(SALES)
+  active                        Boolean                            @default(true)
+  ownedCustomers                Customer[]                         @relation("CustomerOwner")
+  ownedDeals                    Opportunity[]                      @relation("OpportunityOwner")
+  ownedLeads                    Lead[]                             @relation("LeadOwner")
+  activities                    Activity[]                         @relation("ActivityOwner")
+  requestedAiJobs               AiJob[]                            @relation("AiJobRequester")
+  confirmedAiOutputs            AiOutput[]                         @relation("AiOutputConfirmer")
+  aiFeedback                    AiFeedback[]                       @relation("AiFeedbackActor")
+  createdRiskRuleVersions       DealRiskRuleVersion[]              @relation("DealRiskRuleVersionCreator")
+  confirmedMeetingDrafts        MeetingDraftConfirmation[]         @relation("MeetingDraftConfirmer")
+  customerOwnershipAssignments  CustomerOwnershipAssignment[]      @relation("CustomerOwnershipAssignee")
+  assignedCustomerOwnerships    CustomerOwnershipAssignment[]      @relation("CustomerOwnershipActor")
+  customerMergeActions          CustomerMergeHistory[]             @relation("CustomerMergeActor")
+  customerCommandReceipts       CustomerCommandReceipt[]
+  leadCommandReceipts           LeadCommandReceipt[]
+  leadStatusActions             LeadStatusHistory[]                @relation("LeadStatusActor")
+  leadAssignmentActions         LeadAssignmentHistory[]            @relation("LeadAssignmentActor")
+  savedLeadViews                LeadSavedView[]
+  targetedLeadRules             LeadAssignmentRule[]               @relation("LeadRuleTargetOwner")
+  ownedProspects                Prospect[]                         @relation("ProspectOwner")
+  backupOwnedProspects          Prospect[]                         @relation("ProspectBackupOwner")
+  managedProspects              Prospect[]                         @relation("ProspectSalesManager")
+  opportunityStageActions       OpportunityStageHistory[]          @relation("OpportunityStageActor")
+  opportunityProbabilityActions OpportunityProbabilityHistory[]    @relation("OpportunityProbabilityActor")
+  opportunityCommandReceipts    OpportunityCommandReceipt[]
+  opportunityRelatedReceipts    OpportunityRelatedCommandReceipt[]
+  ownedOpportunityPainPoints    OpportunityPainPoint[]             @relation("OpportunityPainPointOwner")
+  madeQuotes                    Quote[]                            @relation("QuoteMaker")
+  approvalRequestsMade          ApprovalRequest[]                  @relation("ApprovalRequestMaker")
+  approvalDecisions             ApprovalDecision[]                 @relation("ApprovalDecisionActor")
+  commercialCommandReceipts     CommercialCommandReceipt[]
+  fiscalCalendarsCreated        FiscalCalendar[]                   @relation("FiscalCalendarCreator")
+  fiscalCalendarsUpdated        FiscalCalendar[]                   @relation("FiscalCalendarUpdater")
+  assignedSalesTargets          SalesTarget[]                      @relation("SalesTargetAssignee")
+  salesTargetsCreated           SalesTarget[]                      @relation("SalesTargetCreator")
+  salesTargetsUpdated           SalesTarget[]                      @relation("SalesTargetUpdater")
+  enterpriseRoleAssignments     UserRoleAssignment[]
+  loginEvents                   LoginEvent[]
+  createdAt                     DateTime                           @default(now())
+  updatedAt                     DateTime                           @updatedAt
+}
+
+model LoginEvent {
+  id             String       @id @default(cuid())
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  identifierHash String       @db.Char(64)
+  outcome        LoginOutcome
+  ipAddressHash  String?      @db.Char(64)
+  userAgentHash  String?      @db.Char(64)
+  correlationId  String       @db.VarChar(191)
+  occurredAt     DateTime     @default(now())
+
+  @@index([occurredAt, outcome])
+  @@index([userId, occurredAt])
+  @@index([identifierHash, occurredAt])
+  @@index([correlationId])
 }
 
 model Customer {
-  id              String         @id @default(cuid())
-  name            String
-  taxId           String         @unique
-  type            CustomerType
-  segment         String
-  province        String
-  address         String?        @db.Text
-  status          CustomerStatus @default(PROSPECT)
-  ownerId         String
-  owner           User           @relation("CustomerOwner", fields: [ownerId], references: [id])
-  organizationUnitId String?
-  organizationUnit OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
-  contacts        Contact[]
-  opportunities   Opportunity[]
-  leads           Lead[]
-  activities      Activity[]
-  quotes          Quote[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                    String                        @id @default(cuid())
+  name                  String
+  taxId                 String                        @unique
+  type                  CustomerType
+  segment               String
+  province              String
+  address               String?                       @db.Text
+  status                CustomerStatus                @default(PROSPECT)
+  ownerId               String
+  owner                 User                          @relation("CustomerOwner", fields: [ownerId], references: [id])
+  version               Int                           @default(1)
+  organizationUnitId    String?
+  organizationUnit      OrganizationUnit?             @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  contacts              Contact[]
+  externalIds           CustomerExternalId[]
+  parentRelationships   CustomerRelationship[]        @relation("CustomerRelationshipParent")
+  childRelationships    CustomerRelationship[]        @relation("CustomerRelationshipChild")
+  ownershipHistory      CustomerOwnershipAssignment[]
+  mergedIntoCustomerId  String?
+  mergedIntoCustomer    Customer?                     @relation("CustomerMergeAliases", fields: [mergedIntoCustomerId], references: [id], onDelete: Restrict)
+  mergeAliases          Customer[]                    @relation("CustomerMergeAliases")
+  mergeSourceHistory    CustomerMergeHistory[]        @relation("CustomerMergeSource")
+  mergeTargetHistory    CustomerMergeHistory[]        @relation("CustomerMergeTarget")
+  duplicateCandidatesA  CustomerDuplicateCandidate[]  @relation("CustomerDuplicateA")
+  duplicateCandidatesB  CustomerDuplicateCandidate[]  @relation("CustomerDuplicateB")
+  duplicateMergeTargets CustomerDuplicateCandidate[]  @relation("CustomerDuplicateMergeTarget")
+  opportunities         Opportunity[]
+  leads                 Lead[]
+  activities            Activity[]
+  quotes                Quote[]
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
 
   @@index([organizationUnitId, updatedAt])
   @@index([ownerId, updatedAt])
+  @@index([status, updatedAt, id])
+  @@index([segment, updatedAt, id])
+  @@index([mergedIntoCustomerId])
+}
+
+model CustomerExternalId {
+  id           String   @id @default(cuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  sourceSystem String   @db.VarChar(100)
+  externalId   String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+
+  @@unique([sourceSystem, externalId])
+  @@index([customerId, sourceSystem])
+}
+
+model CustomerRelationship {
+  id               String    @id @default(cuid())
+  parentCustomerId String
+  parentCustomer   Customer  @relation("CustomerRelationshipParent", fields: [parentCustomerId], references: [id], onDelete: Restrict)
+  childCustomerId  String
+  childCustomer    Customer  @relation("CustomerRelationshipChild", fields: [childCustomerId], references: [id], onDelete: Restrict)
+  relationshipType String    @db.VarChar(100)
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@unique([parentCustomerId, childCustomerId, relationshipType, effectiveFrom])
+  @@index([parentCustomerId, effectiveTo])
+  @@index([childCustomerId, effectiveTo])
+}
+
+model CustomerOwnershipAssignment {
+  id                 String            @id @default(cuid())
+  customerId         String
+  customer           Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  ownerId            String
+  owner              User              @relation("CustomerOwnershipAssignee", fields: [ownerId], references: [id], onDelete: Restrict)
+  organizationUnitId String?
+  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: Restrict)
+  validFrom          DateTime
+  validTo            DateTime?
+  assignedById       String
+  assignedBy         User              @relation("CustomerOwnershipActor", fields: [assignedById], references: [id], onDelete: Restrict)
+  reason             String?           @db.VarChar(1000)
+  createdAt          DateTime          @default(now())
+
+  @@index([customerId, validFrom, validTo])
+  @@index([ownerId, validTo])
+  @@index([organizationUnitId, validTo])
+}
+
+model CustomerMergeHistory {
+  id               String   @id @default(cuid())
+  sourceCustomerId String
+  sourceCustomer   Customer @relation("CustomerMergeSource", fields: [sourceCustomerId], references: [id], onDelete: Restrict)
+  targetCustomerId String
+  targetCustomer   Customer @relation("CustomerMergeTarget", fields: [targetCustomerId], references: [id], onDelete: Restrict)
+  mergedById       String
+  mergedBy         User     @relation("CustomerMergeActor", fields: [mergedById], references: [id], onDelete: Restrict)
+  reason           String   @db.VarChar(1000)
+  sourceSnapshot   Json
+  mergedAt         DateTime
+
+  @@unique([sourceCustomerId])
+  @@index([targetCustomerId, mergedAt])
+}
+
+model CustomerDuplicateCandidate {
+  id                   String    @id @default(cuid())
+  customerAId          String
+  customerA            Customer  @relation("CustomerDuplicateA", fields: [customerAId], references: [id], onDelete: Restrict)
+  customerBId          String
+  customerB            Customer  @relation("CustomerDuplicateB", fields: [customerBId], references: [id], onDelete: Restrict)
+  matchScore           Decimal   @db.Decimal(5, 4)
+  matchSignals         Json
+  detectedAt           DateTime  @default(now())
+  resolvedAt           DateTime?
+  resolutionReason     String?   @db.VarChar(1000)
+  mergedIntoCustomerId String?
+  mergedIntoCustomer   Customer? @relation("CustomerDuplicateMergeTarget", fields: [mergedIntoCustomerId], references: [id], onDelete: Restrict)
+
+  @@unique([customerAId, customerBId])
+  @@index([customerAId, resolvedAt])
+  @@index([customerBId, resolvedAt])
+}
+
+model CustomerCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  actor          User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  targetId       String   @db.VarChar(191)
+  targetVersion  Int?
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([createdAt])
 }
 
 model OrganizationUnit {
-  id        String   @id @default(cuid())
-  code      String   @unique @db.VarChar(100)
-  name      String   @db.VarChar(255)
-  parentId  String?
-  parent    OrganizationUnit?  @relation("OrganizationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children  OrganizationUnit[] @relation("OrganizationHierarchy")
-  active    Boolean  @default(true)
-  roleAssignments UserRoleAssignment[]
-  customers Customer[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                           String                        @id @default(cuid())
+  code                         String                        @unique @db.VarChar(100)
+  name                         String                        @db.VarChar(255)
+  parentId                     String?
+  parent                       OrganizationUnit?             @relation("OrganizationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children                     OrganizationUnit[]            @relation("OrganizationHierarchy")
+  active                       Boolean                       @default(true)
+  roleAssignments              UserRoleAssignment[]
+  customers                    Customer[]
+  opportunities                Opportunity[]
+  customerOwnershipAssignments CustomerOwnershipAssignment[]
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  leads                        Lead[]
+  leadAssignmentRules          LeadAssignmentRule[]
+  prospectBusinessUnits        Prospect[]                    @relation("ProspectBusinessUnit")
+  prospectSalesTeams           Prospect[]                    @relation("ProspectSalesTeam")
+  teamSalesTargets             SalesTarget[]                 @relation("SalesTargetTeam")
+  departmentSalesTargets       SalesTarget[]                 @relation("SalesTargetDepartment")
+  businessUnitSalesTargets     SalesTarget[]                 @relation("SalesTargetBusinessUnit")
 
   @@index([parentId, active])
 }
 
 model UserRoleAssignment {
-  id                 String   @id @default(cuid())
+  id                 String            @id @default(cuid())
   userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  roleCode           String   @db.VarChar(100)
-  scopeCode          String   @db.VarChar(32)
+  user               User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  roleCode           String            @db.VarChar(100)
+  scopeCode          String            @db.VarChar(32)
   organizationUnitId String?
   organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: Restrict)
   effectiveFrom      DateTime
   effectiveTo        DateTime?
-  active             Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  active             Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   @@unique([userId, roleCode, scopeCode, organizationUnitId, effectiveFrom])
   @@index([userId, active, effectiveFrom, effectiveTo])
   @@index([organizationUnitId, roleCode, active])
 }
 
+model RolePermissionGrant {
+  id             String   @id @default(cuid())
+  roleCode       String   @db.VarChar(100)
+  permissionCode String   @db.VarChar(191)
+  createdAt      DateTime @default(now())
+
+  @@unique([roleCode, permissionCode])
+  @@index([permissionCode, roleCode])
+}
+
 model Lead {
-  id                  String     @id @default(cuid())
-  company             String
-  contactName         String
-  contactEmail        String?
-  contactPhone        String?
-  source              LeadSource
-  status              LeadStatus @default(NEW)
-  score               Int        @default(0)
-  recommendedProducts String?    @db.Text
-  notes               String?    @db.Text
-  ownerId             String
-  owner               User       @relation("LeadOwner", fields: [ownerId], references: [id])
-  customerId          String?
-  customer            Customer?  @relation(fields: [customerId], references: [id])
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  id                     String                  @id @default(cuid())
+  leadNumber             String?                 @unique @db.VarChar(32)
+  leadType               LeadType                @default(CORPORATE)
+  company                String
+  taxId                  String?                 @db.VarChar(32)
+  branchNumber           String?                 @db.VarChar(20)
+  industry               String?                 @db.VarChar(191)
+  website                String?                 @db.VarChar(500)
+  contactName            String
+  contactFirstName       String?                 @db.VarChar(191)
+  contactLastName        String?                 @db.VarChar(191)
+  jobTitle               String?                 @db.VarChar(191)
+  department             String?                 @db.VarChar(191)
+  contactEmail           String?
+  contactPhone           String?
+  source                 LeadSource
+  campaignId             String?
+  campaign               Campaign?               @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  status                 LeadStatus              @default(NEW)
+  priority               LeadPriority            @default(MEDIUM)
+  temperature            LeadTemperature         @default(COLD)
+  score                  Int                     @default(0)
+  scoreBreakdown         Json?
+  recommendedProducts    String?                 @db.Text
+  requirementSummary     String?                 @db.Text
+  estimatedBudget        Decimal?                @db.Decimal(19, 4)
+  expectedPurchaseAt     DateTime?
+  numberOfSites          Int?
+  serviceLocations       String?                 @db.Text
+  qualificationData      Json?
+  qualificationResult    String?                 @db.Text
+  disqualificationReason String?                 @db.VarChar(1000)
+  assignedAt             DateTime?
+  firstContactDueAt      DateTime?
+  lastContactedAt        DateTime?
+  nextFollowUpAt         DateTime?
+  convertedAt            DateTime?
+  archivedAt             DateTime?
+  notes                  String?                 @db.Text
+  ownerId                String
+  owner                  User                    @relation("LeadOwner", fields: [ownerId], references: [id])
+  organizationUnitId     String?
+  organizationUnit       OrganizationUnit?       @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  customerId             String?
+  customer               Customer?               @relation(fields: [customerId], references: [id])
+  contactId              String?
+  contact                Contact?                @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  mergedIntoLeadId       String?
+  mergedIntoLead         Lead?                   @relation("LeadMerge", fields: [mergedIntoLeadId], references: [id], onDelete: SetNull)
+  mergedLeads            Lead[]                  @relation("LeadMerge")
+  version                Int                     @default(1)
+  commandReceipts        LeadCommandReceipt[]
+  statusHistory          LeadStatusHistory[]
+  assignmentHistory      LeadAssignmentHistory[]
+  activities             Activity[]
+  opportunity            Opportunity?            @relation("SourceLeadOpportunity")
+  sourceProspect         Prospect?               @relation("ProspectConvertedLead")
+  prospectContacts       ProspectContact[]
+  salesDocuments         SalesDocument[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+
+  @@index([ownerId, updatedAt, id])
+  @@index([organizationUnitId, ownerId, status])
+  @@index([status, updatedAt, id])
+  @@index([temperature, score, updatedAt])
+  @@index([nextFollowUpAt, status])
+  @@index([firstContactDueAt, status])
+  @@index([taxId])
+  @@index([campaignId, status])
+}
+
+model Campaign {
+  id        String     @id @default(cuid())
+  code      String     @unique @db.VarChar(100)
+  name      String     @db.VarChar(255)
+  source    String     @db.VarChar(100)
+  active    Boolean    @default(true)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  leads     Lead[]
+  prospects Prospect[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model LeadNumberSequence {
+  id        String   @id @db.VarChar(32)
+  nextValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model LeadSavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(100)
+  query     Json
+  columns   Json?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, isDefault])
+}
+
+model LeadAssignmentRule {
+  id                 String                 @id @default(cuid())
+  name               String                 @db.VarChar(191)
+  priority           Int                    @default(100)
+  active             Boolean                @default(true)
+  strategy           LeadAssignmentStrategy
+  criteria           Json
+  targetOwnerId      String?
+  targetOwner        User?                  @relation("LeadRuleTargetOwner", fields: [targetOwnerId], references: [id], onDelete: SetNull)
+  organizationUnitId String?
+  organizationUnit   OrganizationUnit?      @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  lastAssignedUserId String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@index([active, priority])
+  @@index([organizationUnitId, active])
+}
+
+model LeadStatusHistory {
+  id             String     @id @default(cuid())
+  leadId         String
+  lead           Lead       @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  fromStatus     LeadStatus
+  toStatus       LeadStatus
+  reason         String?    @db.VarChar(1000)
+  actorId        String
+  actor          User       @relation("LeadStatusActor", fields: [actorId], references: [id], onDelete: Restrict)
+  correlationId  String     @db.VarChar(191)
+  transitionedAt DateTime   @default(now())
+
+  @@index([leadId, transitionedAt])
+}
+
+model LeadAssignmentHistory {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  fromOwnerId String?
+  toOwnerId   String
+  reason      String?  @db.VarChar(1000)
+  actorId     String
+  actor       User     @relation("LeadAssignmentActor", fields: [actorId], references: [id], onDelete: Restrict)
+  assignedAt  DateTime @default(now())
+
+  @@index([leadId, assignedAt])
+}
+
+model LeadCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  actor          User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  leadId         String
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  customerId     String?
+  contactId      String?
+  opportunityId  String?
+  resultLeadId   String?
+  resultVersion  Int
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([leadId, createdAt])
+  @@index([customerId, createdAt])
 }
 
 model Activity {
-  id            String       @id @default(cuid())
-  subject       String
-  type          ActivityType
-  dueAt         DateTime?
-  notes         String?      @db.Text
-  aiSummary     String?      @db.Text
-  actionItems   String?      @db.Text
-  ownerId       String
-  owner         User         @relation("ActivityOwner", fields: [ownerId], references: [id])
-  customerId    String?
-  customer      Customer?    @relation(fields: [customerId], references: [id])
-  opportunityId String?
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  meetingDraftConfirmation MeetingDraftConfirmation? @relation("MeetingConfirmationActivity")
+  id                                 String                    @id @default(cuid())
+  version                            Int                       @default(1)
+  subject                            String
+  type                               ActivityType
+  dueAt                              DateTime?
+  notes                              String?                   @db.Text
+  aiSummary                          String?                   @db.Text
+  actionItems                        String?                   @db.Text
+  ownerId                            String
+  owner                              User                      @relation("ActivityOwner", fields: [ownerId], references: [id])
+  customerId                         String?
+  customer                           Customer?                 @relation(fields: [customerId], references: [id])
+  opportunityId                      String?
+  opportunity                        Opportunity?              @relation(fields: [opportunityId], references: [id])
+  leadId                             String?
+  lead                               Lead?                     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  prospectId                         String?
+  prospect                           Prospect?                 @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  description                        String?                   @db.Text
+  activityAt                         DateTime?
+  startsAt                           DateTime?
+  endsAt                             DateTime?
+  participants                       Json?
+  outcome                            String?                   @db.Text
+  customerFeedback                   String?                   @db.Text
+  nextAction                         String?                   @db.Text
+  nextFollowUpAt                     DateTime?
+  createdAt                          DateTime                  @default(now())
+  updatedAt                          DateTime                  @updatedAt
+  deletedAt                          DateTime?
+  deletedById                        String?
+  meetingDraftConfirmation           MeetingDraftConfirmation? @relation("MeetingConfirmationActivity")
   meetingDraftNextActionConfirmation MeetingDraftConfirmation? @relation("MeetingConfirmationNextAction")
+
+  @@index([leadId, createdAt])
+  @@index([prospectId, createdAt])
+  @@index([ownerId, deletedAt, createdAt])
+}
+
+model Industry {
+  id        String     @id @default(cuid())
+  code      String     @unique @db.VarChar(100)
+  name      String     @db.VarChar(255)
+  active    Boolean    @default(true)
+  prospects Prospect[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model SalesTerritory {
+  id           String        @id @default(cuid())
+  code         String        @unique @db.VarChar(100)
+  name         String        @db.VarChar(255)
+  region       String?       @db.VarChar(100)
+  active       Boolean       @default(true)
+  prospects    Prospect[]
+  salesTargets SalesTarget[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Prospect {
+  id                        String                      @id @default(cuid())
+  prospectCode              String                      @unique @db.VarChar(32)
+  companyName               String                      @db.VarChar(255)
+  companyNameEnglish        String?                     @db.VarChar(255)
+  normalizedCompanyName     String                      @db.VarChar(255)
+  normalizedCompanyEnglish  String?                     @db.VarChar(255)
+  taxId                     String?                     @db.VarChar(32)
+  branchNumber              String?                     @db.VarChar(20)
+  customerType              String?                     @db.VarChar(100)
+  organizationType          String?                     @db.VarChar(100)
+  industryId                String?
+  industry                  Industry?                   @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  subIndustry               String?                     @db.VarChar(191)
+  companySize               String?                     @db.VarChar(100)
+  numberOfEmployees         Int?
+  estimatedAnnualRevenue    Decimal?                    @db.Decimal(19, 4)
+  website                   String?                     @db.VarChar(500)
+  websiteDomain             String?                     @db.VarChar(255)
+  companyDescription        String?                     @db.Text
+  address                   String?                     @db.Text
+  subDistrict               String?                     @db.VarChar(191)
+  district                  String?                     @db.VarChar(191)
+  province                  String?                     @db.VarChar(191)
+  postalCode                String?                     @db.VarChar(20)
+  region                    String?                     @db.VarChar(100)
+  latitude                  Decimal?                    @db.Decimal(10, 7)
+  longitude                 Decimal?                    @db.Decimal(10, 7)
+  salesTerritoryId          String?
+  salesTerritory            SalesTerritory?             @relation(fields: [salesTerritoryId], references: [id], onDelete: SetNull)
+  responsibleBusinessUnitId String?
+  responsibleBusinessUnit   OrganizationUnit?           @relation("ProspectBusinessUnit", fields: [responsibleBusinessUnitId], references: [id], onDelete: SetNull)
+  currentTelecomProvider    String?                     @db.Text
+  currentInternetProvider   String?                     @db.Text
+  currentCloudProvider      String?                     @db.Text
+  currentSecurityProvider   String?                     @db.Text
+  existingSolutions         String?                     @db.Text
+  currentContractEndDate    DateTime?
+  numberOfBranches          Int?
+  businessPainPoints        String?                     @db.Text
+  expectedBudget            Decimal?                    @db.Decimal(19, 4)
+  expectedPurchasePeriod    String?                     @db.VarChar(191)
+  estimatedOpportunityValue Decimal?                    @db.Decimal(19, 4)
+  currency                  String                      @default("THB") @db.Char(3)
+  procurementMethod         String?                     @db.VarChar(191)
+  projectType               String?                     @db.VarChar(191)
+  source                    ProspectSource
+  sourceName                String?                     @db.VarChar(255)
+  campaignId                String?
+  campaign                  Campaign?                   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  referralName              String?                     @db.VarChar(255)
+  partnerId                 String?                     @db.VarChar(191)
+  importedFileName          String?                     @db.VarChar(255)
+  sourceReference           String?                     @db.VarChar(500)
+  ownerId                   String
+  owner                     User                        @relation("ProspectOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  backupOwnerId             String?
+  backupOwner               User?                       @relation("ProspectBackupOwner", fields: [backupOwnerId], references: [id], onDelete: SetNull)
+  salesTeamId               String?
+  salesTeam                 OrganizationUnit?           @relation("ProspectSalesTeam", fields: [salesTeamId], references: [id], onDelete: SetNull)
+  salesManagerId            String?
+  salesManager              User?                       @relation("ProspectSalesManager", fields: [salesManagerId], references: [id], onDelete: SetNull)
+  assignedAt                DateTime?
+  assignedById              String?
+  lastContactAt             DateTime?
+  nextFollowUpAt            DateTime?
+  lastActivityType          ActivityType?
+  followUpStatus            String?                     @db.VarChar(100)
+  contactAttemptCount       Int                         @default(0)
+  status                    ProspectStatus              @default(NEW)
+  aiSummary                 String?                     @db.Text
+  aiOpportunityScore        Int?
+  aiConfidenceScore         Int?
+  aiRiskScore               Int?
+  calculatedScore           Int                         @default(0)
+  heatLevel                 ProspectHeatLevel           @default(COLD)
+  recommendedProducts       String?                     @db.Text
+  suggestedQuestions        Json?
+  suggestedNextAction       String?                     @db.Text
+  enrichmentData            Json?
+  enrichmentStatus          ProspectEnrichmentStatus    @default(NOT_REQUESTED)
+  enrichmentUpdatedAt       DateTime?
+  convertedLeadId           String?                     @unique
+  convertedLead             Lead?                       @relation("ProspectConvertedLead", fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  convertedAt               DateTime?
+  convertedById             String?
+  conversionNote            String?                     @db.Text
+  notes                     String?                     @db.Text
+  version                   Int                         @default(1)
+  createdAt                 DateTime                    @default(now())
+  createdById               String
+  updatedAt                 DateTime                    @updatedAt
+  updatedById               String
+  deletedAt                 DateTime?
+  deletedById               String?
+  deleteReason              String?                     @db.VarChar(100)
+  mergedIntoProspectId      String?
+  mergedIntoProspect        Prospect?                   @relation("ProspectMerge", fields: [mergedIntoProspectId], references: [id], onDelete: SetNull)
+  mergedProspects           Prospect[]                  @relation("ProspectMerge")
+  contacts                  ProspectContact[]
+  activities                Activity[]
+  documents                 SalesDocument[]
+  statusHistory             ProspectStatusHistory[]
+  assignmentHistory         ProspectAssignmentHistory[]
+  commandReceipts           ProspectCommandReceipt[]
+  importRows                ProspectImportRow[]
+
+  @@index([ownerId, status, updatedAt])
+  @@index([responsibleBusinessUnitId, status, updatedAt])
+  @@index([salesTeamId, status, updatedAt])
+  @@index([status, heatLevel, updatedAt])
+  @@index([taxId])
+  @@index([normalizedCompanyName])
+  @@index([websiteDomain])
+  @@index([nextFollowUpAt, status])
+  @@index([deletedAt, updatedAt])
+}
+
+model ProspectContact {
+  id                      String                  @id @default(cuid())
+  prospectId              String
+  prospect                Prospect                @relation(fields: [prospectId], references: [id], onDelete: Restrict)
+  leadId                  String?
+  lead                    Lead?                   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  name                    String                  @db.VarChar(255)
+  position                String?                 @db.VarChar(191)
+  department              String?                 @db.VarChar(191)
+  phone                   String?                 @db.VarChar(100)
+  mobile                  String?                 @db.VarChar(100)
+  email                   String?                 @db.VarChar(320)
+  lineId                  String?                 @db.VarChar(191)
+  preferredContactChannel ProspectContactChannel?
+  isPrimary               Boolean                 @default(false)
+  createdAt               DateTime                @default(now())
+  createdById             String
+  updatedAt               DateTime                @updatedAt
+  updatedById             String
+  deletedAt               DateTime?
+  deletedById             String?
+
+  @@index([prospectId, deletedAt, isPrimary])
+  @@index([leadId, deletedAt])
+  @@index([email])
+  @@index([phone])
+  @@index([mobile])
+}
+
+model ProspectStatusHistory {
+  id             String         @id @default(cuid())
+  prospectId     String
+  prospect       Prospect       @relation(fields: [prospectId], references: [id], onDelete: Restrict)
+  fromStatus     ProspectStatus
+  toStatus       ProspectStatus
+  reason         String?        @db.VarChar(1000)
+  actorId        String
+  correlationId  String         @db.VarChar(191)
+  transitionedAt DateTime       @default(now())
+
+  @@index([prospectId, transitionedAt])
+}
+
+model ProspectAssignmentHistory {
+  id          String   @id @default(cuid())
+  prospectId  String
+  prospect    Prospect @relation(fields: [prospectId], references: [id], onDelete: Restrict)
+  fromOwnerId String?
+  toOwnerId   String
+  actorId     String
+  reason      String?  @db.VarChar(1000)
+  assignedAt  DateTime @default(now())
+
+  @@index([prospectId, assignedAt])
+}
+
+model ProspectCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  prospectId     String
+  prospect       Prospect @relation(fields: [prospectId], references: [id], onDelete: Restrict)
+  resultVersion  Int
+  resultLeadId   String?
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([prospectId, createdAt])
+}
+
+model ProspectSavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @db.VarChar(100)
+  query     Json
+  columns   Json?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, isDefault])
+}
+
+model ProspectNumberSequence {
+  id        String   @id @db.VarChar(32)
+  nextValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model ProspectMergeHistory {
+  id               String   @id @default(cuid())
+  sourceProspectId String
+  targetProspectId String
+  actorId          String
+  reason           String   @db.VarChar(1000)
+  correlationId    String   @db.VarChar(191)
+  mergedAt         DateTime @default(now())
+
+  @@index([sourceProspectId, mergedAt])
+  @@index([targetProspectId, mergedAt])
+}
+
+model ProspectScoringRuleVersion {
+  id            String   @id @default(cuid())
+  version       Int      @unique
+  active        Boolean  @default(false)
+  weights       Json
+  hotThreshold  Int      @default(75)
+  warmThreshold Int      @default(40)
+  createdById   String
+  createdAt     DateTime @default(now())
+
+  @@index([active, version])
+}
+
+model ProspectImportBatch {
+  id             String                    @id @default(cuid())
+  actorId        String
+  idempotencyKey String                    @unique @db.VarChar(191)
+  fileName       String                    @db.VarChar(255)
+  fileHash       String                    @db.Char(64)
+  status         ProspectImportBatchStatus
+  totalRows      Int
+  importedRows   Int                       @default(0)
+  failedRows     Int                       @default(0)
+  createdAt      DateTime                  @default(now())
+  completedAt    DateTime?
+  rows           ProspectImportRow[]
+
+  @@index([actorId, createdAt])
+}
+
+model ProspectImportRow {
+  id         String                  @id @default(cuid())
+  batchId    String
+  batch      ProspectImportBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  rowNumber  Int
+  status     ProspectImportRowStatus
+  normalized Json
+  errors     Json?
+  prospectId String?
+  prospect   Prospect?               @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  createdAt  DateTime                @default(now())
+
+  @@unique([batchId, rowNumber])
+}
+
+model SalesDocument {
+  id            String    @id @default(cuid())
+  prospectId    String?
+  prospect      Prospect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  leadId        String?
+  lead          Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  objectKey     String    @db.VarChar(500)
+  objectKeyHash String    @unique @db.Char(64)
+  contentHash   String    @db.Char(64)
+  fileName      String    @db.VarChar(255)
+  mimeType      String    @db.VarChar(191)
+  sizeBytes     Int
+  category      String    @db.VarChar(100)
+  uploadedById  String
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+  deletedById   String?
+
+  @@index([prospectId, deletedAt, createdAt])
+  @@index([leadId, deletedAt, createdAt])
+  @@index([contentHash])
 }
 
 model Contact {
-  id          String   @id @default(cuid())
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  name        String
-  title       String?
-  phone       String?
-  email       String?
-  relationship String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                      String                   @id @default(cuid())
+  customerId              String
+  customer                Customer                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name                    String
+  title                   String?
+  phone                   String?
+  email                   String?
+  relationship            String?
+  purpose                 String?                  @db.VarChar(100)
+  isPrimary               Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  convertedLeads          Lead[]
+  opportunityStakeholders OpportunityStakeholder[]
 }
 
 model Opportunity {
-  id              String           @id @default(cuid())
-  name            String
-  customerId      String
-  customer        Customer         @relation(fields: [customerId], references: [id])
-  flow            String
-  stage           OpportunityStage @default(QUALIFY)
-  estimatedValue  Decimal          @db.Decimal(15, 2)
-  probability     Int
-  expectedCloseAt DateTime?
-  ownerId         String
-  owner           User             @relation("OpportunityOwner", fields: [ownerId], references: [id])
-  nextAction      String?
-  requirements    String?          @db.Text
-  vendorAssessment VendorAssessment?
-  activities      Activity[]
-  quotes          Quote[]
-  coverageChecks  CoverageCheck[]
-  solutionDesign  SolutionDesign?
-  riskSignals     DealRiskSignal[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                     String                             @id @default(cuid())
+  opportunityNumber      String?                            @unique @db.VarChar(32)
+  name                   String
+  customerId             String
+  customer               Customer                           @relation(fields: [customerId], references: [id])
+  flow                   String
+  stage                  OpportunityStage                   @default(QUALIFY)
+  version                Int                                @default(1)
+  estimatedValue         Decimal                            @db.Decimal(19, 4)
+  currency               String                             @default("THB") @db.Char(3)
+  probability            Int
+  probabilitySource      String                             @default("STAGE_DEFAULT") @db.VarChar(32)
+  forecastCategory       ForecastCategory                   @default(PIPELINE)
+  expectedCloseAt        DateTime?
+  stageEnteredAt         DateTime                           @default(now())
+  organizationUnitId     String?
+  organizationUnit       OrganizationUnit?                  @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  ownerId                String
+  owner                  User                               @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  sourceLeadId           String?                            @unique
+  sourceLead             Lead?                              @relation("SourceLeadOpportunity", fields: [sourceLeadId], references: [id], onDelete: SetNull)
+  nextAction             String?
+  requirements           String?                            @db.Text
+  qualificationResult    String?                            @db.Text
+  stakeholderSummary     String?                            @db.Text
+  lostReason             String?                            @db.VarChar(1000)
+  lostCategory           String?                            @db.VarChar(100)
+  cancelledReason        String?                            @db.VarChar(1000)
+  vendorAssessment       VendorAssessment?
+  activities             Activity[]
+  quotes                 Quote[]                            @relation("OpportunityQuotes")
+  primaryQuoteId         String?                            @unique
+  primaryQuote           Quote?                             @relation("OpportunityPrimaryQuote", fields: [primaryQuoteId], references: [id], onDelete: SetNull)
+  coverageChecks         CoverageCheck[]
+  solutionDesign         SolutionDesign?
+  riskSignals            DealRiskSignal[]
+  stageHistory           OpportunityStageHistory[]
+  probabilityHistory     OpportunityProbabilityHistory[]
+  painPoints             OpportunityPainPoint[]
+  structuredRequirements OpportunityRequirement[]
+  stakeholders           OpportunityStakeholder[]
+  competitors            OpportunityCompetitor[]
+  relatedCommandReceipts OpportunityRelatedCommandReceipt[]
+  commandReceipts        OpportunityCommandReceipt[]
+  forecastItems          ForecastItem[]
+  createdAt              DateTime                           @default(now())
+  updatedAt              DateTime                           @updatedAt
+
+  @@index([organizationUnitId, ownerId, stage, expectedCloseAt])
+  @@index([ownerId, updatedAt, id])
+}
+
+model OpportunityPainPoint {
+  id               String      @id @default(cuid())
+  opportunityId    String
+  opportunity      Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  category         String      @db.VarChar(100)
+  title            String      @db.VarChar(255)
+  currentSituation String?     @db.Text
+  businessProblem  String      @db.Text
+  impact           String?     @db.Text
+  expectedOutcome  String?     @db.Text
+  priority         String      @default("MEDIUM") @db.VarChar(32)
+  status           String      @default("OPEN") @db.VarChar(32)
+  source           String?     @db.VarChar(100)
+  ownerId          String
+  owner            User        @relation("OpportunityPainPointOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([opportunityId, status, priority])
+  @@index([ownerId, updatedAt])
+}
+
+model OpportunityRequirement {
+  id                 String      @id @default(cuid())
+  opportunityId      String
+  opportunity        Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  requirementNumber  String      @db.VarChar(64)
+  title              String      @db.VarChar(255)
+  description        String      @db.Text
+  requirementType    String      @db.VarChar(100)
+  priority           String      @default("MEDIUM") @db.VarChar(32)
+  mandatoryFlag      Boolean     @default(false)
+  acceptanceCriteria String?     @db.Text
+  sourceDocument     String?     @db.VarChar(500)
+  status             String      @default("OPEN") @db.VarChar(32)
+  assignedTeam       String?     @db.VarChar(100)
+  feasibilityStatus  String      @default("NOT_ASSESSED") @db.VarChar(32)
+  solutionResponse   String?     @db.Text
+  riskLevel          String      @default("MEDIUM") @db.VarChar(32)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([opportunityId, requirementNumber])
+  @@index([opportunityId, requirementType, status])
+}
+
+model OpportunityStakeholder {
+  id                     String      @id @default(cuid())
+  opportunityId          String
+  opportunity            Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  contactId              String?
+  contact                Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  name                   String      @db.VarChar(255)
+  organization           String?     @db.VarChar(255)
+  department             String?     @db.VarChar(191)
+  jobTitle               String?     @db.VarChar(191)
+  email                  String?     @db.VarChar(255)
+  phone                  String?     @db.VarChar(100)
+  stakeholderRole        String      @db.VarChar(100)
+  influenceLevel         String      @default("MEDIUM") @db.VarChar(32)
+  decisionPower          String      @default("MEDIUM") @db.VarChar(32)
+  relationshipStrength   String      @default("MEDIUM") @db.VarChar(32)
+  attitude               String      @default("NEUTRAL") @db.VarChar(32)
+  supportLevel           String      @default("NEUTRAL") @db.VarChar(32)
+  preferredCommunication String?     @db.VarChar(100)
+  notes                  String?     @db.Text
+  primaryContactFlag     Boolean     @default(false)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  @@index([opportunityId, influenceLevel, supportLevel])
+  @@index([contactId])
+}
+
+model OpportunityCompetitor {
+  id                String      @id @default(cuid())
+  opportunityId     String
+  opportunity       Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  competitorName    String      @db.VarChar(255)
+  incumbentFlag     Boolean     @default(false)
+  estimatedPrice    Decimal?    @db.Decimal(19, 4)
+  strengths         String?     @db.Text
+  weaknesses        String?     @db.Text
+  relationshipLevel String      @default("UNKNOWN") @db.VarChar(32)
+  threatLevel       String      @default("MEDIUM") @db.VarChar(32)
+  likelySolution    String?     @db.Text
+  winStrategy       String?     @db.Text
+  differentiation   String?     @db.Text
+  notes             String?     @db.Text
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([opportunityId, threatLevel])
+}
+
+model OpportunityRelatedCommandReceipt {
+  id             String      @id @default(cuid())
+  actorId        String
+  actor          User        @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String      @db.VarChar(191)
+  command        String      @db.VarChar(100)
+  opportunityId  String
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  resultId       String      @db.VarChar(191)
+  createdAt      DateTime    @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([opportunityId, createdAt])
+}
+
+model OpportunityNumberSequence {
+  id        String   @id @db.VarChar(32)
+  nextValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model OpportunityProbabilityHistory {
+  id                  String      @id @default(cuid())
+  opportunityId       String
+  opportunity         Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  previousProbability Int
+  newProbability      Int
+  reason              String      @db.VarChar(1000)
+  changedById         String
+  changedBy           User        @relation("OpportunityProbabilityActor", fields: [changedById], references: [id], onDelete: Restrict)
+  aggregateVersion    Int
+  correlationId       String      @db.VarChar(191)
+  changedAt           DateTime
+
+  @@unique([opportunityId, aggregateVersion])
+  @@index([opportunityId, changedAt])
+  @@index([changedById, changedAt])
+}
+
+model OpportunityTransitionPolicyVersion {
+  id                 String           @id @default(cuid())
+  policyCode         String           @db.VarChar(100)
+  version            Int
+  command            String           @db.VarChar(32)
+  fromStage          OpportunityStage
+  toStage            OpportunityStage
+  requiredFields     Json
+  requiredPermission String           @db.VarChar(191)
+  active             Boolean          @default(true)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  createdAt          DateTime         @default(now())
+
+  @@unique([policyCode, version])
+  @@index([fromStage, toStage, command, active, effectiveFrom, effectiveTo])
+}
+
+model OpportunityStageHistory {
+  id               String           @id @default(cuid())
+  opportunityId    String
+  opportunity      Opportunity      @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  fromStage        OpportunityStage
+  toStage          OpportunityStage
+  command          String           @db.VarChar(32)
+  reason           String?          @db.VarChar(1000)
+  actorId          String
+  actor            User             @relation("OpportunityStageActor", fields: [actorId], references: [id], onDelete: Restrict)
+  policyVersionId  String
+  evidenceSnapshot Json
+  aggregateVersion Int
+  correlationId    String           @db.VarChar(191)
+  transitionedAt   DateTime
+
+  @@unique([opportunityId, aggregateVersion])
+  @@index([opportunityId, transitionedAt])
+  @@index([actorId, transitionedAt])
+}
+
+model OpportunityCommandReceipt {
+  id             String      @id @default(cuid())
+  actorId        String
+  actor          User        @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String      @db.VarChar(191)
+  command        String      @db.VarChar(100)
+  opportunityId  String
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  resultVersion  Int
+  createdAt      DateTime    @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([opportunityId, createdAt])
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  name        String
-  category    String
-  description String?  @db.Text
-  listPrice   Decimal  @db.Decimal(15, 2)
-  active      Boolean  @default(true)
-  quoteItems  QuoteItem[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String      @id @default(cuid())
+  code            String      @unique
+  name            String
+  category        String
+  description     String?     @db.Text
+  listPrice       Decimal     @db.Decimal(15, 2)
+  floorPrice      Decimal?    @db.Decimal(19, 4)
+  standardCost    Decimal?    @db.Decimal(19, 4)
+  costConfirmedAt DateTime?
+  active          Boolean     @default(true)
+  quoteItems      QuoteItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model Quote {
-  id            String      @id @default(cuid())
-  quoteNo       String      @unique
-  customerId    String
-  customer      Customer    @relation(fields: [customerId], references: [id])
-  opportunityId String?
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
-  status        QuoteStatus @default(DRAFT)
-  discountPct   Int         @default(0)
-  subtotal      Decimal     @db.Decimal(15, 2)
-  discountValue Decimal     @db.Decimal(15, 2) @default(0)
-  total         Decimal     @db.Decimal(15, 2)
-  validUntil    DateTime?
-  notes         String?     @db.Text
-  items         QuoteItem[]
-  approvals     Approval[]
-  internalOrder InternalOrder?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                    String         @id @default(cuid())
+  quoteNo               String         @unique
+  customerId            String
+  customer              Customer       @relation(fields: [customerId], references: [id])
+  opportunityId         String?
+  opportunity           Opportunity?   @relation("OpportunityQuotes", fields: [opportunityId], references: [id])
+  primaryForOpportunity Opportunity?   @relation("OpportunityPrimaryQuote")
+  version               Int            @default(1)
+  makerId               String?
+  maker                 User?          @relation("QuoteMaker", fields: [makerId], references: [id], onDelete: Restrict)
+  status                QuoteStatus    @default(DRAFT)
+  discountPct           Int            @default(0)
+  subtotal              Decimal        @db.Decimal(15, 2)
+  discountValue         Decimal        @default(0) @db.Decimal(15, 2)
+  total                 Decimal        @db.Decimal(15, 2)
+  validUntil            DateTime?
+  notes                 String?        @db.Text
+  items                 QuoteItem[]
+  approvals             Approval[]
+  versions              QuoteVersion[]
+  internalOrder         InternalOrder?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+model QuoteVersion {
+  id                  String             @id @default(cuid())
+  quoteId             String
+  quote               Quote              @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  versionNumber       Int
+  status              QuoteVersionStatus @default(DRAFT)
+  currency            String             @default("THB") @db.Char(3)
+  subtotal            Decimal            @db.Decimal(19, 4)
+  discountAmount      Decimal            @db.Decimal(19, 4)
+  total               Decimal            @db.Decimal(19, 4)
+  totalCost           Decimal            @db.Decimal(19, 4)
+  grossMarginAmount   Decimal            @db.Decimal(19, 4)
+  grossMarginPct      Decimal            @db.Decimal(7, 4)
+  policyInputSnapshot Json
+  coverageSnapshot    Json
+  solutionSnapshot    Json
+  validUntil          DateTime?
+  notes               String?            @db.Text
+  submittedAt         DateTime?
+  acceptedAt          DateTime?
+  createdAt           DateTime           @default(now())
+  items               QuoteVersionItem[]
+  approvalRequests    ApprovalRequest[]
+
+  @@unique([quoteId, versionNumber])
+  @@index([quoteId, status, versionNumber])
+}
+
+model QuoteVersionItem {
+  id             String       @id @default(cuid())
+  quoteVersionId String
+  quoteVersion   QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  productId      String
+  productCode    String       @db.VarChar(191)
+  productName    String       @db.VarChar(255)
+  quantity       Decimal      @db.Decimal(19, 4)
+  unitPrice      Decimal      @db.Decimal(19, 4)
+  discountAmount Decimal      @db.Decimal(19, 4)
+  unitCost       Decimal      @db.Decimal(19, 4)
+  lineSubtotal   Decimal      @db.Decimal(19, 4)
+  lineTotal      Decimal      @db.Decimal(19, 4)
+  lineCost       Decimal      @db.Decimal(19, 4)
+  marginAmount   Decimal      @db.Decimal(19, 4)
+  createdAt      DateTime     @default(now())
+
+  @@index([quoteVersionId, productId])
+}
+
+model ApprovalPolicy {
+  id              String                  @id @default(cuid())
+  code            String                  @unique @db.VarChar(100)
+  activeVersionId String?                 @unique
+  activeVersion   ApprovalPolicyVersion?  @relation("ActiveApprovalPolicyVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+  versions        ApprovalPolicyVersion[] @relation("ApprovalPolicyVersions")
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+}
+
+model ApprovalPolicyVersion {
+  id             String            @id @default(cuid())
+  policyId       String
+  policy         ApprovalPolicy    @relation("ApprovalPolicyVersions", fields: [policyId], references: [id], onDelete: Restrict)
+  activeFor      ApprovalPolicy?   @relation("ActiveApprovalPolicyVersion")
+  version        Int
+  definition     Json
+  definitionHash String            @db.Char(64)
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+  createdAt      DateTime          @default(now())
+  requests       ApprovalRequest[]
+
+  @@unique([policyId, version])
+}
+
+model ApprovalAuthorityGrant {
+  id                 String    @id @default(cuid())
+  roleCode           String    @db.VarChar(100)
+  permissionCode     String    @db.VarChar(191)
+  organizationUnitId String?
+  customerSegment    String?   @db.VarChar(100)
+  maximumAmount      Decimal   @db.Decimal(19, 4)
+  active             Boolean   @default(true)
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([roleCode, permissionCode, active, effectiveFrom, effectiveTo])
+  @@index([organizationUnitId, customerSegment])
+}
+
+model ApprovalRequest {
+  id               String                @id @default(cuid())
+  quoteVersionId   String
+  quoteVersion     QuoteVersion          @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  policyVersionId  String
+  policyVersion    ApprovalPolicyVersion @relation(fields: [policyVersionId], references: [id], onDelete: Restrict)
+  makerId          String
+  maker            User                  @relation("ApprovalRequestMaker", fields: [makerId], references: [id], onDelete: Restrict)
+  status           ApprovalRequestStatus @default(PENDING)
+  version          Int                   @default(1)
+  inputSnapshot    Json
+  quoteVersionHash String                @db.Char(64)
+  submittedAt      DateTime
+  completedAt      DateTime?
+  supersededAt     DateTime?
+  steps            ApprovalStep[]
+  decisions        ApprovalDecision[]
+
+  @@index([quoteVersionId, status])
+  @@index([makerId, submittedAt])
+}
+
+model ApprovalStep {
+  id                 String             @id @default(cuid())
+  requestId          String
+  request            ApprovalRequest    @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  stepCode           String             @db.VarChar(100)
+  sequence           Int
+  executionMode      String             @db.VarChar(32)
+  requiredPermission String             @db.VarChar(191)
+  assignedRoleCode   String?            @db.VarChar(100)
+  delegatedToActorId String?
+  minimumAuthority   Decimal?           @db.Decimal(19, 4)
+  maximumAuthority   Decimal?           @db.Decimal(19, 4)
+  makerChecker       Boolean            @default(true)
+  status             ApprovalStepStatus @default(WAITING)
+  dueAt              DateTime?
+  decisions          ApprovalDecision[]
+
+  @@unique([requestId, stepCode])
+  @@index([requestId, sequence, status])
+}
+
+model ApprovalDecision {
+  id                  String          @id @default(cuid())
+  requestId           String
+  request             ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  stepId              String
+  step                ApprovalStep    @relation(fields: [stepId], references: [id], onDelete: Restrict)
+  actorId             String
+  actor               User            @relation("ApprovalDecisionActor", fields: [actorId], references: [id], onDelete: Restrict)
+  delegateToActorId   String?
+  decision            String          @db.VarChar(32)
+  reason              String          @db.VarChar(1000)
+  authoritySnapshot   Json
+  policyInputSnapshot Json
+  previousHash        String          @db.Char(64)
+  decisionHash        String          @db.Char(64)
+  correlationId       String          @db.VarChar(191)
+  decidedAt           DateTime
+
+  @@index([requestId, decidedAt])
+  @@index([actorId, decidedAt])
+}
+
+model CommercialCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  actor          User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  targetId       String   @db.VarChar(191)
+  resultVersion  Int?
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([targetId, createdAt])
+}
+
+model ForecastSnapshot {
+  id              String         @id @default(cuid())
+  snapshotKey     String         @unique @db.VarChar(191)
+  periodStart     DateTime
+  periodEnd       DateTime
+  cutoffAt        DateTime
+  timezone        String         @db.VarChar(64)
+  formulaVersion  String         @db.VarChar(64)
+  scopeSnapshot   Json
+  currency        String         @default("THB") @db.Char(3)
+  pipelineAmount  Decimal        @db.Decimal(19, 4)
+  weightedAmount  Decimal        @db.Decimal(19, 4)
+  qualitySnapshot Json
+  createdById     String
+  createdAt       DateTime       @default(now())
+  items           ForecastItem[]
+
+  @@index([periodStart, periodEnd, cutoffAt])
+}
+
+model ForecastItem {
+  id                   String           @id @default(cuid())
+  snapshotId           String
+  snapshot             ForecastSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Restrict)
+  opportunityId        String
+  opportunity          Opportunity      @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  opportunityVersion   Int
+  ownerId              String
+  organizationUnitId   String?
+  customerId           String
+  segment              String           @db.VarChar(100)
+  flow                 String           @db.VarChar(191)
+  stage                OpportunityStage
+  category             ForecastCategory
+  estimatedValue       Decimal          @db.Decimal(19, 4)
+  forecastAmount       Decimal          @db.Decimal(19, 4)
+  weightedAmount       Decimal          @db.Decimal(19, 4)
+  probability          Int
+  amountSource         String           @db.VarChar(32)
+  sourceQuoteVersionId String?
+  expectedCloseAt      DateTime?
+  stageEnteredAt       DateTime
+  riskSnapshot         Json
+  qualitySnapshot      Json
+
+  @@unique([snapshotId, opportunityId])
+  @@index([snapshotId, organizationUnitId, ownerId, stage, category])
+}
+
+model FiscalCalendar {
+  id                   String    @id @default(cuid())
+  code                 String    @unique @db.VarChar(100)
+  name                 String    @db.VarChar(255)
+  fiscalYearStartMonth Int
+  timezone             String    @db.VarChar(64)
+  currency             String    @db.Char(3)
+  reportingCutoffHour  Int
+  submissionSchedule   Json
+  lockSchedule         Json
+  active               Boolean   @default(true)
+  effectiveFrom        DateTime
+  effectiveTo          DateTime?
+  createdById          String
+  createdBy            User      @relation("FiscalCalendarCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById          String
+  updatedBy            User      @relation("FiscalCalendarUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([active, effectiveFrom, effectiveTo])
+}
+
+model SalesTarget {
+  id                     String            @id @default(cuid())
+  version                Int               @default(1)
+  targetType             String            @db.VarChar(64)
+  scopeKey               String            @db.VarChar(191)
+  userId                 String?
+  user                   User?             @relation("SalesTargetAssignee", fields: [userId], references: [id], onDelete: Restrict)
+  teamId                 String?
+  team                   OrganizationUnit? @relation("SalesTargetTeam", fields: [teamId], references: [id], onDelete: Restrict)
+  departmentId           String?
+  department             OrganizationUnit? @relation("SalesTargetDepartment", fields: [departmentId], references: [id], onDelete: Restrict)
+  businessUnitId         String?
+  businessUnit           OrganizationUnit? @relation("SalesTargetBusinessUnit", fields: [businessUnitId], references: [id], onDelete: Restrict)
+  territoryId            String?
+  territory              SalesTerritory?   @relation(fields: [territoryId], references: [id], onDelete: Restrict)
+  region                 String?           @db.VarChar(100)
+  productCategoryId      String?           @db.VarChar(191)
+  customerSegment        String?           @db.VarChar(100)
+  revenueType            RevenueType
+  periodType             FiscalPeriodType
+  fiscalYear             Int
+  fiscalQuarter          Int?
+  fiscalMonth            Int?
+  targetAmount           Decimal           @db.Decimal(19, 4)
+  targetGrossProfit      Decimal?          @db.Decimal(19, 4)
+  targetRecurringRevenue Decimal?          @db.Decimal(19, 4)
+  currency               String            @db.Char(3)
+  status                 SalesTargetStatus @default(DRAFT)
+  effectiveFrom          DateTime
+  effectiveTo            DateTime?
+  createdById            String
+  createdBy              User              @relation("SalesTargetCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById            String
+  updatedBy              User              @relation("SalesTargetUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@index([scopeKey, status, effectiveFrom, effectiveTo])
+  @@index([userId, fiscalYear, periodType, status])
+  @@index([teamId, fiscalYear, periodType, status])
+  @@index([businessUnitId, fiscalYear, periodType, status])
+  @@index([territoryId, fiscalYear, periodType, status])
 }
 
 model CoverageCheck {
@@ -325,11 +1695,11 @@ model CoverageCheck {
   status              CoverageStatus @default(DRAFT)
   fiberAvailable      Boolean?
   olt                 String?
-  distanceKm          Decimal?       @db.Decimal(10,2)
+  distanceKm          Decimal?       @db.Decimal(10, 2)
   capacityMbps        Int?
   availablePorts      Int?
   expectedInstallDate DateTime?
-  confirmedCost       Decimal?       @db.Decimal(15,2)
+  confirmedCost       Decimal?       @db.Decimal(15, 2)
   responderNotes      String?        @db.Text
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -339,11 +1709,11 @@ model SolutionDesign {
   id             String      @id @default(cuid())
   opportunityId  String      @unique
   opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  ntWorkValue    Decimal     @db.Decimal(15,2)
-  partnerCost    Decimal     @db.Decimal(15,2) @default(0)
-  estimatedCost  Decimal     @db.Decimal(15,2)
-  estimatedPrice Decimal     @db.Decimal(15,2)
-  marginPct      Decimal     @db.Decimal(6,2)
+  ntWorkValue    Decimal     @db.Decimal(15, 2)
+  partnerCost    Decimal     @default(0) @db.Decimal(15, 2)
+  estimatedCost  Decimal     @db.Decimal(15, 2)
+  estimatedPrice Decimal     @db.Decimal(15, 2)
+  marginPct      Decimal     @db.Decimal(6, 2)
   riskNotes      String?     @db.Text
   assumptions    String?     @db.Text
   createdAt      DateTime    @default(now())
@@ -351,29 +1721,29 @@ model SolutionDesign {
 }
 
 model InternalOrder {
-  id              String              @id @default(cuid())
-  orderNo         String              @unique
-  quoteId         String              @unique
-  quote           Quote               @relation(fields: [quoteId], references: [id])
-  status          InternalOrderStatus @default(DRAFT)
-  omReference     String?
-  crmReference    String?
+  id               String              @id @default(cuid())
+  orderNo          String              @unique
+  quoteId          String              @unique
+  quote            Quote               @relation(fields: [quoteId], references: [id])
+  status           InternalOrderStatus @default(DRAFT)
+  omReference      String?
+  crmReference     String?
   billingReference String?
-  handoffNotes    String?             @db.Text
-  sentAt          DateTime?
-  acknowledgedAt  DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  handoffNotes     String?             @db.Text
+  sentAt           DateTime?
+  acknowledgedAt   DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 }
 
 model QuoteItem {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   quoteId   String
-  quote     Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int     @default(1)
-  unitPrice Decimal @db.Decimal(15, 2)
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  unitPrice Decimal  @db.Decimal(15, 2)
   createdAt DateTime @default(now())
 }
 
@@ -404,7 +1774,7 @@ model VendorAssessment {
 model AiProviderConfiguration {
   id              String                           @id @db.VarChar(64)
   activeVersionId String?                          @unique
-  activeVersion   AiProviderConfigurationVersion? @relation("ActiveAiProviderVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+  activeVersion   AiProviderConfigurationVersion?  @relation("ActiveAiProviderVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
   versions        AiProviderConfigurationVersion[] @relation("AiProviderVersionHistory")
   createdAt       DateTime                         @default(now())
   updatedAt       DateTime                         @updatedAt
@@ -414,39 +1784,39 @@ model AiProviderConfigurationVersion {
   id               String                   @id @default(cuid())
   configurationId  String                   @db.VarChar(64)
   configuration    AiProviderConfiguration  @relation("AiProviderVersionHistory", fields: [configurationId], references: [id], onDelete: Restrict)
-  activeFor         AiProviderConfiguration? @relation("ActiveAiProviderVersion")
-  version           Int
-  enabled           Boolean                  @default(false)
-  apiUrl            String                   @db.VarChar(2048)
-  model             String                   @db.VarChar(255)
-  requestTimeoutMs  Int
-  apiKeyCiphertext  Bytes?                   @db.VarBinary(4096)
-  apiKeyNonce       Bytes?                   @db.VarBinary(12)
-  apiKeyAuthTag     Bytes?                   @db.VarBinary(16)
-  createdAt         DateTime                 @default(now())
-  aiOutputs         AiOutput[]
+  activeFor        AiProviderConfiguration? @relation("ActiveAiProviderVersion")
+  version          Int
+  enabled          Boolean                  @default(false)
+  apiUrl           String                   @db.VarChar(2048)
+  model            String                   @db.VarChar(255)
+  requestTimeoutMs Int
+  apiKeyCiphertext Bytes?                   @db.VarBinary(4096)
+  apiKeyNonce      Bytes?                   @db.VarBinary(12)
+  apiKeyAuthTag    Bytes?                   @db.VarBinary(16)
+  createdAt        DateTime                 @default(now())
+  aiOutputs        AiOutput[]
 
   @@unique([configurationId, version])
   @@index([configurationId, createdAt])
 }
 
 model AiJob {
-  id              String       @id @default(cuid())
-  idempotencyKey  String       @unique @db.VarChar(191)
-  capability      String       @db.VarChar(100)
-  requestedById   String
-  requestedBy     User         @relation("AiJobRequester", fields: [requestedById], references: [id], onDelete: Restrict)
-  status          AiJobStatus  @default(QUEUED)
-  attemptCount    Int          @default(0)
-  maxAttempts     Int
-  availableAt     DateTime     @default(now())
-  leaseExpiresAt  DateTime?
-  errorCode       String?      @db.VarChar(100)
-  startedAt       DateTime?
-  completedAt     DateTime?
-  output          AiOutput?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String      @id @default(cuid())
+  idempotencyKey String      @unique @db.VarChar(191)
+  capability     String      @db.VarChar(100)
+  requestedById  String
+  requestedBy    User        @relation("AiJobRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  status         AiJobStatus @default(QUEUED)
+  attemptCount   Int         @default(0)
+  maxAttempts    Int
+  availableAt    DateTime    @default(now())
+  leaseExpiresAt DateTime?
+  errorCode      String?     @db.VarChar(100)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  output         AiOutput?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@index([status, availableAt])
   @@index([requestedById, capability, createdAt])
@@ -466,7 +1836,7 @@ model AiOutput {
   validatedOutput                Json?
   status                         AiOutputStatus                 @default(DRAFT)
   safetyResult                   AiSafetyResult
-  confidenceBand                 AiConfidenceBand              @default(UNKNOWN)
+  confidenceBand                 AiConfidenceBand               @default(UNKNOWN)
   latencyMs                      Int?
   inputTokens                    Int?
   outputTokens                   Int?
@@ -502,20 +1872,20 @@ model AiFeedback {
 }
 
 model MeetingDraftConfirmation {
-  id             String    @id @default(cuid())
-  idempotencyKey String    @unique @db.VarChar(191)
-  aiOutputId     String    @unique
-  aiOutput       AiOutput  @relation(fields: [aiOutputId], references: [id], onDelete: Restrict)
-  activityId     String    @unique
-  activity       Activity  @relation("MeetingConfirmationActivity", fields: [activityId], references: [id], onDelete: Restrict)
+  id                   String    @id @default(cuid())
+  idempotencyKey       String    @unique @db.VarChar(191)
+  aiOutputId           String    @unique
+  aiOutput             AiOutput  @relation(fields: [aiOutputId], references: [id], onDelete: Restrict)
+  activityId           String    @unique
+  activity             Activity  @relation("MeetingConfirmationActivity", fields: [activityId], references: [id], onDelete: Restrict)
   nextActionActivityId String?   @unique
   nextActionActivity   Activity? @relation("MeetingConfirmationNextAction", fields: [nextActionActivityId], references: [id], onDelete: Restrict)
-  selectedFields Json
-  finalContent   Json
-  confirmedById  String
-  confirmedBy    User      @relation("MeetingDraftConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
-  confirmedAt    DateTime
-  createdAt      DateTime  @default(now())
+  selectedFields       Json
+  finalContent         Json
+  confirmedById        String
+  confirmedBy          User      @relation("MeetingDraftConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt          DateTime
+  createdAt            DateTime  @default(now())
 
   @@index([confirmedById, confirmedAt])
 }
@@ -557,22 +1927,22 @@ model DealRiskRule {
 }
 
 model DealRiskRuleVersion {
-  id                String            @id @default(cuid())
-  ruleId            String
-  rule              DealRiskRule      @relation(fields: [ruleId], references: [id], onDelete: Restrict)
-  version           Int
-  riskType          String            @db.VarChar(100)
-  enabled           Boolean           @default(false)
-  effectiveFrom     DateTime
-  effectiveTo       DateTime?
-  conditionConfig   Json
-  thresholdConfig   Json
-  scopeConfig       Json
-  severityConfig    Json
-  createdById       String
-  createdBy         User              @relation("DealRiskRuleVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  signals           DealRiskSignal[]
-  createdAt         DateTime          @default(now())
+  id              String           @id @default(cuid())
+  ruleId          String
+  rule            DealRiskRule     @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  version         Int
+  riskType        String           @db.VarChar(100)
+  enabled         Boolean          @default(false)
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  conditionConfig Json
+  thresholdConfig Json
+  scopeConfig     Json
+  severityConfig  Json
+  createdById     String
+  createdBy       User             @relation("DealRiskRuleVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  signals         DealRiskSignal[]
+  createdAt       DateTime         @default(now())
 
   @@unique([ruleId, version])
   @@index([ruleId, enabled, effectiveFrom, effectiveTo])
@@ -580,18 +1950,18 @@ model DealRiskRuleVersion {
 }
 
 model DealRiskSignal {
-  id                   String               @id @default(cuid())
-  opportunityId        String
-  opportunity          Opportunity          @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
-  ruleVersionId        String
-  ruleVersion          DealRiskRuleVersion  @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
-  evaluationKey        String               @db.VarChar(191)
-  riskType             String               @db.VarChar(100)
-  thresholdSnapshot    Json
-  triggeringFacts      Json
-  severitySnapshot     Json
-  evaluatedAt          DateTime
-  createdAt            DateTime             @default(now())
+  id                String              @id @default(cuid())
+  opportunityId     String
+  opportunity       Opportunity         @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  ruleVersionId     String
+  ruleVersion       DealRiskRuleVersion @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+  evaluationKey     String              @db.VarChar(191)
+  riskType          String              @db.VarChar(100)
+  thresholdSnapshot Json
+  triggeringFacts   Json
+  severitySnapshot  Json
+  evaluatedAt       DateTime
+  createdAt         DateTime            @default(now())
 
   @@unique([opportunityId, ruleVersionId, evaluationKey])
   @@index([opportunityId, evaluatedAt])
