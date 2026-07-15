@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { PresalesAccessError, PresalesImmutableError, PresalesPermissionError, PresalesTransitionError, PresalesValidationError } from "@/lib/solution-design/solution-design-service";
+import { workflowCorrelationId, workflowUnauthenticated } from "./workflow-api-response";
+
+export async function presalesActor(request:Request){const correlationId=workflowCorrelationId(request);const session=await getSession();if(!session)return{response:workflowUnauthenticated(correlationId)} as const;const authorization=await loadAuthorizationContext({actorId:session.id,legacyRole:session.role});return{actor:{...session,authorization},correlationId} as const;}
+export function presalesApiError(error:unknown,correlationId:string){let status=500,code="INTERNAL_ERROR",fieldErrors:undefined|Array<{field:string;code:string}>;if(error instanceof PresalesValidationError){status=400;code="VALIDATION_FAILED";fieldErrors=error.fields.map(field=>({field,code:"INVALID"}));}else if(error instanceof PresalesPermissionError){status=403;code="FORBIDDEN";}else if(error instanceof PresalesAccessError){status=404;code="RESOURCE_NOT_FOUND";}else if(error instanceof PresalesTransitionError){status=422;code="TRANSITION_DENIED";fieldErrors=error.fields.map(field=>({field,code:"REQUIRED"}));}else if(error instanceof PresalesImmutableError){status=409;code="HISTORICAL_VERSION_IMMUTABLE";}return NextResponse.json({error:{code,message:"ไม่สามารถดำเนินการได้",...(fieldErrors?{fieldErrors}:{}),retryable:false,correlationId}},{status});}
+export async function jsonBody(request:Request){try{return await request.json();}catch{throw new PresalesValidationError(["body"]);}}

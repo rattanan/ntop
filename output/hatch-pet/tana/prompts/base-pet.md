@@ -1,0 +1,7 @@
+Create one clean full-body reference sprite for Codex pet Tana.
+
+Pet identity: A compact friendly pangolin systems architect inspired by a careful Thai software builder: slate and deep teal overlapping scales with restrained warm-gold accents, bright intelligent eyes, sturdy small paws, calm confident posture, approachable rather than armored or aggressive. The character communicates precision, server-side security, backward compatibility, thoughtful review, and quiet persistence without text, logos, code, UI, or separate props. Keep all details bold and readable at pet size..
+Style: Pet-safe sprite: compact full-body mascot, readable in a 192x208 cell, clear silhouette, simple face, stable palette/materials, and crisp edges for chroma-key extraction. Style `3d-toy`: Stylized 3D toy mascot with smooth rounded forms, simple materials, clear silhouette, and no photoreal complexity. User style notes: Premium stylized 3D collectible toy, softly rounded matte materials, clean silhouette, subtle Thai-inspired warmth through palette only, no cultural symbols, no logos, no text..
+
+
+Place a single centered pose on a perfectly flat pure magenta #FF00FF chroma-key background. Keep the full pet visible, compact, readable at 192x208, and easy to animate. Preserve approved reference identity cues. No scenery, text, borders, checkerboard transparency, shadows, glows, detached effects, or extra props. Keep #FF00FF and close colors out of the pet, props, highlights, and effects.

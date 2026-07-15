@@ -20,8 +20,14 @@ const expectedPermissions: Record<Role, readonly Permission[]> = {
     PERMISSIONS.opportunityTransition,
     PERMISSIONS.quoteManage,
     PERMISSIONS.quoteSubmit,
+    PERMISSIONS.proposalView,
+    PERMISSIONS.proposalManage,
+    PERMISSIONS.contractView,
+    PERMISSIONS.contractManage,
+    PERMISSIONS.contractSignatureManage,
+    PERMISSIONS.contractServiceOrderCreate,
   ],
-  VIEWER: [PERMISSIONS.recordViewOwned],
+  VIEWER: [PERMISSIONS.recordViewOwned, PERMISSIONS.proposalView, PERMISSIONS.contractView],
 };
 
 describe("legacy role permission policy", () => {
@@ -64,6 +70,19 @@ describe("legacy role permission policy", () => {
     expect(
       permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.aiRiskExplain),
     ).toBe(false);
+  });
+
+  it("allows Sales to manage Proposal while Viewer remains read-only", () => {
+    expect(permissionPolicy.allows({ role: "SALES" }, PERMISSIONS.proposalManage)).toBe(true);
+    expect(permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.proposalView)).toBe(true);
+    expect(permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.proposalManage)).toBe(false);
+  });
+
+  it("keeps Contract mutation server-side while Viewer remains read-only", () => {
+    expect(permissionPolicy.allows({ role: "SALES" }, PERMISSIONS.contractManage)).toBe(true);
+    expect(permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.contractView)).toBe(true);
+    expect(permissionPolicy.allows({ role: "VIEWER" }, PERMISSIONS.contractManage)).toBe(false);
+    expect(permissionPolicy.allows({ role: "SALES" }, PERMISSIONS.contractApprove)).toBe(false);
   });
 
   it("restricts customer merge to the configured privileged permission", () => {

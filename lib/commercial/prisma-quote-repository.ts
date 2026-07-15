@@ -114,10 +114,17 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
   async findQuote(input: { id: string; context: AuthorizationContext }, transaction: Transaction) {
     const result = await transaction.quote.findFirst({
       where: { id: input.id, opportunity: buildOpportunityScopeWhere(input.context) },
-      select: { id: true, opportunityId: true, makerId: true, versions: { orderBy: { versionNumber: "desc" }, take: 1, select: { versionNumber: true } } },
+      select: { id: true, opportunityId: true, proposalId: true, makerId: true, versions: { orderBy: { versionNumber: "desc" }, take: 1, select: { versionNumber: true } } },
     });
     if (!result?.opportunityId || !result.makerId) return null;
-    return { id: result.id, opportunityId: result.opportunityId, makerId: result.makerId, latestVersion: result.versions[0]?.versionNumber ?? 0 };
+    return { id: result.id, opportunityId: result.opportunityId, proposalId: result.proposalId, makerId: result.makerId, latestVersion: result.versions[0]?.versionNumber ?? 0 };
+  }
+
+  async findProposal(input: { id: string; context: AuthorizationContext }, transaction: Transaction) {
+    return transaction.proposal.findFirst({
+      where: { id: input.id, deletedAt: null, opportunity: buildOpportunityScopeWhere(input.context) },
+      select: { id: true, opportunityId: true, customerId: true },
+    });
   }
 
   async loadProducts(ids: readonly string[], transaction: Transaction) {
@@ -143,13 +150,14 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
     const quote = input.draft.quoteId
       ? await transaction.quote.update({
           where: { id: input.draft.quoteId },
-          data: { version: { increment: 1 }, status: "DRAFT", updatedAt: new Date() },
+          data: { version: { increment: 1 }, status: "DRAFT", ...(input.draft.proposalId ? { proposalId: input.draft.proposalId } : {}), updatedAt: new Date() },
         })
       : await transaction.quote.create({
           data: {
             quoteNo: `QT-${randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase()}`,
             customerId: input.opportunity.customerId,
             opportunityId: input.opportunity.id,
+            proposalId: input.draft.proposalId,
             makerId: input.actorId,
             status: "DRAFT",
             discountPct: input.calculations.subtotal.isZero()

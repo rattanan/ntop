@@ -1,0 +1,11 @@
+import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { assertPermission, PERMISSIONS } from "@/lib/authorization/permission-policy";
+import { contractCreateSchema } from "@/lib/contract/contracts";
+import { createContractRuntime } from "@/lib/contract/contract-runtime";
+import { prisma } from "@/lib/prisma";
+import { requireIdempotencyKey, workflowApiError, workflowCorrelationId, workflowUnauthenticated } from "../workflow-api-response";
+import { contractActor } from "./contract-api";
+
+export async function GET(request:Request){const correlationId=workflowCorrelationId(request),session=await getSession();if(!session)return workflowUnauthenticated(correlationId);try{assertPermission(session,PERMISSIONS.contractView);const actor=await contractActor(session),url=new URL(request.url),limit=Math.min(100,Math.max(1,Number(url.searchParams.get("limit")??50)||50)),status=url.searchParams.get("status"),type=url.searchParams.get("type"),q=url.searchParams.get("q")?.trim(),enterprise=actor.authorization.assignments.some(a=>a.scope==="ENTERPRISE"),units=[...new Set(actor.authorization.assignments.flatMap(a=>a.organizationUnitId&&(a.scope==="ORG_UNIT"||a.scope==="TEAM")?[a.organizationUnitId]:[]))];const scoped=enterprise?{}:{OR:[{ownerId:session.id},...(units.length?[{organizationUnitId:{in:units}}]:[])]};const where={deletedAt:null,...scoped,...(status?{statusCode:status}:{}),...(type?{contractTypeCode:type}:{}),...(q?{OR:[{contractNo:{contains:q}},{name:{contains:q}}]}:{})};const data=await prisma.contract.findMany({where,include:{status:true,contractType:true},orderBy:[{updatedAt:"desc"},{id:"desc"}],take:limit});return NextResponse.json({data,meta:{correlationId,count:data.length,limit}});}catch(error){return workflowApiError(error,correlationId);}}
+export async function POST(request:Request){const correlationId=workflowCorrelationId(request),session=await getSession();if(!session)return workflowUnauthenticated(correlationId);const key=requireIdempotencyKey(request,correlationId);if(typeof key!=="string")return key;try{const data=await createContractRuntime().service.create(await contractActor(session),contractCreateSchema.parse(await request.json()),correlationId);return NextResponse.json({data,meta:{correlationId}},{status:201});}catch(error){return workflowApiError(error,correlationId);}}

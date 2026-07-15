@@ -317,51 +317,56 @@ enum AiFeedbackRating {
 }
 
 model User {
-  id                            String                             @id @default(cuid())
-  email                         String                             @unique
-  name                          String
-  passwordHash                  String
-  role                          Role                               @default(SALES)
-  active                        Boolean                            @default(true)
-  ownedCustomers                Customer[]                         @relation("CustomerOwner")
-  ownedDeals                    Opportunity[]                      @relation("OpportunityOwner")
-  ownedLeads                    Lead[]                             @relation("LeadOwner")
-  activities                    Activity[]                         @relation("ActivityOwner")
-  requestedAiJobs               AiJob[]                            @relation("AiJobRequester")
-  confirmedAiOutputs            AiOutput[]                         @relation("AiOutputConfirmer")
-  aiFeedback                    AiFeedback[]                       @relation("AiFeedbackActor")
-  createdRiskRuleVersions       DealRiskRuleVersion[]              @relation("DealRiskRuleVersionCreator")
-  confirmedMeetingDrafts        MeetingDraftConfirmation[]         @relation("MeetingDraftConfirmer")
-  customerOwnershipAssignments  CustomerOwnershipAssignment[]      @relation("CustomerOwnershipAssignee")
-  assignedCustomerOwnerships    CustomerOwnershipAssignment[]      @relation("CustomerOwnershipActor")
-  customerMergeActions          CustomerMergeHistory[]             @relation("CustomerMergeActor")
-  customerCommandReceipts       CustomerCommandReceipt[]
-  leadCommandReceipts           LeadCommandReceipt[]
-  leadStatusActions             LeadStatusHistory[]                @relation("LeadStatusActor")
-  leadAssignmentActions         LeadAssignmentHistory[]            @relation("LeadAssignmentActor")
-  savedLeadViews                LeadSavedView[]
-  targetedLeadRules             LeadAssignmentRule[]               @relation("LeadRuleTargetOwner")
-  ownedProspects                Prospect[]                         @relation("ProspectOwner")
-  backupOwnedProspects          Prospect[]                         @relation("ProspectBackupOwner")
-  managedProspects              Prospect[]                         @relation("ProspectSalesManager")
-  opportunityStageActions       OpportunityStageHistory[]          @relation("OpportunityStageActor")
-  opportunityProbabilityActions OpportunityProbabilityHistory[]    @relation("OpportunityProbabilityActor")
-  opportunityCommandReceipts    OpportunityCommandReceipt[]
-  opportunityRelatedReceipts    OpportunityRelatedCommandReceipt[]
-  ownedOpportunityPainPoints    OpportunityPainPoint[]             @relation("OpportunityPainPointOwner")
-  madeQuotes                    Quote[]                            @relation("QuoteMaker")
-  approvalRequestsMade          ApprovalRequest[]                  @relation("ApprovalRequestMaker")
-  approvalDecisions             ApprovalDecision[]                 @relation("ApprovalDecisionActor")
-  commercialCommandReceipts     CommercialCommandReceipt[]
-  fiscalCalendarsCreated        FiscalCalendar[]                   @relation("FiscalCalendarCreator")
-  fiscalCalendarsUpdated        FiscalCalendar[]                   @relation("FiscalCalendarUpdater")
-  assignedSalesTargets          SalesTarget[]                      @relation("SalesTargetAssignee")
-  salesTargetsCreated           SalesTarget[]                      @relation("SalesTargetCreator")
-  salesTargetsUpdated           SalesTarget[]                      @relation("SalesTargetUpdater")
-  enterpriseRoleAssignments     UserRoleAssignment[]
-  loginEvents                   LoginEvent[]
-  createdAt                     DateTime                           @default(now())
-  updatedAt                     DateTime                           @updatedAt
+  id                              String                             @id @default(cuid())
+  email                           String                             @unique
+  name                            String
+  passwordHash                    String
+  role                            Role                               @default(SALES)
+  active                          Boolean                            @default(true)
+  ownedCustomers                  Customer[]                         @relation("CustomerOwner")
+  ownedDeals                      Opportunity[]                      @relation("OpportunityOwner")
+  ownedLeads                      Lead[]                             @relation("LeadOwner")
+  activities                      Activity[]                         @relation("ActivityOwner")
+  requestedAiJobs                 AiJob[]                            @relation("AiJobRequester")
+  confirmedAiOutputs              AiOutput[]                         @relation("AiOutputConfirmer")
+  aiFeedback                      AiFeedback[]                       @relation("AiFeedbackActor")
+  createdRiskRuleVersions         DealRiskRuleVersion[]              @relation("DealRiskRuleVersionCreator")
+  confirmedMeetingDrafts          MeetingDraftConfirmation[]         @relation("MeetingDraftConfirmer")
+  customerOwnershipAssignments    CustomerOwnershipAssignment[]      @relation("CustomerOwnershipAssignee")
+  assignedCustomerOwnerships      CustomerOwnershipAssignment[]      @relation("CustomerOwnershipActor")
+  customerMergeActions            CustomerMergeHistory[]             @relation("CustomerMergeActor")
+  customerCommandReceipts         CustomerCommandReceipt[]
+  leadCommandReceipts             LeadCommandReceipt[]
+  leadStatusActions               LeadStatusHistory[]                @relation("LeadStatusActor")
+  leadAssignmentActions           LeadAssignmentHistory[]            @relation("LeadAssignmentActor")
+  savedLeadViews                  LeadSavedView[]
+  targetedLeadRules               LeadAssignmentRule[]               @relation("LeadRuleTargetOwner")
+  ownedProspects                  Prospect[]                         @relation("ProspectOwner")
+  backupOwnedProspects            Prospect[]                         @relation("ProspectBackupOwner")
+  managedProspects                Prospect[]                         @relation("ProspectSalesManager")
+  opportunityStageActions         OpportunityStageHistory[]          @relation("OpportunityStageActor")
+  opportunityProbabilityActions   OpportunityProbabilityHistory[]    @relation("OpportunityProbabilityActor")
+  opportunityCommandReceipts      OpportunityCommandReceipt[]
+  opportunityRelatedReceipts      OpportunityRelatedCommandReceipt[]
+  ownedOpportunityPainPoints      OpportunityPainPoint[]             @relation("OpportunityPainPointOwner")
+  madeQuotes                      Quote[]                            @relation("QuoteMaker")
+  ownedProposals                  Proposal[]                         @relation("ProposalOwner")
+  createdProposalVersions         ProposalVersion[]                  @relation("ProposalVersionCreator")
+  createdProposalTemplates        ProposalTemplate[]                 @relation("ProposalTemplateCreator")
+  createdProposalTemplateVersions ProposalTemplateVersion[]          @relation("ProposalTemplateVersionCreator")
+  proposalCommandReceipts         ProposalCommandReceipt[]
+  approvalRequestsMade            ApprovalRequest[]                  @relation("ApprovalRequestMaker")
+  approvalDecisions               ApprovalDecision[]                 @relation("ApprovalDecisionActor")
+  commercialCommandReceipts       CommercialCommandReceipt[]
+  fiscalCalendarsCreated          FiscalCalendar[]                   @relation("FiscalCalendarCreator")
+  fiscalCalendarsUpdated          FiscalCalendar[]                   @relation("FiscalCalendarUpdater")
+  assignedSalesTargets            SalesTarget[]                      @relation("SalesTargetAssignee")
+  salesTargetsCreated             SalesTarget[]                      @relation("SalesTargetCreator")
+  salesTargetsUpdated             SalesTarget[]                      @relation("SalesTargetUpdater")
+  enterpriseRoleAssignments       UserRoleAssignment[]
+  loginEvents                     LoginEvent[]
+  createdAt                       DateTime                           @default(now())
+  updatedAt                       DateTime                           @updatedAt
 }
 
 model LoginEvent {
@@ -382,38 +387,40 @@ model LoginEvent {
 }
 
 model Customer {
-  id                    String                        @id @default(cuid())
-  name                  String
-  taxId                 String                        @unique
-  type                  CustomerType
-  segment               String
-  province              String
-  address               String?                       @db.Text
-  status                CustomerStatus                @default(PROSPECT)
-  ownerId               String
-  owner                 User                          @relation("CustomerOwner", fields: [ownerId], references: [id])
-  version               Int                           @default(1)
-  organizationUnitId    String?
-  organizationUnit      OrganizationUnit?             @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
-  contacts              Contact[]
-  externalIds           CustomerExternalId[]
-  parentRelationships   CustomerRelationship[]        @relation("CustomerRelationshipParent")
-  childRelationships    CustomerRelationship[]        @relation("CustomerRelationshipChild")
-  ownershipHistory      CustomerOwnershipAssignment[]
-  mergedIntoCustomerId  String?
-  mergedIntoCustomer    Customer?                     @relation("CustomerMergeAliases", fields: [mergedIntoCustomerId], references: [id], onDelete: Restrict)
-  mergeAliases          Customer[]                    @relation("CustomerMergeAliases")
-  mergeSourceHistory    CustomerMergeHistory[]        @relation("CustomerMergeSource")
-  mergeTargetHistory    CustomerMergeHistory[]        @relation("CustomerMergeTarget")
-  duplicateCandidatesA  CustomerDuplicateCandidate[]  @relation("CustomerDuplicateA")
-  duplicateCandidatesB  CustomerDuplicateCandidate[]  @relation("CustomerDuplicateB")
-  duplicateMergeTargets CustomerDuplicateCandidate[]  @relation("CustomerDuplicateMergeTarget")
-  opportunities         Opportunity[]
-  leads                 Lead[]
-  activities            Activity[]
-  quotes                Quote[]
-  createdAt             DateTime                      @default(now())
-  updatedAt             DateTime                      @updatedAt
+  id                        String                        @id @default(cuid())
+  name                      String
+  taxId                     String                        @unique
+  type                      CustomerType
+  segment                   String
+  province                  String
+  address                   String?                       @db.Text
+  status                    CustomerStatus                @default(PROSPECT)
+  ownerId                   String
+  owner                     User                          @relation("CustomerOwner", fields: [ownerId], references: [id])
+  version                   Int                           @default(1)
+  organizationUnitId        String?
+  organizationUnit          OrganizationUnit?             @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  contacts                  Contact[]
+  externalIds               CustomerExternalId[]
+  parentRelationships       CustomerRelationship[]        @relation("CustomerRelationshipParent")
+  childRelationships        CustomerRelationship[]        @relation("CustomerRelationshipChild")
+  ownershipHistory          CustomerOwnershipAssignment[]
+  mergedIntoCustomerId      String?
+  mergedIntoCustomer        Customer?                     @relation("CustomerMergeAliases", fields: [mergedIntoCustomerId], references: [id], onDelete: Restrict)
+  mergeAliases              Customer[]                    @relation("CustomerMergeAliases")
+  mergeSourceHistory        CustomerMergeHistory[]        @relation("CustomerMergeSource")
+  mergeTargetHistory        CustomerMergeHistory[]        @relation("CustomerMergeTarget")
+  duplicateCandidatesA      CustomerDuplicateCandidate[]  @relation("CustomerDuplicateA")
+  duplicateCandidatesB      CustomerDuplicateCandidate[]  @relation("CustomerDuplicateB")
+  duplicateMergeTargets     CustomerDuplicateCandidate[]  @relation("CustomerDuplicateMergeTarget")
+  opportunities             Opportunity[]
+  leads                     Lead[]
+  activities                Activity[]
+  quotes                    Quote[]
+  proposals                 Proposal[]
+  solutionInstallationSites SolutionInstallationSite[]
+  createdAt                 DateTime                      @default(now())
+  updatedAt                 DateTime                      @updatedAt
 
   @@index([organizationUnitId, updatedAt])
   @@index([ownerId, updatedAt])
@@ -1116,56 +1123,61 @@ model Contact {
   updatedAt               DateTime                 @updatedAt
   convertedLeads          Lead[]
   opportunityStakeholders OpportunityStakeholder[]
+  siteSurveyContacts      SiteSurveyContact[]
 }
 
 model Opportunity {
-  id                     String                             @id @default(cuid())
-  opportunityNumber      String?                            @unique @db.VarChar(32)
-  name                   String
-  customerId             String
-  customer               Customer                           @relation(fields: [customerId], references: [id])
-  flow                   String
-  stage                  OpportunityStage                   @default(QUALIFY)
-  version                Int                                @default(1)
-  estimatedValue         Decimal                            @db.Decimal(19, 4)
-  currency               String                             @default("THB") @db.Char(3)
-  probability            Int
-  probabilitySource      String                             @default("STAGE_DEFAULT") @db.VarChar(32)
-  forecastCategory       ForecastCategory                   @default(PIPELINE)
-  expectedCloseAt        DateTime?
-  stageEnteredAt         DateTime                           @default(now())
-  organizationUnitId     String?
-  organizationUnit       OrganizationUnit?                  @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
-  ownerId                String
-  owner                  User                               @relation("OpportunityOwner", fields: [ownerId], references: [id])
-  sourceLeadId           String?                            @unique
-  sourceLead             Lead?                              @relation("SourceLeadOpportunity", fields: [sourceLeadId], references: [id], onDelete: SetNull)
-  nextAction             String?
-  requirements           String?                            @db.Text
-  qualificationResult    String?                            @db.Text
-  stakeholderSummary     String?                            @db.Text
-  lostReason             String?                            @db.VarChar(1000)
-  lostCategory           String?                            @db.VarChar(100)
-  cancelledReason        String?                            @db.VarChar(1000)
-  vendorAssessment       VendorAssessment?
-  activities             Activity[]
-  quotes                 Quote[]                            @relation("OpportunityQuotes")
-  primaryQuoteId         String?                            @unique
-  primaryQuote           Quote?                             @relation("OpportunityPrimaryQuote", fields: [primaryQuoteId], references: [id], onDelete: SetNull)
-  coverageChecks         CoverageCheck[]
-  solutionDesign         SolutionDesign?
-  riskSignals            DealRiskSignal[]
-  stageHistory           OpportunityStageHistory[]
-  probabilityHistory     OpportunityProbabilityHistory[]
-  painPoints             OpportunityPainPoint[]
-  structuredRequirements OpportunityRequirement[]
-  stakeholders           OpportunityStakeholder[]
-  competitors            OpportunityCompetitor[]
-  relatedCommandReceipts OpportunityRelatedCommandReceipt[]
-  commandReceipts        OpportunityCommandReceipt[]
-  forecastItems          ForecastItem[]
-  createdAt              DateTime                           @default(now())
-  updatedAt              DateTime                           @updatedAt
+  id                        String                             @id @default(cuid())
+  opportunityNumber         String?                            @unique @db.VarChar(32)
+  name                      String
+  customerId                String
+  customer                  Customer                           @relation(fields: [customerId], references: [id])
+  flow                      String
+  stage                     OpportunityStage                   @default(QUALIFY)
+  version                   Int                                @default(1)
+  estimatedValue            Decimal                            @db.Decimal(19, 4)
+  currency                  String                             @default("THB") @db.Char(3)
+  probability               Int
+  probabilitySource         String                             @default("STAGE_DEFAULT") @db.VarChar(32)
+  forecastCategory          ForecastCategory                   @default(PIPELINE)
+  expectedCloseAt           DateTime?
+  stageEnteredAt            DateTime                           @default(now())
+  organizationUnitId        String?
+  organizationUnit          OrganizationUnit?                  @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  ownerId                   String
+  owner                     User                               @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  sourceLeadId              String?                            @unique
+  sourceLead                Lead?                              @relation("SourceLeadOpportunity", fields: [sourceLeadId], references: [id], onDelete: SetNull)
+  nextAction                String?
+  requirements              String?                            @db.Text
+  qualificationResult       String?                            @db.Text
+  stakeholderSummary        String?                            @db.Text
+  lostReason                String?                            @db.VarChar(1000)
+  lostCategory              String?                            @db.VarChar(100)
+  cancelledReason           String?                            @db.VarChar(1000)
+  vendorAssessment          VendorAssessment?
+  activities                Activity[]
+  quotes                    Quote[]                            @relation("OpportunityQuotes")
+  proposals                 Proposal[]
+  primaryQuoteId            String?                            @unique
+  primaryQuote              Quote?                             @relation("OpportunityPrimaryQuote", fields: [primaryQuoteId], references: [id], onDelete: SetNull)
+  coverageChecks            CoverageCheck[]
+  solutionDesign            SolutionDesign?
+  solutionInstallationSites SolutionInstallationSite[]
+  siteSurveyRequests        SiteSurveyRequest[]
+  boqHeaders                BoqHeader[]
+  riskSignals               DealRiskSignal[]
+  stageHistory              OpportunityStageHistory[]
+  probabilityHistory        OpportunityProbabilityHistory[]
+  painPoints                OpportunityPainPoint[]
+  structuredRequirements    OpportunityRequirement[]
+  stakeholders              OpportunityStakeholder[]
+  competitors               OpportunityCompetitor[]
+  relatedCommandReceipts    OpportunityRelatedCommandReceipt[]
+  commandReceipts           OpportunityCommandReceipt[]
+  forecastItems             ForecastItem[]
+  createdAt                 DateTime                           @default(now())
+  updatedAt                 DateTime                           @updatedAt
 
   @@index([organizationUnitId, ownerId, stage, expectedCloseAt])
   @@index([ownerId, updatedAt, id])
@@ -1194,24 +1206,25 @@ model OpportunityPainPoint {
 }
 
 model OpportunityRequirement {
-  id                 String      @id @default(cuid())
+  id                 String                       @id @default(cuid())
   opportunityId      String
-  opportunity        Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
-  requirementNumber  String      @db.VarChar(64)
-  title              String      @db.VarChar(255)
-  description        String      @db.Text
-  requirementType    String      @db.VarChar(100)
-  priority           String      @default("MEDIUM") @db.VarChar(32)
-  mandatoryFlag      Boolean     @default(false)
-  acceptanceCriteria String?     @db.Text
-  sourceDocument     String?     @db.VarChar(500)
-  status             String      @default("OPEN") @db.VarChar(32)
-  assignedTeam       String?     @db.VarChar(100)
-  feasibilityStatus  String      @default("NOT_ASSESSED") @db.VarChar(32)
-  solutionResponse   String?     @db.Text
-  riskLevel          String      @default("MEDIUM") @db.VarChar(32)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  opportunity        Opportunity                  @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  requirementNumber  String                       @db.VarChar(64)
+  title              String                       @db.VarChar(255)
+  description        String                       @db.Text
+  requirementType    String                       @db.VarChar(100)
+  priority           String                       @default("MEDIUM") @db.VarChar(32)
+  mandatoryFlag      Boolean                      @default(false)
+  acceptanceCriteria String?                      @db.Text
+  sourceDocument     String?                      @db.VarChar(500)
+  status             String                       @default("OPEN") @db.VarChar(32)
+  assignedTeam       String?                      @db.VarChar(100)
+  feasibilityStatus  String                       @default("NOT_ASSESSED") @db.VarChar(32)
+  solutionResponse   String?                      @db.Text
+  riskLevel          String                       @default("MEDIUM") @db.VarChar(32)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  solutionMappings   SolutionRequirementMapping[]
 
   @@unique([opportunityId, requirementNumber])
   @@index([opportunityId, requirementType, status])
@@ -1360,19 +1373,26 @@ model OpportunityCommandReceipt {
 }
 
 model Product {
-  id              String      @id @default(cuid())
-  code            String      @unique
-  name            String
-  category        String
-  description     String?     @db.Text
-  listPrice       Decimal     @db.Decimal(15, 2)
-  floorPrice      Decimal?    @db.Decimal(19, 4)
-  standardCost    Decimal?    @db.Decimal(19, 4)
-  costConfirmedAt DateTime?
-  active          Boolean     @default(true)
-  quoteItems      QuoteItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                           String                @id @default(cuid())
+  code                         String                @unique
+  name                         String
+  category                     String
+  description                  String?               @db.Text
+  listPrice                    Decimal               @db.Decimal(15, 2)
+  floorPrice                   Decimal?              @db.Decimal(19, 4)
+  standardCost                 Decimal?              @db.Decimal(19, 4)
+  costConfirmedAt              DateTime?
+  serviceCategoryCode          String?               @db.VarChar(100)
+  requiresSiteSurvey           Boolean               @default(false)
+  requiresBoq                  Boolean               @default(false)
+  requiresPhysicalInstallation Boolean               @default(false)
+  active                       Boolean               @default(true)
+  quoteItems                   QuoteItem[]
+  solutionServiceItems         SolutionServiceItem[]
+  solutionComponents           SolutionComponent[]
+  boqItems                     BoqItem[]
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
 }
 
 model Quote {
@@ -1382,6 +1402,8 @@ model Quote {
   customer              Customer       @relation(fields: [customerId], references: [id])
   opportunityId         String?
   opportunity           Opportunity?   @relation("OpportunityQuotes", fields: [opportunityId], references: [id])
+  proposalId            String?
+  proposal              Proposal?      @relation(fields: [proposalId], references: [id], onDelete: SetNull)
   primaryForOpportunity Opportunity?   @relation("OpportunityPrimaryQuote")
   version               Int            @default(1)
   makerId               String?
@@ -1399,6 +1421,180 @@ model Quote {
   internalOrder         InternalOrder?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+
+  @@index([proposalId, createdAt])
+}
+
+model ProposalStatusDefinition {
+  code               String     @id @db.VarChar(32)
+  label              String     @db.VarChar(100)
+  sortOrder          Int
+  terminal           Boolean    @default(false)
+  active             Boolean    @default(true)
+  reportingCategory  String     @default("OPEN") @db.VarChar(32)
+  allowedTransitions Json
+  proposals          Proposal[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model ProposalStatusTransition {
+  id                 String   @id @default(cuid())
+  fromStatusCode     String   @db.VarChar(32)
+  toStatusCode       String   @db.VarChar(32)
+  requiredPermission String?  @db.VarChar(191)
+  makerChecker       Boolean  @default(false)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  @@unique([fromStatusCode, toStatusCode])
+  @@index([fromStatusCode, active])
+}
+
+model ProposalTemplate {
+  id              String                    @id @default(cuid())
+  code            String                    @unique @db.VarChar(100)
+  name            String                    @db.VarChar(255)
+  category        String                    @db.VarChar(100)
+  active          Boolean                   @default(true)
+  activeVersionId String?                   @unique
+  activeVersion   ProposalTemplateVersion?  @relation("ActiveProposalTemplateVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+  versions        ProposalTemplateVersion[] @relation("ProposalTemplateVersions")
+  createdById     String
+  createdBy       User                      @relation("ProposalTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([active, category, name])
+}
+
+model ProposalTemplateVersion {
+  id                 String                    @id @default(cuid())
+  templateId         String
+  template           ProposalTemplate          @relation("ProposalTemplateVersions", fields: [templateId], references: [id], onDelete: Restrict)
+  activeFor          ProposalTemplate?         @relation("ActiveProposalTemplateVersion")
+  version            Int
+  companyInformation String?                   @db.Text
+  terms              String?                   @db.Text
+  footer             String?                   @db.Text
+  createdById        String
+  createdBy          User                      @relation("ProposalTemplateVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  sections           ProposalTemplateSection[]
+  proposalVersions   ProposalVersion[]
+  createdAt          DateTime                  @default(now())
+
+  @@unique([templateId, version])
+}
+
+model ProposalTemplateSection {
+  id                String                  @id @default(cuid())
+  templateVersionId String
+  templateVersion   ProposalTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  sectionCode       String                  @db.VarChar(100)
+  title             String                  @db.VarChar(255)
+  sortOrder         Int
+  contentType       String                  @default("RICH_TEXT") @db.VarChar(32)
+  defaultContent    String                  @db.Text
+  structuredData    Json?
+
+  @@unique([templateVersionId, sectionCode])
+  @@index([templateVersionId, sortOrder])
+}
+
+model Proposal {
+  id              String                   @id @default(cuid())
+  proposalNo      String                   @unique @db.VarChar(32)
+  name            String                   @db.VarChar(255)
+  opportunityId   String
+  opportunity     Opportunity              @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  customerId      String
+  customer        Customer                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  ownerId         String
+  owner           User                     @relation("ProposalOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  version         Int                      @default(1)
+  statusCode      String                   @db.VarChar(32)
+  status          ProposalStatusDefinition @relation(fields: [statusCode], references: [code], onDelete: Restrict)
+  createDate      DateTime                 @default(now())
+  expireDate      DateTime?
+  description     String?                  @db.Text
+  tags            Json?
+  versions        ProposalVersion[]
+  quotes          Quote[]
+  commandReceipts ProposalCommandReceipt[]
+  deletedAt       DateTime?
+  deletedById     String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([ownerId, statusCode, updatedAt])
+  @@index([opportunityId, deletedAt, updatedAt])
+  @@index([customerId, deletedAt, updatedAt])
+}
+
+model ProposalVersion {
+  id                               String                   @id @default(cuid())
+  proposalId                       String
+  proposal                         Proposal                 @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  versionNumber                    Int
+  name                             String                   @db.VarChar(255)
+  statusCode                       String                   @db.VarChar(32)
+  description                      String?                  @db.Text
+  expireDate                       DateTime?
+  tags                             Json?
+  templateVersionId                String?
+  templateVersion                  ProposalTemplateVersion? @relation(fields: [templateVersionId], references: [id], onDelete: SetNull)
+  restoredFromVersionId            String?
+  restoredFromVersion              ProposalVersion?         @relation("ProposalVersionRestore", fields: [restoredFromVersionId], references: [id], onDelete: SetNull)
+  restoredVersions                 ProposalVersion[]        @relation("ProposalVersionRestore")
+  aiProviderConfigurationVersionId String?
+  aiProviderModel                  String?                  @db.VarChar(255)
+  aiPromptTemplateVersion          String?                  @db.VarChar(100)
+  aiInputSourceReferences          Json?
+  createdById                      String
+  createdBy                        User                     @relation("ProposalVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  sections                         ProposalSection[]
+  createdAt                        DateTime                 @default(now())
+
+  @@unique([proposalId, versionNumber])
+  @@index([proposalId, createdAt])
+}
+
+model ProposalSection {
+  id                String          @id @default(cuid())
+  proposalVersionId String
+  proposalVersion   ProposalVersion @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
+  sectionCode       String          @db.VarChar(100)
+  title             String          @db.VarChar(255)
+  sortOrder         Int
+  contentType       String          @default("RICH_TEXT") @db.VarChar(32)
+  content           String          @db.Text
+  structuredData    Json?
+
+  @@unique([proposalVersionId, sectionCode])
+  @@index([proposalVersionId, sortOrder])
+}
+
+model ProposalCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  actor          User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  proposalId     String
+  proposal       Proposal @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  resultVersion  Int
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([proposalId, createdAt])
+}
+
+model ProposalNumberSequence {
+  id        String   @id @db.VarChar(32)
+  nextValue Int      @default(0)
+  updatedAt DateTime @updatedAt
 }
 
 model QuoteVersion {
@@ -1706,18 +1902,610 @@ model CoverageCheck {
 }
 
 model SolutionDesign {
-  id             String      @id @default(cuid())
-  opportunityId  String      @unique
-  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  ntWorkValue    Decimal     @db.Decimal(15, 2)
-  partnerCost    Decimal     @default(0) @db.Decimal(15, 2)
-  estimatedCost  Decimal     @db.Decimal(15, 2)
-  estimatedPrice Decimal     @db.Decimal(15, 2)
-  marginPct      Decimal     @db.Decimal(6, 2)
-  riskNotes      String?     @db.Text
-  assumptions    String?     @db.Text
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id                       String                       @id @default(cuid())
+  opportunityId            String                       @unique
+  opportunity              Opportunity                  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  solutionDesignNumber     String?                      @unique @db.VarChar(32)
+  solutionDesignName       String?                      @db.VarChar(255)
+  statusCode               String                       @default("DRAFT") @db.VarChar(64)
+  version                  Int                          @default(1)
+  revisionNumber           Int                          @default(0)
+  parentVersionId          String?                      @db.VarChar(191)
+  designType               String?                      @db.VarChar(100)
+  solutionCategory         String?                      @db.VarChar(100)
+  description              String?                      @db.Text
+  objective                String?                      @db.Text
+  executiveSummary         String?                      @db.Text
+  technicalSummary         String?                      @db.Text
+  salesOwnerId             String?                      @db.VarChar(191)
+  preSalesOwnerId          String?                      @db.VarChar(191)
+  technicalApproverId      String?                      @db.VarChar(191)
+  commercialOwnerId        String?                      @db.VarChar(191)
+  surveyCoordinatorId      String?                      @db.VarChar(191)
+  requestedDate            DateTime?
+  targetDesignDate         DateTime?
+  expectedProposalDate     DateTime?
+  approvedDate             DateTime?
+  requirementsCompleteness Int                          @default(0)
+  technicalReadiness       Int                          @default(0)
+  boqReadiness             Int                          @default(0)
+  surveyReadiness          Int                          @default(0)
+  overallReadiness         Int                          @default(0)
+  technicalFeasibility     String                       @default("NOT_ASSESSED") @db.VarChar(64)
+  commercialFeasibility    String                       @default("NOT_ASSESSED") @db.VarChar(64)
+  implementationComplexity String                       @default("MEDIUM") @db.VarChar(32)
+  riskLevel                String                       @default("MEDIUM") @db.VarChar(32)
+  surveyRequired           Boolean                      @default(false)
+  surveyRequirementReason  String?                      @db.VarChar(1000)
+  surveyOverrideReason     String?                      @db.VarChar(1000)
+  surveyOverrideById       String?                      @db.VarChar(191)
+  surveyOverrideAt         DateTime?
+  ntWorkValue              Decimal                      @default(0) @db.Decimal(19, 4)
+  partnerCost              Decimal                      @default(0) @db.Decimal(19, 4)
+  estimatedCost            Decimal                      @default(0) @db.Decimal(19, 4)
+  estimatedPrice           Decimal                      @default(0) @db.Decimal(19, 4)
+  marginPct                Decimal                      @default(0) @db.Decimal(7, 4)
+  riskNotes                String?                      @db.Text
+  assumptions              String?                      @db.Text
+  createdById              String?                      @db.VarChar(191)
+  updatedById              String?                      @db.VarChar(191)
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  versions                 SolutionDesignVersion[]
+  services                 SolutionServiceItem[]
+  sites                    SolutionInstallationSite[]
+  components               SolutionComponent[]
+  networkConnections       SolutionNetworkConnection[]
+  requirementMappings      SolutionRequirementMapping[]
+  risks                    SolutionDesignRisk[]
+  surveyRequests           SiteSurveyRequest[]
+  boqHeaders               BoqHeader[]
+  reviewDecisions          SolutionReviewDecision[]
+
+  @@index([preSalesOwnerId, statusCode])
+  @@index([targetDesignDate, statusCode])
+}
+
+model PresalesNumberSequence {
+  id        String   @id @db.VarChar(32)
+  nextValue Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceCategoryConfig {
+  id                           String                @id @default(cuid())
+  code                         String                @unique @db.VarChar(100)
+  name                         String                @db.VarChar(255)
+  requiresSiteSurvey           Boolean               @default(false)
+  requiresBoq                  Boolean               @default(false)
+  requiresPhysicalInstallation Boolean               @default(false)
+  active                       Boolean               @default(true)
+  displayOrder                 Int                   @default(0)
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
+  solutionServiceItems         SolutionServiceItem[]
+}
+
+model SolutionStatusDefinition {
+  id                     String   @id @default(cuid())
+  entityType             String   @default("SOLUTION_DESIGN") @db.VarChar(32)
+  code                   String   @db.VarChar(64)
+  name                   String   @db.VarChar(191)
+  displayOrder           Int
+  requiredFields         Json
+  requiredChecklistItems Json
+  requiredApprovals      Json
+  expectedDurationHours  Int?
+  active                 Boolean  @default(true)
+  closed                 Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([entityType, code])
+  @@index([entityType, active, displayOrder])
+}
+
+model SolutionStatusTransition {
+  id             String   @id @default(cuid())
+  entityType     String   @default("SOLUTION_DESIGN") @db.VarChar(32)
+  fromStatusCode String   @db.VarChar(64)
+  toStatusCode   String   @db.VarChar(64)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@unique([entityType, fromStatusCode, toStatusCode])
+  @@index([entityType, fromStatusCode, active])
+}
+
+model SolutionDesignVersion {
+  id               String         @id @default(cuid())
+  solutionDesignId String
+  solutionDesign   SolutionDesign @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  version          Int
+  revisionNumber   Int
+  statusCode       String         @db.VarChar(64)
+  snapshot         Json
+  changeReason     String?        @db.VarChar(1000)
+  createdById      String         @db.VarChar(191)
+  createdAt        DateTime       @default(now())
+
+  @@unique([solutionDesignId, version, revisionNumber])
+  @@index([solutionDesignId, createdAt])
+}
+
+model SolutionServiceItem {
+  id                           String                @id @default(cuid())
+  solutionDesignId             String
+  solutionDesign               SolutionDesign        @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  serviceCategoryId            String
+  serviceCategory              ServiceCategoryConfig @relation(fields: [serviceCategoryId], references: [id], onDelete: Restrict)
+  productId                    String?
+  product                      Product?              @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity                     Decimal               @default(1) @db.Decimal(19, 4)
+  requestedBandwidth           String?               @db.VarChar(100)
+  accessTechnology             String?               @db.VarChar(100)
+  serviceLevel                 String?               @db.VarChar(100)
+  contractMonths               Int?
+  installationSiteId           String?
+  destinationSiteId            String?
+  redundancyRequirement        String?               @db.VarChar(191)
+  estimatedOneTimeCharge       Decimal?              @db.Decimal(19, 4)
+  estimatedRecurringCharge     Decimal?              @db.Decimal(19, 4)
+  surveyRequired               Boolean
+  boqRequired                  Boolean
+  physicalInstallationRequired Boolean
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
+  surveyRequests               SiteSurveyRequest[]
+
+  @@index([solutionDesignId, serviceCategoryId])
+  @@index([productId])
+}
+
+model SolutionInstallationSite {
+  id                            String                      @id @default(cuid())
+  solutionDesignId              String
+  solutionDesign                SolutionDesign              @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  opportunityId                 String
+  opportunity                   Opportunity                 @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  siteCode                      String?                     @db.VarChar(64)
+  siteName                      String                      @db.VarChar(255)
+  siteType                      String?                     @db.VarChar(100)
+  accountId                     String
+  account                       Customer                    @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  branchName                    String?                     @db.VarChar(255)
+  buildingName                  String?                     @db.VarChar(255)
+  floor                         String?                     @db.VarChar(100)
+  room                          String?                     @db.VarChar(100)
+  addressLine1                  String                      @db.VarChar(500)
+  addressLine2                  String?                     @db.VarChar(500)
+  subdistrict                   String?                     @db.VarChar(191)
+  district                      String                      @db.VarChar(191)
+  province                      String                      @db.VarChar(191)
+  postalCode                    String?                     @db.VarChar(20)
+  country                       String                      @default("TH") @db.Char(2)
+  latitude                      Decimal                     @db.Decimal(10, 7)
+  longitude                     Decimal                     @db.Decimal(10, 7)
+  gpsAccuracy                   Decimal?                    @db.Decimal(10, 2)
+  landmark                      String?                     @db.VarChar(500)
+  accessInstructions            String?                     @db.Text
+  operatingHours                String?                     @db.VarChar(255)
+  restrictedAccess              Boolean                     @default(false)
+  securityRequirements          String?                     @db.Text
+  rackAvailable                 Boolean?
+  rackSpaceAvailable            String?                     @db.VarChar(100)
+  powerAvailable                Boolean?
+  groundingAvailable            Boolean?
+  airConditioningAvailable      Boolean?
+  existingNetwork               Boolean?
+  existingProvider              String?                     @db.VarChar(255)
+  existingCircuitInfo           String?                     @db.Text
+  notes                         String?                     @db.Text
+  active                        Boolean                     @default(true)
+  createdAt                     DateTime                    @default(now())
+  updatedAt                     DateTime                    @updatedAt
+  sourceNetworkConnections      SolutionNetworkConnection[] @relation("NetworkConnectionSourceSite")
+  destinationNetworkConnections SolutionNetworkConnection[] @relation("NetworkConnectionDestinationSite")
+  surveyRequests                SiteSurveyRequest[]
+
+  @@unique([solutionDesignId, siteCode])
+  @@index([opportunityId, active])
+  @@index([accountId, active])
+}
+
+model SolutionComponent {
+  id                     String         @id @default(cuid())
+  solutionDesignId       String
+  solutionDesign         SolutionDesign @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  componentNumber        String         @db.VarChar(64)
+  componentName          String         @db.VarChar(255)
+  componentType          String         @db.VarChar(100)
+  serviceCategoryId      String?
+  description            String?        @db.Text
+  sourceSiteId           String?
+  destinationSiteId      String?
+  bandwidth              String?        @db.VarChar(100)
+  accessTechnology       String?        @db.VarChar(100)
+  redundancyType         String?        @db.VarChar(100)
+  quantity               Decimal        @default(1) @db.Decimal(19, 4)
+  unit                   String         @default("EA") @db.VarChar(32)
+  productId              String?
+  product                Product?       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  dependsOnComponentId   String?
+  implementationSequence Int?
+  surveyRequired         Boolean        @default(false)
+  boqRequired            Boolean        @default(false)
+  technicalStatus        String         @default("NOT_ASSESSED") @db.VarChar(64)
+  commercialStatus       String         @default("NOT_ASSESSED") @db.VarChar(64)
+  estimatedCost          Decimal?       @db.Decimal(19, 4)
+  estimatedPrice         Decimal?       @db.Decimal(19, 4)
+  notes                  String?        @db.Text
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  @@unique([solutionDesignId, componentNumber])
+  @@index([solutionDesignId, implementationSequence])
+}
+
+model SolutionNetworkConnection {
+  id                      String                    @id @default(cuid())
+  solutionDesignId        String
+  solutionDesign          SolutionDesign            @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  connectionNumber        String                    @db.VarChar(64)
+  sourceSiteId            String
+  sourceSite              SolutionInstallationSite  @relation("NetworkConnectionSourceSite", fields: [sourceSiteId], references: [id], onDelete: Restrict)
+  destinationSiteId       String?
+  destinationSite         SolutionInstallationSite? @relation("NetworkConnectionDestinationSite", fields: [destinationSiteId], references: [id], onDelete: Restrict)
+  connectionType          String                    @db.VarChar(100)
+  serviceCategoryId       String?
+  topologyType            String                    @db.VarChar(100)
+  primaryBandwidth        String?                   @db.VarChar(100)
+  backupBandwidth         String?                   @db.VarChar(100)
+  primaryAccessTechnology String?                   @db.VarChar(100)
+  backupAccessTechnology  String?                   @db.VarChar(100)
+  redundancyMode          String?                   @db.VarChar(100)
+  sla                     String?                   @db.VarChar(100)
+  surveyRequired          Boolean                   @default(false)
+  feasibilityStatus       String                    @default("NOT_ASSESSED") @db.VarChar(64)
+  notes                   String?                   @db.Text
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  @@unique([solutionDesignId, connectionNumber])
+  @@index([sourceSiteId, destinationSiteId])
+}
+
+model SolutionRequirementMapping {
+  id                  String                 @id @default(cuid())
+  solutionDesignId    String
+  solutionDesign      SolutionDesign         @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  requirementId       String
+  requirement         OpportunityRequirement @relation(fields: [requirementId], references: [id], onDelete: Restrict)
+  solutionComponentId String?
+  surveyRequestId     String?
+  boqLineItemId       String?
+  coverageStatus      String                 @default("REQUIRES_CLARIFICATION") @db.VarChar(64)
+  response            String?                @db.Text
+  gap                 String?                @db.Text
+  notes               String?                @db.Text
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@unique([solutionDesignId, requirementId, solutionComponentId])
+  @@index([requirementId, coverageStatus])
+}
+
+model SolutionDesignRisk {
+  id               String         @id @default(cuid())
+  solutionDesignId String
+  solutionDesign   SolutionDesign @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  recordType       String         @db.VarChar(32)
+  title            String         @db.VarChar(255)
+  category         String?        @db.VarChar(100)
+  description      String         @db.Text
+  probability      String?        @db.VarChar(32)
+  impact           String?        @db.VarChar(32)
+  severity         String?        @db.VarChar(32)
+  mitigation       String?        @db.Text
+  contingency      String?        @db.Text
+  ownerId          String?        @db.VarChar(191)
+  dueDate          DateTime?
+  status           String         @default("OPEN") @db.VarChar(64)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([solutionDesignId, recordType, status])
+}
+
+model SiteSurveyRequest {
+  id                         String                     @id @default(cuid())
+  surveyRequestNumber        String                     @unique @db.VarChar(32)
+  solutionDesignId           String
+  solutionDesign             SolutionDesign             @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  opportunityId              String
+  opportunity                Opportunity                @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  installationSiteId         String
+  installationSite           SolutionInstallationSite   @relation(fields: [installationSiteId], references: [id], onDelete: Restrict)
+  requestedServiceId         String
+  requestedService           SolutionServiceItem        @relation(fields: [requestedServiceId], references: [id], onDelete: Restrict)
+  destinationSiteId          String?
+  requestType                String                     @default("NEW_INSTALLATION") @db.VarChar(64)
+  surveyType                 String                     @default("PHYSICAL_SITE") @db.VarChar(64)
+  statusCode                 String                     @default("DRAFT") @db.VarChar(64)
+  priority                   String                     @default("NORMAL") @db.VarChar(32)
+  surveyReason               String                     @db.VarChar(1000)
+  requestedById              String                     @db.VarChar(191)
+  assignedCoordinatorId      String?                    @db.VarChar(191)
+  assignedSurveyTeamId       String?                    @db.VarChar(191)
+  assignedSurveyEngineerId   String?                    @db.VarChar(191)
+  requestedBandwidth         String?                    @db.VarChar(100)
+  accessTechnologyPreference String?                    @db.VarChar(100)
+  redundancyRequirement      String?                    @db.VarChar(191)
+  targetActivationDate       DateTime?
+  requestedSla               String?                    @db.VarChar(100)
+  specialRequirements        String?                    @db.Text
+  preferredSurveyDateFrom    DateTime?
+  preferredSurveyDateTo      DateTime?
+  scheduledSurveyDate        DateTime?
+  surveyStartedAt            DateTime?
+  surveyCompletedAt          DateTime?
+  resultSubmittedAt          DateTime?
+  resultApprovedAt           DateTime?
+  integrationStatus          String                     @default("NOT_SUBMITTED") @db.VarChar(64)
+  integrationProvider        String                     @default("MANUAL") @db.VarChar(64)
+  integrationMode            String                     @default("MANUAL") @db.VarChar(32)
+  externalRequestId          String?                    @db.VarChar(191)
+  externalReferenceNumber    String?                    @db.VarChar(191)
+  lastIntegrationAttemptAt   DateTime?
+  lastIntegrationSuccessAt   DateTime?
+  integrationErrorCode       String?                    @db.VarChar(100)
+  integrationErrorMessage    String?                    @db.VarChar(1000)
+  requestPayloadVersion      String                     @default("1.0") @db.VarChar(32)
+  responsePayloadVersion     String?                    @db.VarChar(32)
+  integrationCorrelationId   String                     @db.VarChar(191)
+  integrationRetryCount      Int                        @default(0)
+  requestPayloadSnapshot     Json?
+  version                    Int                        @default(1)
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+  contacts                   SiteSurveyContact[]
+  results                    SiteSurveyResult[]
+  integrationLogs            SiteSurveyIntegrationLog[]
+  boqHeaders                 BoqHeader[]
+
+  @@index([solutionDesignId, statusCode])
+  @@index([installationSiteId, statusCode])
+  @@index([assignedSurveyEngineerId, statusCode])
+  @@index([scheduledSurveyDate, statusCode])
+  @@index([externalRequestId])
+}
+
+model SiteSurveyContact {
+  id                     String            @id @default(cuid())
+  siteSurveyRequestId    String
+  siteSurveyRequest      SiteSurveyRequest @relation(fields: [siteSurveyRequestId], references: [id], onDelete: Restrict)
+  contactId              String?
+  contact                Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  fullName               String            @db.VarChar(255)
+  jobTitle               String?           @db.VarChar(191)
+  department             String?           @db.VarChar(191)
+  organization           String?           @db.VarChar(255)
+  phone                  String            @db.VarChar(100)
+  email                  String?           @db.VarChar(255)
+  preferredContactMethod String?           @db.VarChar(100)
+  availableDate          DateTime?
+  availableTimeWindow    String?           @db.VarChar(191)
+  siteAccessRole         String?           @db.VarChar(100)
+  primaryContact         Boolean           @default(false)
+  backupContact          Boolean           @default(false)
+  notes                  String?           @db.Text
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@index([siteSurveyRequestId, primaryContact])
+  @@index([contactId])
+}
+
+model SiteSurveyResult {
+  id                          String                    @id @default(cuid())
+  siteSurveyRequestId         String
+  siteSurveyRequest           SiteSurveyRequest         @relation(fields: [siteSurveyRequestId], references: [id], onDelete: Restrict)
+  revisionNumber              Int                       @default(1)
+  statusCode                  String                    @default("DRAFT") @db.VarChar(64)
+  resultSource                String                    @default("MANUAL") @db.VarChar(32)
+  surveyDate                  DateTime
+  surveyTeam                  String?                   @db.VarChar(255)
+  surveyEngineer              String?                   @db.VarChar(255)
+  customerContactPresent      String?                   @db.VarChar(255)
+  weatherCondition            String?                   @db.VarChar(100)
+  siteAccessibility           String?                   @db.VarChar(100)
+  feasibilityStatus           String                    @db.VarChar(64)
+  recommendedAccessTechnology String?                   @db.VarChar(100)
+  availableBandwidth          String?                   @db.VarChar(100)
+  nearestNetworkNode          String?                   @db.VarChar(255)
+  estimatedDistanceMeters     Decimal?                  @db.Decimal(19, 4)
+  estimatedLeadTimeDays       Int?
+  technicalSummary            String                    @db.Text
+  findings                    Json
+  measurements                Json
+  conditions                  Json
+  risks                       Json
+  customerActions             Json
+  submittedById               String?                   @db.VarChar(191)
+  submittedAt                 DateTime?
+  reviewedById                String?                   @db.VarChar(191)
+  reviewedAt                  DateTime?
+  decision                    String?                   @db.VarChar(32)
+  decisionReason              String?                   @db.VarChar(1000)
+  responsePayloadSnapshot     Json?
+  createdAt                   DateTime                  @default(now())
+  updatedAt                   DateTime                  @updatedAt
+  estimatedItems              SiteSurveyEstimatedItem[]
+
+  @@unique([siteSurveyRequestId, revisionNumber])
+  @@index([siteSurveyRequestId, statusCode])
+}
+
+model SiteSurveyEstimatedItem {
+  id                 String           @id @default(cuid())
+  siteSurveyResultId String
+  siteSurveyResult   SiteSurveyResult @relation(fields: [siteSurveyResultId], references: [id], onDelete: Restrict)
+  externalItemCode   String?          @db.VarChar(100)
+  itemType           String           @db.VarChar(32)
+  itemName           String           @db.VarChar(255)
+  description        String?          @db.Text
+  quantity           Decimal          @db.Decimal(19, 4)
+  unit               String           @db.VarChar(32)
+  estimatedUnitCost  Decimal?         @db.Decimal(19, 4)
+  estimatedTotalCost Decimal?         @db.Decimal(19, 4)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([siteSurveyResultId, itemType])
+}
+
+model SiteSurveyIntegrationLog {
+  id                  String            @id @default(cuid())
+  siteSurveyRequestId String
+  siteSurveyRequest   SiteSurveyRequest @relation(fields: [siteSurveyRequestId], references: [id], onDelete: Restrict)
+  direction           String            @db.VarChar(16)
+  provider            String            @db.VarChar(64)
+  schemaVersion       String            @db.VarChar(32)
+  correlationId       String            @db.VarChar(191)
+  status              String            @db.VarChar(64)
+  payloadSnapshot     Json
+  errorCode           String?           @db.VarChar(100)
+  errorMessage        String?           @db.VarChar(1000)
+  createdAt           DateTime          @default(now())
+
+  @@index([siteSurveyRequestId, createdAt])
+  @@index([correlationId])
+}
+
+model BoqHeader {
+  id                    String             @id @default(cuid())
+  boqNumber             String             @unique @db.VarChar(32)
+  opportunityId         String
+  opportunity           Opportunity        @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  solutionDesignId      String
+  solutionDesign        SolutionDesign     @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  siteSurveyRequestId   String?
+  siteSurveyRequest     SiteSurveyRequest? @relation(fields: [siteSurveyRequestId], references: [id], onDelete: Restrict)
+  version               Int                @default(1)
+  revisionNumber        Int                @default(0)
+  statusCode            String             @default("DRAFT") @db.VarChar(64)
+  currency              String             @default("THB") @db.Char(3)
+  pricingDate           DateTime           @default(now())
+  validUntil            DateTime?
+  preparedById          String             @db.VarChar(191)
+  reviewedById          String?            @db.VarChar(191)
+  approvedById          String?            @db.VarChar(191)
+  changeReason          String?            @db.VarChar(1000)
+  totalOneTimeCost      Decimal            @default(0) @db.Decimal(19, 4)
+  totalOneTimePrice     Decimal            @default(0) @db.Decimal(19, 4)
+  monthlyRecurringCost  Decimal            @default(0) @db.Decimal(19, 4)
+  monthlyRecurringPrice Decimal            @default(0) @db.Decimal(19, 4)
+  annualRecurringCost   Decimal            @default(0) @db.Decimal(19, 4)
+  annualRecurringPrice  Decimal            @default(0) @db.Decimal(19, 4)
+  totalContractValue    Decimal            @default(0) @db.Decimal(19, 4)
+  totalCost             Decimal            @default(0) @db.Decimal(19, 4)
+  grossProfit           Decimal            @default(0) @db.Decimal(19, 4)
+  grossMarginPercent    Decimal            @default(0) @db.Decimal(7, 4)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  items                 BoqItem[]
+  versions              BoqVersion[]
+
+  @@index([solutionDesignId, statusCode])
+  @@index([siteSurveyRequestId, statusCode])
+}
+
+model BoqSection {
+  id           String    @id @default(cuid())
+  code         String    @unique @db.VarChar(100)
+  name         String    @db.VarChar(255)
+  displayOrder Int       @default(0)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  items        BoqItem[]
+}
+
+model BoqItem {
+  id                 String     @id @default(cuid())
+  boqId              String
+  boq                BoqHeader  @relation(fields: [boqId], references: [id], onDelete: Restrict)
+  lineNumber         Int
+  sectionId          String
+  section            BoqSection @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+  sourceType         String     @db.VarChar(32)
+  sourceReferenceId  String?    @db.VarChar(191)
+  productId          String?
+  product            Product?   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  materialCode       String?    @db.VarChar(100)
+  itemName           String     @db.VarChar(255)
+  description        String?    @db.Text
+  specification      String?    @db.Text
+  quantity           Decimal    @db.Decimal(19, 4)
+  unit               String     @db.VarChar(32)
+  wastagePercent     Decimal    @default(0) @db.Decimal(7, 4)
+  finalQuantity      Decimal    @db.Decimal(19, 4)
+  listPrice          Decimal?   @db.Decimal(19, 4)
+  unitCost           Decimal    @default(0) @db.Decimal(19, 4)
+  unitSellingPrice   Decimal    @default(0) @db.Decimal(19, 4)
+  totalCost          Decimal    @default(0) @db.Decimal(19, 4)
+  totalSellingPrice  Decimal    @default(0) @db.Decimal(19, 4)
+  discountPercent    Decimal    @default(0) @db.Decimal(7, 4)
+  grossProfit        Decimal    @default(0) @db.Decimal(19, 4)
+  grossMarginPercent Decimal    @default(0) @db.Decimal(7, 4)
+  chargeType         String     @default("ONE_TIME") @db.VarChar(32)
+  billingFrequency   String?    @db.VarChar(32)
+  contractMonths     Int?
+  installationSiteId String?
+  leadTimeDays       Int?
+  remarks            String?    @db.Text
+  optional           Boolean    @default(false)
+  customerProvided   Boolean    @default(false)
+  provisionalPricing Boolean    @default(false)
+  active             Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@unique([boqId, lineNumber])
+  @@unique([boqId, sourceType, sourceReferenceId])
+  @@index([boqId, sectionId])
+  @@index([sourceType, sourceReferenceId])
+}
+
+model BoqVersion {
+  id             String    @id @default(cuid())
+  boqId          String
+  boq            BoqHeader @relation(fields: [boqId], references: [id], onDelete: Restrict)
+  version        Int
+  revisionNumber Int
+  statusCode     String    @db.VarChar(64)
+  snapshot       Json
+  changeReason   String?   @db.VarChar(1000)
+  createdById    String    @db.VarChar(191)
+  createdAt      DateTime  @default(now())
+
+  @@unique([boqId, version, revisionNumber])
+  @@index([boqId, createdAt])
+}
+
+model SolutionReviewDecision {
+  id               String         @id @default(cuid())
+  solutionDesignId String
+  solutionDesign   SolutionDesign @relation(fields: [solutionDesignId], references: [id], onDelete: Restrict)
+  reviewType       String         @db.VarChar(32)
+  decision         String         @db.VarChar(32)
+  reason           String         @db.VarChar(1000)
+  requestedById    String         @db.VarChar(191)
+  decidedById      String         @db.VarChar(191)
+  correlationId    String         @db.VarChar(191)
+  createdAt        DateTime       @default(now())
+
+  @@index([solutionDesignId, reviewType, createdAt])
 }
 
 model InternalOrder {
@@ -1966,4 +2754,344 @@ model DealRiskSignal {
   @@unique([opportunityId, ruleVersionId, evaluationKey])
   @@index([opportunityId, evaluatedAt])
   @@index([ruleVersionId, evaluatedAt])
+}
+
+model ContractStatusDefinition {
+  code              String     @id @db.VarChar(40)
+  label             String     @db.VarChar(100)
+  sortOrder         Int
+  terminal          Boolean    @default(false)
+  active            Boolean    @default(true)
+  reportingCategory String     @default("OPEN") @db.VarChar(32)
+  contracts         Contract[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model ContractStatusTransition {
+  id                       String   @id @default(cuid())
+  fromStatusCode           String   @db.VarChar(40)
+  toStatusCode             String   @db.VarChar(40)
+  requiredPermission       String?  @db.VarChar(191)
+  makerChecker             Boolean  @default(false)
+  requiredSignatureParties Json?
+  active                   Boolean  @default(true)
+  createdAt                DateTime @default(now())
+
+  @@unique([fromStatusCode, toStatusCode])
+  @@index([fromStatusCode, active])
+}
+
+model ContractTypeDefinition {
+  code      String     @id @db.VarChar(60)
+  name      String     @db.VarChar(150)
+  active    Boolean    @default(true)
+  contracts Contract[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([active, name])
+}
+
+model Contract {
+  id                      String                   @id @default(cuid())
+  contractNo              String                   @unique @db.VarChar(40)
+  name                    String                   @db.VarChar(255)
+  contractTypeCode        String                   @db.VarChar(60)
+  contractType            ContractTypeDefinition   @relation(fields: [contractTypeCode], references: [code], onDelete: Restrict)
+  statusCode              String                   @db.VarChar(40)
+  status                  ContractStatusDefinition @relation(fields: [statusCode], references: [code], onDelete: Restrict)
+  customerId              String
+  customerContactId       String?
+  ownerId                 String
+  organizationUnitId      String?
+  quoteId                 String
+  quoteVersionId          String                   @unique
+  opportunityId           String?
+  proposalId              String?
+  boqId                   String?
+  siteSurveyRequestId     String?
+  version                 Int                      @default(1)
+  currency                String                   @default("THB") @db.Char(3)
+  startDate               DateTime?
+  endDate                 DateTime?
+  effectiveAt             DateTime?
+  autoRenewal             Boolean                  @default(false)
+  nextRenewalAt           DateTime?
+  totalContractValue      Decimal                  @db.Decimal(19, 4)
+  monthlyRecurringRevenue Decimal                  @db.Decimal(19, 4)
+  oneTimeRevenue          Decimal                  @db.Decimal(19, 4)
+  deletedAt               DateTime?
+  versions                ContractVersion[]
+  reviews                 ContractReview[]
+  documents               ContractDocument[]
+  signatures              ContractSignature[]
+  amendments              ContractAmendment[]
+  renewals                ContractRenewal[]
+  purchaseOrders          ContractPurchaseOrder[]
+  serviceOrders           ContractServiceOrder[]
+  commandReceipts         ContractCommandReceipt[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@index([ownerId, statusCode, updatedAt, id])
+  @@index([customerId, statusCode, updatedAt, id])
+  @@index([contractTypeCode, statusCode, updatedAt, id])
+  @@index([organizationUnitId, statusCode, updatedAt, id])
+  @@index([endDate, statusCode])
+  @@index([nextRenewalAt, statusCode])
+}
+
+model ContractVersion {
+  id                               String                 @id @default(cuid())
+  contractId                       String
+  contract                         Contract               @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  versionNumber                    Int
+  statusCode                       String                 @db.VarChar(40)
+  name                             String                 @db.VarChar(255)
+  currency                         String                 @db.Char(3)
+  startDate                        DateTime?
+  endDate                          DateTime?
+  paymentTerm                      String?                @db.VarChar(255)
+  billingCycle                     String?                @db.VarChar(100)
+  taxRate                          Decimal                @default(0) @db.Decimal(7, 4)
+  subtotal                         Decimal                @db.Decimal(19, 4)
+  discountAmount                   Decimal                @db.Decimal(19, 4)
+  taxAmount                        Decimal                @db.Decimal(19, 4)
+  totalWithTax                     Decimal                @db.Decimal(19, 4)
+  totalContractValue               Decimal                @db.Decimal(19, 4)
+  monthlyRecurringRevenue          Decimal                @db.Decimal(19, 4)
+  oneTimeRevenue                   Decimal                @db.Decimal(19, 4)
+  annualRecurringRevenue           Decimal                @db.Decimal(19, 4)
+  terms                            String?                @db.LongText
+  remarks                          String?                @db.Text
+  sourceSnapshot                   Json
+  changeReason                     String?                @db.VarChar(1000)
+  amendmentId                      String?
+  aiProviderConfigurationVersionId String?
+  aiProviderModel                  String?                @db.VarChar(255)
+  aiPromptTemplateVersion          String?                @db.VarChar(100)
+  aiInputSourceReferences          Json?
+  createdById                      String
+  items                            ContractItem[]
+  reviews                          ContractReview[]
+  signatures                       ContractSignature[]
+  serviceOrders                    ContractServiceOrder[]
+  createdAt                        DateTime               @default(now())
+
+  @@unique([contractId, versionNumber])
+  @@index([contractId, createdAt])
+  @@index([amendmentId])
+}
+
+model ContractItem {
+  id                         String          @id @default(cuid())
+  contractVersionId          String
+  contractVersion            ContractVersion @relation(fields: [contractVersionId], references: [id], onDelete: Restrict)
+  productId                  String?
+  productCode                String          @db.VarChar(191)
+  serviceName                String          @db.VarChar(255)
+  description                String?         @db.Text
+  quantity                   Decimal         @db.Decimal(19, 4)
+  unit                       String          @db.VarChar(50)
+  monthlyCharge              Decimal         @db.Decimal(19, 4)
+  oneTimeCharge              Decimal         @db.Decimal(19, 4)
+  discountAmount             Decimal         @db.Decimal(19, 4)
+  durationMonths             Int
+  lineContractValue          Decimal         @db.Decimal(19, 4)
+  installationRequired       Boolean         @default(false)
+  solutionInstallationSiteId String?
+  serviceLocation            String?         @db.VarChar(500)
+  bandwidth                  String?         @db.VarChar(100)
+  sla                        String?         @db.VarChar(255)
+  supportLevel               String?         @db.VarChar(255)
+  futureCircuitId            String?         @db.VarChar(191)
+  futureServiceId            String?         @db.VarChar(191)
+  sortOrder                  Int
+  createdAt                  DateTime        @default(now())
+
+  @@index([contractVersionId, sortOrder])
+  @@index([productId])
+  @@index([solutionInstallationSiteId])
+}
+
+model ContractReview {
+  id                String          @id @default(cuid())
+  contractId        String
+  contract          Contract        @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  contractVersionId String
+  contractVersion   ContractVersion @relation(fields: [contractVersionId], references: [id], onDelete: Restrict)
+  reviewType        String          @db.VarChar(50)
+  status            String          @db.VarChar(40)
+  reviewerId        String
+  riskLevel         String?         @db.VarChar(40)
+  clauses           Json?
+  comment           String?         @db.Text
+  decidedAt         DateTime?
+  createdAt         DateTime        @default(now())
+
+  @@index([contractId, reviewType, status, createdAt])
+}
+
+model ContractDocument {
+  id             String                    @id @default(cuid())
+  contractId     String
+  contract       Contract                  @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  category       String                    @db.VarChar(60)
+  currentVersion Int                       @default(0)
+  versions       ContractDocumentVersion[]
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([contractId, category, updatedAt])
+}
+
+model ContractDocumentVersion {
+  id                String                  @id @default(cuid())
+  documentId        String
+  document          ContractDocument        @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  versionNumber     Int
+  fileName          String                  @db.VarChar(255)
+  mimeType          String                  @db.VarChar(191)
+  sizeBytes         BigInt
+  objectKey         String                  @db.Text
+  objectKeyHash     String                  @unique @db.Char(64)
+  sha256            String                  @db.Char(64)
+  malwareScanStatus String                  @db.VarChar(40)
+  uploadedById      String
+  createdAt         DateTime                @default(now())
+  signatures        ContractSignature[]
+  purchaseOrders    ContractPurchaseOrder[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId, createdAt])
+}
+
+model ContractSignature {
+  id                String                  @id @default(cuid())
+  contractId        String
+  contract          Contract                @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  contractVersionId String
+  contractVersion   ContractVersion         @relation(fields: [contractVersionId], references: [id], onDelete: Restrict)
+  partyCode         String                  @db.VarChar(40)
+  methodCode        String                  @db.VarChar(40)
+  status            String                  @db.VarChar(40)
+  documentVersionId String
+  documentVersion   ContractDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  signedByName      String                  @db.VarChar(255)
+  signedAt          DateTime
+  verifiedById      String
+  providerReference String?                 @db.VarChar(255)
+  createdAt         DateTime                @default(now())
+
+  @@unique([contractVersionId, partyCode])
+  @@index([contractId, status, signedAt])
+}
+
+model ContractAmendment {
+  id                     String    @id @default(cuid())
+  contractId             String
+  contract               Contract  @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  amendmentNo            String    @db.VarChar(60)
+  amendmentTypeCode      String    @db.VarChar(60)
+  status                 String    @db.VarChar(40)
+  reason                 String    @db.VarChar(1000)
+  sourceVersionNumber    Int
+  resultingVersionNumber Int?
+  requestedById          String
+  approvedAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@unique([contractId, amendmentNo])
+  @@index([contractId, status, createdAt])
+}
+
+model ContractRenewal {
+  id                String                    @id @default(cuid())
+  contractId        String
+  contract          Contract                  @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  renewalTypeCode   String                    @db.VarChar(60)
+  status            String                    @db.VarChar(40)
+  renewalDate       DateTime
+  outcome           String?                   @db.VarChar(100)
+  renewedContractId String?
+  createdById       String
+  reminders         ContractRenewalReminder[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([renewalDate, status])
+  @@index([contractId, status, renewalDate])
+}
+
+model ContractRenewalReminder {
+  id         String          @id @default(cuid())
+  renewalId  String
+  renewal    ContractRenewal @relation(fields: [renewalId], references: [id], onDelete: Restrict)
+  daysBefore Int
+  dueAt      DateTime
+  status     String          @default("PENDING") @db.VarChar(40)
+  sentAt     DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@unique([renewalId, daysBefore])
+  @@index([status, dueAt])
+}
+
+model ContractPurchaseOrder {
+  id                String                   @id @default(cuid())
+  contractId        String
+  contract          Contract                 @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  poNumber          String                   @db.VarChar(100)
+  poDate            DateTime
+  currency          String                   @db.Char(3)
+  amount            Decimal                  @db.Decimal(19, 4)
+  remainingAmount   Decimal                  @db.Decimal(19, 4)
+  documentVersionId String?
+  documentVersion   ContractDocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  createdById       String
+  createdAt         DateTime                 @default(now())
+
+  @@unique([contractId, poNumber])
+  @@index([contractId, poDate])
+}
+
+model ContractServiceOrder {
+  id                String          @id @default(cuid())
+  contractId        String
+  contract          Contract        @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  contractVersionId String
+  contractVersion   ContractVersion @relation(fields: [contractVersionId], references: [id], onDelete: Restrict)
+  orderNo           String          @unique @db.VarChar(60)
+  modeCode          String          @default("MANUAL") @db.VarChar(40)
+  status            String          @db.VarChar(40)
+  prefillSnapshot   Json
+  createdById       String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([contractId, status, createdAt])
+}
+
+model ContractCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  contractId     String
+  contract       Contract @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  resultVersion  Int
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([contractId, createdAt])
+}
+
+model ContractNumberSequence {
+  id        String   @id @db.VarChar(32)
+  nextValue Int      @default(0)
+  updatedAt DateTime @updatedAt
 }

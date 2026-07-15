@@ -44,7 +44,7 @@ describe("Opportunity/Pipeline/Quote/Approval persistence", () => {
   it("adds floor price through additive forward and compatibility migrations", () => {
     const floorMigration = read("prisma/migrations/20260714100000_add_product_floor_price/migration.sql");
     const floorCompatibility = read("prisma/legacy-mariadb-5.5-product-floor-price.sql");
-    expect(schema).toContain("floorPrice      Decimal?");
+    expect(schema).toMatch(/floorPrice\s+Decimal\?/);
     expect(floorMigration).toContain("ADD COLUMN `floorPrice`");
     expect(floorCompatibility).toContain("20260714100000_add_product_floor_price");
     expect(floorMigration + floorCompatibility).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);

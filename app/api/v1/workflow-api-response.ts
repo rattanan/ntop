@@ -7,6 +7,13 @@ import { ApprovalPolicyUnavailableError, QuoteAccessError, QuoteFloorPriceError,
 import { ForecastValidationError } from "@/lib/forecast/forecast-service";
 import { OpportunityAccessError, OpportunityIdempotencyConflictError, OpportunityProbabilityOverrideDeniedError, OpportunityTransitionDeniedError, OpportunityValidationError, OpportunityVersionConflictError } from "@/lib/opportunity/opportunity-service";
 import { LeadAccessError, LeadConversionError, LeadDuplicateResolutionRequiredError, LeadIdempotencyConflictError, LeadMergeDeniedError, LeadValidationError, LeadVersionConflictError } from "@/lib/lead/lead-service";
+import { AiConfigurationRuntimeError } from "@/lib/ai/provider-configuration-runtime";
+import { OpenAiCompatibleProviderError } from "@/lib/ai/openai-compatible-client";
+import { AiInputPolicyError, AiOutputValidationError } from "@/lib/ai/safety-policy";
+import { ProposalAccessError, ProposalConfigurationError, ProposalTerminalError, ProposalTransitionError, ProposalVersionConflictError } from "@/lib/proposal/proposal-service";
+import { ContractAccessError, ContractConfigurationError, ContractDateRangeError, ContractMakerCheckerError, ContractServiceOrderError, ContractSignatureRequiredError, ContractTerminalError, ContractTransitionError, ContractVersionConflictError } from "@/lib/contract/contract-service";
+import { ContractFinancialError } from "@/lib/contract/contract-financials";
+import { ContractDocumentValidationError } from "@/lib/contract/contract-document-service";
 
 export function workflowCorrelationId(request: Request) {
   const supplied = request.headers.get("x-correlation-id")?.trim();
@@ -28,13 +35,13 @@ export function workflowApiError(error: unknown, correlationId: string) {
   let code = "INTERNAL_ERROR";
   const message = "ไม่สามารถดำเนินการได้";
   let fieldErrors: Array<{ field: string; code: string }> | undefined;
-  if (error instanceof SyntaxError || error instanceof ZodError || error instanceof ForecastValidationError || error instanceof OpportunityValidationError || error instanceof LeadValidationError) {
+  if (error instanceof SyntaxError || error instanceof ZodError || error instanceof ForecastValidationError || error instanceof OpportunityValidationError || error instanceof LeadValidationError || error instanceof AiInputPolicyError || error instanceof AiOutputValidationError || error instanceof ContractFinancialError || error instanceof ContractDateRangeError || error instanceof ContractDocumentValidationError) {
     status = 400; code = "VALIDATION_FAILED";
   } else if (error instanceof PermissionDeniedError || error instanceof ApprovalDecisionDeniedError || error instanceof OpportunityProbabilityOverrideDeniedError) {
     status = 403; code = "FORBIDDEN";
-  } else if (error instanceof OpportunityAccessError || error instanceof LeadAccessError || error instanceof QuoteAccessError || error instanceof ApprovalAccessError) {
+  } else if (error instanceof OpportunityAccessError || error instanceof LeadAccessError || error instanceof QuoteAccessError || error instanceof ApprovalAccessError || error instanceof ProposalAccessError || error instanceof ContractAccessError) {
     status = 404; code = "RESOURCE_NOT_FOUND";
-  } else if (error instanceof OpportunityVersionConflictError || error instanceof LeadVersionConflictError || error instanceof ApprovalVersionConflictError) {
+  } else if (error instanceof OpportunityVersionConflictError || error instanceof LeadVersionConflictError || error instanceof ApprovalVersionConflictError || error instanceof ProposalVersionConflictError || error instanceof ContractVersionConflictError) {
     status = 409; code = "VERSION_CONFLICT";
   } else if (error instanceof OpportunityIdempotencyConflictError || error instanceof LeadIdempotencyConflictError) {
     status = 409; code = "IDEMPOTENCY_CONFLICT";
@@ -58,6 +65,20 @@ export function workflowApiError(error: unknown, correlationId: string) {
     status = 409; code = "QUOTE_VERSION_IMMUTABLE";
   } else if (error instanceof ApprovalPolicyUnavailableError) {
     status = 503; code = "APPROVAL_POLICY_UNAVAILABLE";
+  } else if (error instanceof ProposalTransitionError) {
+    status = 422; code = "PROPOSAL_TRANSITION_DENIED";
+  } else if (error instanceof ProposalTerminalError) {
+    status = 409; code = "PROPOSAL_TERMINAL";
+  } else if (error instanceof ProposalConfigurationError) {
+    status = 503; code = "PROPOSAL_CONFIGURATION_UNAVAILABLE";
+  } else if (error instanceof ContractTransitionError || error instanceof ContractMakerCheckerError || error instanceof ContractSignatureRequiredError || error instanceof ContractServiceOrderError) {
+    status = 422; code = "CONTRACT_COMMAND_DENIED";
+  } else if (error instanceof ContractTerminalError) {
+    status = 409; code = "CONTRACT_TERMINAL";
+  } else if (error instanceof ContractConfigurationError) {
+    status = 503; code = "CONTRACT_CONFIGURATION_UNAVAILABLE";
+  } else if (error instanceof AiConfigurationRuntimeError || error instanceof OpenAiCompatibleProviderError) {
+    status = 503; code = "AI_PROVIDER_UNAVAILABLE";
   }
   return NextResponse.json({ error: { code, message, ...(fieldErrors ? { fieldErrors } : {}), retryable: status === 503, correlationId } }, { status });
 }

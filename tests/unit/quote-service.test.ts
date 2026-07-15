@@ -11,6 +11,7 @@ function setup() {
   const repository: QuoteRepository<Tx> = {
     transaction: vi.fn(async (work) => work(tx)), findReceipt: vi.fn().mockResolvedValue(null), saveReceipt: vi.fn().mockResolvedValue(undefined),
     findOpportunity: vi.fn().mockResolvedValue({ id: "opp", customerId: "customer", customerSegment: "B1", coverageConfirmed: false, solutionComplete: false, opportunityRisk: "NONE" }),
+    findProposal: vi.fn().mockResolvedValue({ id: "proposal", opportunityId: "opp", customerId: "customer" }),
     findQuote: vi.fn().mockResolvedValue(null), loadProducts: vi.fn().mockResolvedValue([{ id: "product", code: "P", name: "Product", category: "Network", listPrice: "1000.0000", floorPrice: null, standardCost: "800.0000", costConfirmed: true }]),
     createVersion: vi.fn().mockResolvedValue(version), findVersion: vi.fn().mockResolvedValue(version),
     activeApprovalPolicy: vi.fn().mockResolvedValue({ id: "policy-v1", definition: { submissionGates: { coverageRequired: true, solutionRequired: true, confirmedCostRequired: true }, rules: [], fallbackSteps: [{ code: "manager", sequence: 1, executionMode: "SEQUENTIAL", requiredPermission: "approval.manager", makerChecker: true }] } }),
@@ -34,6 +35,15 @@ describe("QuoteService", () => {
     const input = vi.mocked(repository.createVersion).mock.calls[0][0];
     expect(input.calculations.lines).toHaveLength(2);
     expect(input.calculations.total.toFixed(4)).toBe("2790.0000");
+  });
+
+  it("links a Proposal only when it belongs to the same Opportunity and Customer", async () => {
+    const { service, repository } = setup();
+    await service.createVersion(actor, { proposalId: "proposal", opportunityId: "opp", currency: "THB", items: [{ productId: "product", quantity: "1" }] }, "corr", "proposal-quote");
+    expect(repository.findProposal).toHaveBeenCalled();
+    expect(repository.createVersion).toHaveBeenCalledWith(expect.objectContaining({ draft: expect.objectContaining({ proposalId: "proposal" }) }), tx);
+    vi.mocked(repository.findProposal!).mockResolvedValue({ id: "proposal", opportunityId: "other", customerId: "customer" });
+    await expect(service.createVersion(actor, { proposalId: "proposal", opportunityId: "opp", currency: "THB", items: [{ productId: "product", quantity: "1" }] }, "corr", "invalid-proposal-quote")).rejects.toThrow("Quote is unavailable");
   });
 
   it("rejects a net unit price below configured floor price", async () => {

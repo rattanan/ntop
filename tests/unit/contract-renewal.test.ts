@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { renewalReminderSchedule } from "../../lib/contract/contract-renewal";
+describe("renewal reminder schedule",()=>{it("creates unique UTC reminders in configured order",()=>{const result=renewalReminderSchedule(new Date("2027-01-01T00:00:00.000Z"),[7,90,30,7]);expect(result.map(r=>r.daysBefore)).toEqual([90,30,7]);expect(result[2].dueAt.toISOString()).toBe("2026-12-25T00:00:00.000Z");});});

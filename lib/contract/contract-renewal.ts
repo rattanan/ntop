@@ -1,0 +1,1 @@
+export function renewalReminderSchedule(renewalDate:Date,days:number[]=[90,60,30,7]){if(Number.isNaN(renewalDate.getTime()))throw new Error("Invalid renewal date.");return [...new Set(days)].sort((a,b)=>b-a).map(daysBefore=>({daysBefore,dueAt:new Date(renewalDate.getTime()-daysBefore*86_400_000)}));}

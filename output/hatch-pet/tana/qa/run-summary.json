@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "spriteVersionNumber": 2,
+  "run_dir": "/Users/rattananair/codes/ntop/output/hatch-pet/tana",
+  "spritesheet": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/final/spritesheet-extended.webp",
+  "validation": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/final/validation-extended.json",
+  "chroma_despill": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/chroma-despill-extended.json",
+  "contact_sheet": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/contact-sheet-extended.png",
+  "direction_sheet": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/look-directions.png",
+  "direction_semantics": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/direction-semantics.json",
+  "blind_direction_validation": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/direction-blind-validation.json",
+  "blind_review_resolution": null,
+  "continuity": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/look-continuity.json",
+  "review": "/Users/rattananair/codes/ntop/output/hatch-pet/tana/qa/review.json",
+  "package": "/Users/rattananair/.codex/pets/tana"
+}

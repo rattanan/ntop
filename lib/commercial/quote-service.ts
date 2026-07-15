@@ -20,6 +20,7 @@ import { decimal, money } from "./decimal-money";
 
 export type QuoteDraftInput = {
   quoteId?: string;
+  proposalId?: string;
   opportunityId: string;
   currency: string;
   validUntil?: Date | null;
@@ -74,7 +75,8 @@ export interface QuoteRepository<TTransaction> {
   findReceipt(actorId: string, key: string, command: string, transaction: TTransaction): Promise<{ targetId: string; resultVersion: number | null } | null>;
   saveReceipt(input: { actorId: string; idempotencyKey: string; command: string; targetId: string; resultVersion: number | null }, transaction: TTransaction): Promise<void>;
   findOpportunity(input: { id: string; context: AuthorizationContext }, transaction: TTransaction): Promise<{ id: string; customerId: string; customerSegment: string; coverageConfirmed: boolean; solutionComplete: boolean; opportunityRisk: string } | null>;
-  findQuote(input: { id: string; context: AuthorizationContext }, transaction: TTransaction): Promise<{ id: string; opportunityId: string; makerId: string; latestVersion: number } | null>;
+  findQuote(input: { id: string; context: AuthorizationContext }, transaction: TTransaction): Promise<{ id: string; opportunityId: string; proposalId: string | null; makerId: string; latestVersion: number } | null>;
+  findProposal?(input: { id: string; context: AuthorizationContext }, transaction: TTransaction): Promise<{ id: string; opportunityId: string; customerId: string } | null>;
   loadProducts(ids: readonly string[], transaction: TTransaction): Promise<ProductCommercialFact[]>;
   createVersion(input: { actorId: string; draft: QuoteDraftInput; opportunity: { id: string; customerId: string; customerSegment: string }; calculations: ReturnType<typeof calculateQuote>; products: ProductCommercialFact[]; versionNumber: number }, transaction: TTransaction): Promise<QuoteVersionRecord>;
   findVersion(input: { id: string; context: AuthorizationContext }, transaction: TTransaction): Promise<QuoteVersionRecord | null>;
@@ -135,10 +137,15 @@ export class QuoteService<TTransaction> {
       }
       const opportunity = await this.repository.findOpportunity({ id: draft.opportunityId, context: actor.authorization }, transaction);
       if (!opportunity) throw new QuoteAccessError();
+      const proposal = draft.proposalId
+        ? await this.repository.findProposal?.({ id: draft.proposalId, context: actor.authorization }, transaction)
+        : null;
+      if (draft.proposalId && (!proposal || proposal.opportunityId !== opportunity.id || proposal.customerId !== opportunity.customerId)) throw new QuoteAccessError();
       const quote = draft.quoteId
         ? await this.repository.findQuote({ id: draft.quoteId, context: actor.authorization }, transaction)
         : null;
       if (draft.quoteId && (!quote || quote.opportunityId !== draft.opportunityId)) throw new QuoteAccessError();
+      if (quote?.proposalId && draft.proposalId && quote.proposalId !== draft.proposalId) throw new QuoteAccessError();
       const products = await this.repository.loadProducts([...new Set(draft.items.map((item) => item.productId))], transaction);
       if (products.length !== new Set(draft.items.map((item) => item.productId)).size) throw new QuoteAccessError();
       const productMap = new Map(products.map((product) => [product.id, product]));
@@ -183,7 +190,7 @@ export class QuoteService<TTransaction> {
         targetVersion: String(created.versionNumber),
         outcome: "SUCCESS",
         correlationId,
-        data: { quoteId: created.quoteId, opportunityId: created.opportunityId },
+        data: { quoteId: created.quoteId, opportunityId: created.opportunityId, proposalId: draft.proposalId ?? quote?.proposalId ?? null },
       }, { transaction });
       await this.repository.saveReceipt({ actorId: actor.id, idempotencyKey, command: "quote.version.create", targetId: created.id, resultVersion: created.versionNumber }, transaction);
       return created;

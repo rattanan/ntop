@@ -49,7 +49,7 @@ flowchart LR
 
 ### Module boundaries
 
-Identity, Customer, Lead/Activity, Opportunity/Forecast, Product, Coverage/Solution, Quote/Approval, Order Handoff, Document, Notification, Integration, Audit และ Administration แต่ละ module เป็นเจ้าของ schema/API ภายในของตน ห้าม module อื่นเขียนตารางโดยตรง; cross-module consistency ใช้ application orchestration หรือ domain event
+Identity, Customer, Lead/Activity, Opportunity/Forecast, Product, Coverage/Solution, Proposal, Quote/Approval, Order Handoff, Document, Notification, Integration, Audit และ Administration แต่ละ module เป็นเจ้าของ schema/API ภายในของตน ห้าม module อื่นเขียนตารางโดยตรง; cross-module consistency ใช้ application orchestration หรือ domain event Proposal อ้าง Opportunity/Customer แบบ read-only และส่ง optional identity link ให้ Quote ผ่าน application service โดยไม่เขียน aggregate ของ Quote โดยตรง
 
 ## 4. Deployment topology
 

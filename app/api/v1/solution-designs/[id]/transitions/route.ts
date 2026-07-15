@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { transitionSolutionDesign } from "@/lib/solution-design/solution-design-service";
+import { jsonBody,presalesActor,presalesApiError } from "../../../presales-api";
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){const auth=await presalesActor(request);if("response"in auth)return auth.response;try{const body=await jsonBody(request) as {toStatusCode?:unknown;reason?:unknown};if(typeof body.toStatusCode!=="string"||typeof body.reason!=="string")throw new Error("invalid");return NextResponse.json({data:await transitionSolutionDesign(auth.actor,(await params).id,body.toStatusCode,body.reason,auth.correlationId),meta:{correlationId:auth.correlationId}});}catch(error){return presalesApiError(error,auth.correlationId);}}

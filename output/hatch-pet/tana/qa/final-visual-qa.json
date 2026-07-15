@@ -1,0 +1,11 @@
+{
+  "visual_qa": "pass",
+  "reviewed_by": "independent-final-visual-qa-worker",
+  "qa_note": "All 11 rows preserve Tana's identity and clean sprite construction; standard-state motions read correctly, deterministic validation passes, and the clockwise look loop remains coherent with two minor intermediate-direction warnings.",
+  "review_warnings": [
+    "112.5 vertical axis is subtle, but the labeled ordered loop confirms down-right without reversal.",
+    "135 horizontal axis conflicted in blind review, but the labeled full-body loop keeps the nose on the screen-right half and confirms down-right without reversal.",
+    "Continuity metrics contain bottom-edge and local-difference warnings, but visual review found no snap, scale pop, seam, interior body hole, identity change, or semantic break."
+  ],
+  "repair_rows": []
+}

@@ -1,0 +1,8 @@
+import { describe,expect,it } from "vitest";
+import { calculateBoqLine,calculateBoqTotals } from "../../lib/solution-design/boq-calculator";
+
+describe("BOQ decimal calculations",()=>{
+  it("calculates wastage, cost, selling price, profit and margin without floating point",()=>{const line=calculateBoqLine({quantity:"10.0000",wastagePercent:"5.0000",unitCost:"12.3456",unitSellingPrice:"20.0000",discountPercent:"10.0000"});expect(line.finalQuantity.toFixed(4)).toBe("10.5000");expect(line.totalCost.toFixed(4)).toBe("129.6288");expect(line.totalSellingPrice.toFixed(4)).toBe("189.0000");expect(line.grossProfit.toFixed(4)).toBe("59.3712");expect(line.grossMarginPercent.toFixed(4)).toBe("31.4133");});
+  it("handles zero selling price safely",()=>{expect(calculateBoqLine({quantity:"1",unitCost:"100",unitSellingPrice:"0"}).grossMarginPercent.toFixed(4)).toBe("0.0000");});
+  it("keeps one-time, monthly, annual and contract value separate",()=>{const one={...calculateBoqLine({quantity:"1",unitCost:"100",unitSellingPrice:"150"}),chargeType:"ONE_TIME",contractMonths:24};const month={...calculateBoqLine({quantity:"1",unitCost:"10",unitSellingPrice:"20"}),chargeType:"MONTHLY_RECURRING",contractMonths:24};const annual={...calculateBoqLine({quantity:"1",unitCost:"60",unitSellingPrice:"120"}),chargeType:"ANNUAL_RECURRING",contractMonths:24};const totals=calculateBoqTotals([one,month,annual]);expect(totals.totalOneTimePrice.toFixed(4)).toBe("150.0000");expect(totals.monthlyRecurringPrice.toFixed(4)).toBe("20.0000");expect(totals.annualRecurringPrice.toFixed(4)).toBe("120.0000");expect(totals.totalContractValue.toFixed(4)).toBe("870.0000");});
+});

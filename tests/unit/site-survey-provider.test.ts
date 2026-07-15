@@ -1,0 +1,8 @@
+import { describe,expect,it } from "vitest";
+import { ManualSiteSurveyProvider,MockNTSPSiteSurveyProvider } from "../../lib/solution-design/site-survey-provider";
+import type { NTSPSiteSurveyRequestV1 } from "../../lib/solution-design/contracts";
+const request:NTSPSiteSurveyRequestV1={schemaVersion:"1.0",correlationId:"cor-1",sourceSystem:"NT_ENTERPRISE_SALES_PLATFORM",requestNumber:"SUR-2026-000001",requestedAt:"2026-07-15T00:00:00Z",opportunity:{opportunityId:"o",opportunityNumber:"OPP-1",opportunityName:"Synthetic"},customer:{customerName:"Synthetic Co"},service:{serviceCategory:"BROADBAND_INTERNET",redundancyRequired:false},installationSite:{siteId:"site",siteName:"HQ",addressLine1:"1 Test Road",district:"Test",province:"Bangkok",latitude:13.75,longitude:100.5},contacts:[{fullName:"Synthetic Contact",phone:"0800000000",primaryContact:true}]};
+describe("Site survey integration providers",()=>{
+  it("manual submission never invents an external NTSP id",async()=>{const result=await new ManualSiteSurveyProvider().submitSurveyRequest(request);expect(result).toEqual({accepted:true,provider:"MANUAL",internalRequestId:"SUR-2026-000001",status:"SUBMITTED"});expect(result.externalRequestId).toBeUndefined();});
+  it("mock provider is deterministic and unavailable in production",async()=>{expect(()=>new MockNTSPSiteSurveyProvider("production")).toThrow(/disabled/);const provider=new MockNTSPSiteSurveyProvider("test");expect((await provider.submitSurveyRequest(request)).externalRequestId).toBe("MOCK-SUR-2026-000001");expect((await provider.getSurveyResult("MOCK-1")).surveyResult?.feasibilityStatus).toBe("FEASIBLE");});
+});

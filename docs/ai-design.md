@@ -28,13 +28,16 @@
 3. Next Action Recommendation converted to Activity/Task after Human Confirmation
 4. Deterministic Deal Risk/Pipeline Health with optional AI explanation
 5. Provenance, feedback, audit, bounded timeout/quota and manual fallback
+6. Human-triggered Proposal Draft generation from authorized Opportunity,
+   Customer, Meeting Note, Product and Template context, delivered by the
+   additive Proposal Phase 1 increment
 
 ### Release 1 exclusions
 
 - Public-web Research Connector and web browsing
 - Recording, audio/video upload, transcription and transcript-file upload
 - AI Opportunity generation or stage mutation
-- Proposal/TOR authoring and in-system long-document editor
+- TOR authoring and uploaded-document authoring/analysis
 - Uploaded-document analysis
 - Pricing Recommendation
 - Numeric AI probability/revenue forecast
@@ -44,6 +47,11 @@
 
 - **Release 2:** Research Connector, Opportunity Finder/Territory Planning, Opportunity Draft, read-only Document/TOR Analysis and Pricing Recommendation
 - **Release 3:** calibrated Forecast/Revenue, Provisioning, Customer Success and Renewal predictions after representative data/evaluation gates
+
+Proposal Draft generation is governed by
+[`proposal-quotation-phase1-implementation.md`](proposal-quotation-phase1-implementation.md).
+It is editable, strictly schema-validated and never changes pricing, Opportunity,
+Approval or workflow state autonomously.
 
 ## 3. Phase 1 capabilities
 
@@ -140,4 +148,3 @@ All mutations require server authorization, optimistic concurrency/idempotency w
 - Prompt injection in pasted text; mitigate with input limits, secret scan, instruction isolation, output schema validation and no tool/autonomous actions
 - Sensitive-data leakage; mitigate with server-side allowlists, ACL, masking, redaction tests and no raw prompt storage
 - Users may over-trust output; mitigate with Draft/Suggestion labels, sources/confidence and Human Confirmation
-

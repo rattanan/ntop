@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "reviewed_by": "independent-final-visual-qa-worker",
+  "directions": [
+    {"degree":"000","expected":"up","verdict":"pass","observed":"chin and snout lifted, complete eye globes and pupils high","horizontal":"balanced/neutral as expected for vertical cardinal","vertical":"strong up"},
+    {"degree":"022.5","expected":"up-right","verdict":"pass","observed":"slight screen-right snout turn with elevated gaze","horizontal":"right","vertical":"up"},
+    {"degree":"045","expected":"up-right","verdict":"pass","observed":"clear right turn with lifted eye line","horizontal":"right","vertical":"up"},
+    {"degree":"067.5","expected":"up-right","verdict":"pass","observed":"right-facing profile retains raised snout and pupil","horizontal":"right","vertical":"up"},
+    {"degree":"090","expected":"right","verdict":"pass","observed":"nose tip and visible pupil unmistakably screen-right","horizontal":"strong right","vertical":"balanced/neutral as expected for horizontal cardinal"},
+    {"degree":"112.5","expected":"down-right","verdict":"warning","observed":"right-facing profile begins lowering through the labeled ordered arc; blind vertical cue was subtle","horizontal":"right","vertical":"slight down, accepted in loop context"},
+    {"degree":"135","expected":"down-right","verdict":"warning","observed":"head and gaze are visibly down and remain on the rightward half of the continuous arc; blind horizontal cue conflicted","horizontal":"right in labeled full-body loop","vertical":"down"},
+    {"degree":"157.5","expected":"down-right","verdict":"pass","observed":"deep downward pitch retains screen-right nose and visible eye","horizontal":"right","vertical":"down"},
+    {"degree":"180","expected":"down","verdict":"pass","observed":"centered bowed head, low pupils and snout toward chest","horizontal":"balanced/neutral as expected for vertical cardinal","vertical":"strong down"},
+    {"degree":"202.5","expected":"down-left","verdict":"pass","observed":"nose and visible pupil begin clearly screen-left while remaining bowed","horizontal":"left","vertical":"down"},
+    {"degree":"225","expected":"down-left","verdict":"pass","observed":"clear left profile with lowered gaze","horizontal":"left","vertical":"down"},
+    {"degree":"247.5","expected":"down-left","verdict":"pass","observed":"left-facing profile retains downward eye and snout pitch","horizontal":"left","vertical":"down"},
+    {"degree":"270","expected":"left","verdict":"pass","observed":"nose tip and visible pupil unmistakably screen-left","horizontal":"strong left","vertical":"balanced/neutral as expected for horizontal cardinal"},
+    {"degree":"292.5","expected":"up-left","verdict":"pass","observed":"left-facing profile begins lifting eye and snout","horizontal":"left","vertical":"up"},
+    {"degree":"315","expected":"up-left","verdict":"pass","observed":"strong left profile with raised gaze","horizontal":"left","vertical":"up"},
+    {"degree":"337.5","expected":"up-left","verdict":"pass","observed":"strong upward chin and pupils retain screen-left cue one step before 000","horizontal":"left","vertical":"up"}
+  ],
+  "continuity_review":"Metric warnings were reviewed against the normal-size labeled loop. Transparent spans occur only between planted feet at the bottom edge, not inside the filled body. No visible snap, seam, interior body hole, scale pop, identity change, or semantic reversal remains."
+}

@@ -13,6 +13,9 @@ import {
   PackageSearch,
   Settings,
   ShieldCheck,
+  DraftingCompass,
+  MapPinned,
+  ListTree,
   Target,
   Users,
 } from "lucide-react";
@@ -49,8 +52,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Sales Pipeline", href: "/pipeline", icon: LayoutDashboard },
       { label: "Coverage", href: "/coverage", icon: PackageSearch },
+      { label: "Solution Design", href: "/solution-designs", icon: DraftingCompass, keywords: "presales solution" },
+      { label: "Site Survey", href: "/site-surveys", icon: MapPinned, keywords: "survey ntsp" },
+      { label: "BOQ", href: "/boqs", icon: ListTree, keywords: "bill of quantities" },
       { label: "บริการและราคา", href: "/products", icon: Boxes, keywords: "product service" },
+      { label: "Proposal", href: "/proposals", icon: FileCheck2, keywords: "proposal quotation ai" },
       { label: "ใบเสนอราคา", href: "/quotes", icon: FileText, keywords: "quote quotation" },
+      { label: "สัญญา", href: "/contracts", icon: FileCheck2, keywords: "contract agreement renewal" },
       { label: "การอนุมัติ", href: "/approvals", icon: ShieldCheck, keywords: "approval" },
     ],
   },
@@ -77,7 +85,9 @@ export const QUICK_CREATE_ITEMS = [
   { label: "สร้างลูกค้า", href: "/customers/new" },
   { label: "สร้างโอกาสขาย", href: "/opportunities/new" },
   { label: "บันทึกกิจกรรม", href: "/activities/new" },
+  { label: "สร้าง Proposal", href: "/proposals/new" },
   { label: "สร้างใบเสนอราคา", href: "/quotes/new" },
+  { label: "สร้างสัญญา", href: "/contracts/new" },
 ];
 
 export function visibleNavigation(isAdmin: boolean) {

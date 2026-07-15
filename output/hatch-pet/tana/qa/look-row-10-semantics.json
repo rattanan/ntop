@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "row": 10,
+  "edge_check": "pass",
+  "continuity": {
+    "verdict": "pass",
+    "reason": "The lower body remains planted while the downward pose turns continuously through screen-left and returns toward up; metric warnings correspond to visible pose change or intentional space between planted feet, with no visible seam, interior body hole, snap, or broken attachment."
+  },
+  "directions": [
+    {"degree":"180","expected":"down","verdict":"pass","observed":"pupils, snout, and head pitch unmistakably down"},
+    {"degree":"202.5","expected":"down-left","verdict":"pass","observed":"downward head begins turning screen-left"},
+    {"degree":"225","expected":"down-left","verdict":"pass","observed":"clear left profile retains lowered gaze"},
+    {"degree":"247.5","expected":"down-left","verdict":"pass","observed":"screen-left turn dominates with a remaining downward cue"},
+    {"degree":"270","expected":"left","verdict":"pass","observed":"nose tip and visible pupil are unmistakably screen-left of head center"},
+    {"degree":"292.5","expected":"up-left","verdict":"pass","observed":"left profile begins a continuous upward eye and snout pitch"},
+    {"degree":"315","expected":"up-left","verdict":"pass","observed":"strong screen-left profile with visibly elevated eye and snout"},
+    {"degree":"337.5","expected":"up-left","verdict":"pass","observed":"strong upward pitch retains a screen-left cue one step before 000"}
+  ]
+}

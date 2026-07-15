@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "row": 9,
+  "registration": "qa/look-row-9-registration.json",
+  "edge_check": "pass",
+  "continuity": {
+    "verdict": "pass",
+    "reason": "The planted paws and lower body remain registered while the pupils, snout, head, upper torso, and tail follow a smooth clockwise arc without a visible snap, scale pop, or attachment break."
+  },
+  "directions": [
+    {"degree": "000", "expected": "up", "verdict": "pass", "observed": "pupils high in both eye apertures with lifted gaze and balanced body"},
+    {"degree": "022.5", "expected": "up-right", "verdict": "pass", "observed": "pupils and snout begin moving to screen-right while retaining a strong upward cue"},
+    {"degree": "045", "expected": "up-right", "verdict": "pass", "observed": "clear screen-right head turn with eyes still elevated"},
+    {"degree": "067.5", "expected": "up-right", "verdict": "pass", "observed": "rightward turn dominates with a remaining upward eye and snout pitch"},
+    {"degree": "090", "expected": "right", "verdict": "pass", "observed": "nose tip and visible pupil are unmistakably screen-right of head center"},
+    {"degree": "112.5", "expected": "down-right", "verdict": "pass", "observed": "right-facing profile begins a continuous downward head and eye pitch"},
+    {"degree": "135", "expected": "down-right", "verdict": "pass", "observed": "strong screen-right profile with visibly lowered eye and snout"},
+    {"degree": "157.5", "expected": "down-right", "verdict": "pass", "observed": "deep downward pitch retains the screen-right side before the 180 boundary"}
+  ]
+}

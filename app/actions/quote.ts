@@ -27,6 +27,7 @@ export async function createGovernedQuote(_: FormState, form: FormData): Promise
     await createQuoteRuntime().createVersion(
       { ...session, authorization },
       {
+        proposalId: text(form, "proposalId") || undefined,
         opportunityId: text(form, "opportunityId"),
         currency: "THB",
         validUntil: text(form, "validUntil") ? new Date(`${text(form, "validUntil")}T16:59:59.999Z`) : null,

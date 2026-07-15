@@ -1,0 +1,2 @@
+import{test,expect}from"@playwright/test";
+test("Solution Design, Site Survey and BOQ APIs do not expose records without authentication",async({request})=>{for(const path of ["/api/v1/solution-designs","/api/v1/solution-designs/guessed-id","/api/v1/site-surveys","/api/v1/site-surveys/guessed-id","/api/v1/boqs","/api/v1/boqs/guessed-id"]){const response=await request.get(path);expect(response.status(),path).toBe(401);}});
