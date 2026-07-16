@@ -243,6 +243,9 @@ button,summary { touch-action:manipulation; }
 .sidebar-link.active { background:#fff2a8;color:var(--nt-ink-950);box-shadow:inset 3px 0 0 var(--nt-yellow-600); }
 .sidebar-link.active::after { background:transparent; }
 .sidebar-footer { background:#fbfbfc; }
+.sidebar-version { display:block;margin-top:9px;color:var(--muted-foreground);font-size:10px;font-weight:650;letter-spacing:.04em;text-align:center; }
+.sidebar-collapsed .sidebar-version { display:none; }
+@media (max-width: 900px) { .sidebar-collapsed .sidebar-version { display:block; } }
 .workspace-header { min-height:68px;height:auto;padding:10px 20px;gap:16px;background:rgb(255 255 255 / .94);border-color:var(--border);backdrop-filter:blur(14px); }
 .breadcrumb { min-width:180px;display:flex;align-items:center;gap:7px;color:var(--muted-foreground);font-size:12px;white-space:nowrap; }
 .breadcrumb a { display:inline-flex;align-items:center;gap:6px;color:var(--nt-gray-700);font-weight:650; }

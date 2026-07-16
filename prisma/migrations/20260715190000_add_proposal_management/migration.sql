@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `ProposalStatusDefinition` (
   `updatedAt` DATETIME NOT NULL,
   INDEX `ProposalStatusDefinition_active_sortOrder_idx` (`active`, `sortOrder`),
   PRIMARY KEY (`code`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO `ProposalStatusDefinition`
   (`code`, `label`, `sortOrder`, `terminal`, `active`, `reportingCategory`, `allowedTransitions`, `updatedAt`)
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `ProposalStatusTransition` (
   UNIQUE INDEX `ProposalStatusTransition_fromStatusCode_toStatusCode_key` (`fromStatusCode`, `toStatusCode`),
   INDEX `ProposalStatusTransition_fromStatusCode_active_idx` (`fromStatusCode`, `active`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO `ProposalStatusTransition` (`id`,`fromStatusCode`,`toStatusCode`,`requiredPermission`,`makerChecker`) VALUES
   ('proposal-transition-draft-review','DRAFT','PENDING_REVIEW',NULL,false),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `ProposalNumberSequence` (
   `nextValue` INTEGER NOT NULL DEFAULT 0,
   `updatedAt` DATETIME NOT NULL,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ProposalTemplate` (
   `id` VARCHAR(191) NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `ProposalTemplate` (
   UNIQUE INDEX `ProposalTemplate_activeVersionId_key` (`activeVersionId`),
   INDEX `ProposalTemplate_active_category_name_idx` (`active`, `category`, `name`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ProposalTemplateVersion` (
   `id` VARCHAR(191) NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `ProposalTemplateVersion` (
   `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE INDEX `ProposalTemplateVersion_templateId_version_key` (`templateId`, `version`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ProposalTemplateSection` (
   `id` VARCHAR(191) NOT NULL,
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `ProposalTemplateSection` (
   UNIQUE INDEX `ProposalTemplateSection_templateVersionId_sectionCode_key` (`templateVersionId`, `sectionCode`),
   INDEX `ProposalTemplateSection_templateVersionId_sortOrder_idx` (`templateVersionId`, `sortOrder`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `Proposal` (
   `id` VARCHAR(191) NOT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS `Proposal` (
   INDEX `Proposal_opportunityId_deletedAt_updatedAt_idx` (`opportunityId`, `deletedAt`, `updatedAt`),
   INDEX `Proposal_customerId_deletedAt_updatedAt_idx` (`customerId`, `deletedAt`, `updatedAt`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ProposalVersion` (
   `id` VARCHAR(191) NOT NULL,
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS `ProposalVersion` (
   UNIQUE INDEX `ProposalVersion_proposalId_versionNumber_key` (`proposalId`, `versionNumber`),
   INDEX `ProposalVersion_proposalId_createdAt_idx` (`proposalId`, `createdAt`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ProposalSection` (
   `id` VARCHAR(191) NOT NULL,
@@ -168,7 +168,7 @@ CREATE TABLE IF NOT EXISTS `ProposalSection` (
   UNIQUE INDEX `ProposalSection_proposalVersionId_sectionCode_key` (`proposalVersionId`, `sectionCode`),
   INDEX `ProposalSection_proposalVersionId_sortOrder_idx` (`proposalVersionId`, `sortOrder`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ProposalCommandReceipt` (
   `id` VARCHAR(191) NOT NULL,
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS `ProposalCommandReceipt` (
   UNIQUE INDEX `ProposalCommandReceipt_actorId_idempotencyKey_command_key` (`actorId`, `idempotencyKey`, `command`),
   INDEX `ProposalCommandReceipt_proposalId_createdAt_idx` (`proposalId`, `createdAt`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ALTER TABLE `Quote` ADD COLUMN `proposalId` VARCHAR(191) NULL;
 CREATE INDEX `Quote_proposalId_createdAt_idx` ON `Quote` (`proposalId`, `createdAt`);

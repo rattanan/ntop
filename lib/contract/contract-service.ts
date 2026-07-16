@@ -6,7 +6,7 @@ import type { ContractCreateInput, ContractEditInput } from "./contracts";
 
 export type ContractActor = { id: string; role: "ADMIN" | "SALES" | "VIEWER"; authorization: AuthorizationContext };
 export type ContractRecord = { id: string; contractNo: string; customerId: string; ownerId: string; version: number; statusCode: string; terminal: boolean; latestVersionId: string; cleanSignatureParties: string[] };
-type QuoteSource = { quoteId: string; quoteVersionId: string; status: string; customerId: string; opportunityId: string | null; proposalId: string | null; currency: string; sourceSnapshot: Record<string, unknown> };
+type QuoteSource = { quoteId: string; quoteVersionId: string; status: string; customerId: string; opportunityId: string | null; organizationUnitId: string | null; proposalId: string | null; currency: string; sourceSnapshot: Record<string, unknown> };
 type Transition = { requiredPermission: string | null; makerChecker: boolean; requiredSignatureParties: string[] };
 
 export interface ContractRepository<Tx> {
@@ -59,14 +59,14 @@ export class ContractService<Tx> {
   }
 
   async transition(actor: ContractActor, contractId: string, expectedVersion: number, toStatusCode: string, comment: string, correlationId: string) {
-    assertPermission(actor, PERMISSIONS.contractManage, this.permissions);
     return this.repository.transaction(async (tx) => {
       const contract = await this.required(contractId, actor, tx);
       this.mutable(contract, expectedVersion);
       const [edge, target] = await Promise.all([this.repository.findTransition(contract.statusCode, toStatusCode, tx), this.repository.statusIsActive(toStatusCode, tx)]);
       if (!edge || !target) throw new ContractTransitionError();
       if (edge.makerChecker && contract.ownerId === actor.id) throw new ContractMakerCheckerError();
-      if (edge.requiredPermission && !(await this.hasPermission(actor, edge.requiredPermission, tx))) throw new PermissionDeniedError(edge.requiredPermission as Permission);
+      const requiredPermission = edge.requiredPermission ?? PERMISSIONS.contractManage;
+      if (!(await this.hasPermission(actor, requiredPermission, tx))) throw new PermissionDeniedError(requiredPermission as Permission);
       if (edge.requiredSignatureParties.some((party) => !contract.cleanSignatureParties.includes(party))) throw new ContractSignatureRequiredError();
       const draft = await this.snapshotDraft(contractId, actor, tx, expectedVersion, comment);
       const updated = await this.repository.createVersion({ contract, expectedVersion, actorId: actor.id, draft, financials: calculateContractFinancials(draft.items, draft.taxRate), statusCode: toStatusCode }, tx);

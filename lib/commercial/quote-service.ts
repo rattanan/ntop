@@ -80,6 +80,7 @@ export interface QuoteRepository<TTransaction> {
   loadProducts(ids: readonly string[], transaction: TTransaction): Promise<ProductCommercialFact[]>;
   createVersion(input: { actorId: string; draft: QuoteDraftInput; opportunity: { id: string; customerId: string; customerSegment: string }; calculations: ReturnType<typeof calculateQuote>; products: ProductCommercialFact[]; versionNumber: number }, transaction: TTransaction): Promise<QuoteVersionRecord>;
   findVersion(input: { id: string; context: AuthorizationContext }, transaction: TTransaction): Promise<QuoteVersionRecord | null>;
+  transitionVersion(input: { version: QuoteVersionRecord; toStatus: "SENT" | "ACCEPTED"; transitionedAt: Date }, transaction: TTransaction): Promise<QuoteVersionRecord>;
   activeApprovalPolicy(transaction: TTransaction): Promise<ActiveApprovalPolicy | null>;
   submitVersion(input: { version: QuoteVersionRecord; policyVersionId: string; policyInput: ApprovalPolicyInput; matchedRuleCodes: string[]; steps: ReturnType<typeof evaluateApprovalPolicy>["steps"]; quoteVersionHash: string; submittedAt: Date }, transaction: TTransaction): Promise<{ requestId: string }>;
 }
@@ -100,6 +101,9 @@ export class QuoteFloorPriceError extends Error {
 }
 export class ApprovalPolicyUnavailableError extends Error {
   constructor() { super("Approval policy is unavailable."); this.name = "ApprovalPolicyUnavailableError"; }
+}
+export class QuoteTransitionError extends Error {
+  constructor() { super("Quote status transition is not allowed."); this.name = "QuoteTransitionError"; }
 }
 
 function stableHashPayload(value: unknown) {
@@ -242,6 +246,37 @@ export class QuoteService<TTransaction> {
       }, { transaction });
       await this.repository.saveReceipt({ actorId: actor.id, idempotencyKey, command: "quote.version.submit", targetId: result.requestId, resultVersion: 1 }, transaction);
       return result;
+    });
+  }
+
+  async transition(actor: Actor, quoteVersionId: string, toStatus: "SENT" | "ACCEPTED", correlationId: string, idempotencyKey: string) {
+    assertPermission(actor, PERMISSIONS.quoteManage, this.permissions);
+    return this.repository.transaction(async (transaction) => {
+      const command = `quote.version.${toStatus.toLowerCase()}`;
+      const receipt = await this.repository.findReceipt(actor.id, idempotencyKey, command, transaction);
+      if (receipt) {
+        const previous = await this.repository.findVersion({ id: receipt.targetId, context: actor.authorization }, transaction);
+        if (!previous) throw new QuoteAccessError();
+        return previous;
+      }
+      const version = await this.repository.findVersion({ id: quoteVersionId, context: actor.authorization }, transaction);
+      if (!version) throw new QuoteAccessError();
+      const allowed = (version.status === "APPROVED" && toStatus === "SENT")
+        || (version.status === "SENT" && toStatus === "ACCEPTED");
+      if (!allowed) throw new QuoteTransitionError();
+      const transitioned = await this.repository.transitionVersion({ version, toStatus, transitionedAt: this.now() }, transaction);
+      await this.auditWriter.append({
+        actorId: actor.id,
+        action: command,
+        targetType: "QuoteVersion",
+        targetId: quoteVersionId,
+        targetVersion: String(version.versionNumber),
+        outcome: "SUCCESS",
+        correlationId,
+        data: { fromStatus: version.status, toStatus },
+      }, { transaction });
+      await this.repository.saveReceipt({ actorId: actor.id, idempotencyKey, command, targetId: quoteVersionId, resultVersion: version.versionNumber }, transaction);
+      return transitioned;
     });
   }
 }

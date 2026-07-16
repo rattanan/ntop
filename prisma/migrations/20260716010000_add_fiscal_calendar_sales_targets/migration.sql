@@ -21,7 +21,7 @@ CREATE TABLE `FiscalCalendar` (
   INDEX `FiscalCalendar_active_effective_idx` (`active`, `effectiveFrom`, `effectiveTo`),
   CONSTRAINT `FiscalCalendar_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `FiscalCalendar_updatedById_fkey` FOREIGN KEY (`updatedById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE `SalesTarget` (
   `id` VARCHAR(191) NOT NULL,
@@ -65,4 +65,4 @@ CREATE TABLE `SalesTarget` (
   CONSTRAINT `SalesTarget_territoryId_fkey` FOREIGN KEY (`territoryId`) REFERENCES `SalesTerritory`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `SalesTarget_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `SalesTarget_updatedById_fkey` FOREIGN KEY (`updatedById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

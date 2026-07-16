@@ -767,6 +767,10 @@ model Activity {
   actionItems                        String?                   @db.Text
   ownerId                            String
   owner                              User                      @relation("ActivityOwner", fields: [ownerId], references: [id])
+  statusCode                         String                    @default("OPEN") @db.VarChar(32)
+  status                             ActivityStatusDefinition  @relation(fields: [statusCode], references: [code], onDelete: Restrict)
+  completedAt                        DateTime?
+  completionOutcome                  String?                   @db.Text
   customerId                         String?
   customer                           Customer?                 @relation(fields: [customerId], references: [id])
   opportunityId                      String?
@@ -794,6 +798,40 @@ model Activity {
   @@index([leadId, createdAt])
   @@index([prospectId, createdAt])
   @@index([ownerId, deletedAt, createdAt])
+  @@index([ownerId, statusCode, dueAt])
+  @@index([statusCode, dueAt, deletedAt])
+}
+
+model ActivityStatusDefinition {
+  code              String                     @id @db.VarChar(32)
+  label             String                     @db.VarChar(100)
+  sortOrder         Int
+  reportingCategory String                     @db.VarChar(32)
+  terminal          Boolean                    @default(false)
+  active            Boolean                    @default(true)
+  activities        Activity[]
+  fromTransitions   ActivityStatusTransition[] @relation("ActivityTransitionFrom")
+  toTransitions     ActivityStatusTransition[] @relation("ActivityTransitionTo")
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model ActivityStatusTransition {
+  id                 String                   @id @default(cuid())
+  fromStatusCode     String                   @db.VarChar(32)
+  fromStatus         ActivityStatusDefinition @relation("ActivityTransitionFrom", fields: [fromStatusCode], references: [code], onDelete: Restrict)
+  toStatusCode       String                   @db.VarChar(32)
+  toStatus           ActivityStatusDefinition @relation("ActivityTransitionTo", fields: [toStatusCode], references: [code], onDelete: Restrict)
+  requiredPermission String?                  @db.VarChar(100)
+  ownerOnly          Boolean                  @default(true)
+  active             Boolean                  @default(true)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@unique([fromStatusCode, toStatusCode])
+  @@index([fromStatusCode, active])
 }
 
 model Industry {

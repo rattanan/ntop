@@ -13,7 +13,7 @@ function setup() {
     findOpportunity: vi.fn().mockResolvedValue({ id: "opp", customerId: "customer", customerSegment: "B1", coverageConfirmed: false, solutionComplete: false, opportunityRisk: "NONE" }),
     findProposal: vi.fn().mockResolvedValue({ id: "proposal", opportunityId: "opp", customerId: "customer" }),
     findQuote: vi.fn().mockResolvedValue(null), loadProducts: vi.fn().mockResolvedValue([{ id: "product", code: "P", name: "Product", category: "Network", listPrice: "1000.0000", floorPrice: null, standardCost: "800.0000", costConfirmed: true }]),
-    createVersion: vi.fn().mockResolvedValue(version), findVersion: vi.fn().mockResolvedValue(version),
+    createVersion: vi.fn().mockResolvedValue(version), findVersion: vi.fn().mockResolvedValue(version), transitionVersion: vi.fn().mockImplementation(async ({ toStatus }) => ({ ...version, status: toStatus })),
     activeApprovalPolicy: vi.fn().mockResolvedValue({ id: "policy-v1", definition: { submissionGates: { coverageRequired: true, solutionRequired: true, confirmedCostRequired: true }, rules: [], fallbackSteps: [{ code: "manager", sequence: 1, executionMode: "SEQUENTIAL", requiredPermission: "approval.manager", makerChecker: true }] } }),
     submitVersion: vi.fn().mockResolvedValue({ requestId: "request" }),
   };
@@ -35,6 +35,13 @@ describe("QuoteService", () => {
     const input = vi.mocked(repository.createVersion).mock.calls[0][0];
     expect(input.calculations.lines).toHaveLength(2);
     expect(input.calculations.total.toFixed(4)).toBe("2790.0000");
+  });
+
+  it("creates the next immutable revision on the same Quote after return or rejection", async () => {
+    const { service, repository } = setup();
+    vi.mocked(repository.findQuote).mockResolvedValue({ id: "q", opportunityId: "opp", proposalId: null, makerId: "admin", latestVersion: 1 });
+    await service.createVersion(actor, { quoteId: "q", opportunityId: "opp", currency: "THB", items: [{ productId: "product", quantity: "1" }] }, "corr", "revision");
+    expect(repository.createVersion).toHaveBeenCalledWith(expect.objectContaining({ versionNumber: 2, draft: expect.objectContaining({ quoteId: "q" }) }), tx);
   });
 
   it("links a Proposal only when it belongs to the same Opportunity and Customer", async () => {
@@ -64,5 +71,24 @@ describe("QuoteService", () => {
     vi.mocked(repository.findReceipt).mockResolvedValue({ targetId: "request", resultVersion: 1 });
     await expect(service.submit(actor, "qv", "corr", "idem")).resolves.toEqual({ requestId: "request" });
     expect(repository.findVersion).not.toHaveBeenCalled();
+  });
+
+  it("moves an approved quote through sent to accepted with audit and idempotency receipts", async () => {
+    const { service, repository, audit } = setup();
+    vi.mocked(repository.findVersion).mockResolvedValue({ ...version, status: "APPROVED" });
+    await expect(service.transition(actor, "qv", "SENT", "corr", "send")).resolves.toMatchObject({ status: "SENT" });
+    expect(repository.transitionVersion).toHaveBeenCalledWith(expect.objectContaining({ toStatus: "SENT" }), tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "quote.version.sent" }), { transaction: tx });
+    expect(repository.saveReceipt).toHaveBeenCalledWith(expect.objectContaining({ command: "quote.version.sent" }), tx);
+
+    vi.mocked(repository.findVersion).mockResolvedValue({ ...version, status: "SENT" });
+    await expect(service.transition(actor, "qv", "ACCEPTED", "corr", "accept")).resolves.toMatchObject({ status: "ACCEPTED" });
+  });
+
+  it("rejects commercial quote transitions that skip the approved and sent sequence", async () => {
+    const { service, repository } = setup();
+    vi.mocked(repository.findVersion).mockResolvedValue(version);
+    await expect(service.transition(actor, "qv", "ACCEPTED", "corr", "skip")).rejects.toThrow("not allowed");
+    expect(repository.transitionVersion).not.toHaveBeenCalled();
   });
 });

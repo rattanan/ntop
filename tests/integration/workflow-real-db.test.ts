@@ -92,7 +92,7 @@ run("MariaDB 5.5 workflow repository integration", () => {
       expect(sameSubmission.requestId).toBe(submitted.requestId); ids.requestId = submitted.requestId;
 
       const request = await tx.approvalRequest.findUniqueOrThrow({ where: { id: submitted.requestId }, include: { steps: true } });
-      const approvals = new ApprovalService(bindTransaction(new PrismaApprovalRepository(prisma), tx), audit, () => new Date("2026-07-14T03:00:00Z"));
+      const approvals = new ApprovalService(bindTransaction(new PrismaApprovalRepository(prisma), tx), audit, () => new Date());
       const decisionInput = { requestId: request.id, stepId: request.steps[0].id, action: "APPROVE" as const, reason: "Integration approval", expectedVersion: request.version };
       const decision = await approvals.decide(approverActor, decisionInput, correlation, `approval-${tag}`);
       const sameDecision = await approvals.decide(approverActor, decisionInput, correlation, `approval-${tag}`);

@@ -118,9 +118,9 @@ ALTER TABLE `Customer` ADD CONSTRAINT `Customer_mergedIntoCustomerId_fkey`
 ALTER TABLE `CustomerExternalId` ADD CONSTRAINT `CustomerExternalId_customerId_fkey`
   FOREIGN KEY (`customerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `CustomerRelationship` ADD CONSTRAINT `CustomerRelationship_parentCustomerId_fkey`
-  FOREIGN KEY (`parentCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY (`parentCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE `CustomerRelationship` ADD CONSTRAINT `CustomerRelationship_childCustomerId_fkey`
-  FOREIGN KEY (`childCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY (`childCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE `CustomerOwnershipAssignment` ADD CONSTRAINT `CustomerOwnershipAssignment_customerId_fkey`
   FOREIGN KEY (`customerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `CustomerOwnershipAssignment` ADD CONSTRAINT `CustomerOwnershipAssignment_ownerId_fkey`
@@ -130,15 +130,15 @@ ALTER TABLE `CustomerOwnershipAssignment` ADD CONSTRAINT `CustomerOwnershipAssig
 ALTER TABLE `CustomerOwnershipAssignment` ADD CONSTRAINT `CustomerOwnershipAssignment_assignedById_fkey`
   FOREIGN KEY (`assignedById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `CustomerMergeHistory` ADD CONSTRAINT `CustomerMergeHistory_sourceCustomerId_fkey`
-  FOREIGN KEY (`sourceCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY (`sourceCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE `CustomerMergeHistory` ADD CONSTRAINT `CustomerMergeHistory_targetCustomerId_fkey`
-  FOREIGN KEY (`targetCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY (`targetCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE `CustomerMergeHistory` ADD CONSTRAINT `CustomerMergeHistory_mergedById_fkey`
   FOREIGN KEY (`mergedById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `CustomerDuplicateCandidate` ADD CONSTRAINT `CustomerDuplicateCandidate_customerAId_fkey`
-  FOREIGN KEY (`customerAId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY (`customerAId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE `CustomerDuplicateCandidate` ADD CONSTRAINT `CustomerDuplicateCandidate_customerBId_fkey`
-  FOREIGN KEY (`customerBId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  FOREIGN KEY (`customerBId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 ALTER TABLE `CustomerDuplicateCandidate` ADD CONSTRAINT `CustomerDuplicateCandidate_mergedIntoCustomerId_fkey`
   FOREIGN KEY (`mergedIntoCustomerId`) REFERENCES `Customer`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `CustomerCommandReceipt` ADD CONSTRAINT `CustomerCommandReceipt_actorId_fkey`

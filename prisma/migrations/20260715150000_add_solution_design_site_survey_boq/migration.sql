@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `ServiceCategoryConfig` (
 
     UNIQUE INDEX `ServiceCategoryConfig_code_key`(`code`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionStatusDefinition` (
     `id` VARCHAR(191) NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `SolutionStatusDefinition` (
     INDEX `SolutionStatusDefinition_entityType_active_displayOrder_idx`(`entityType`, `active`, `displayOrder`),
     UNIQUE INDEX `SolutionStatusDefinition_entityType_code_key`(`entityType`, `code`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionStatusTransition` (
     `id` VARCHAR(191) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `SolutionStatusTransition` (
     INDEX `SolutionStatusTransition_entityType_fromStatusCode_active_idx`(`entityType`, `fromStatusCode`, `active`),
     UNIQUE INDEX `SolutionStatusTransition_entityType_fromStatusCode_toStatusC_key`(`entityType`, `fromStatusCode`, `toStatusCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionDesignVersion` (
     `id` VARCHAR(191) NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `SolutionDesignVersion` (
     INDEX `SolutionDesignVersion_solutionDesignId_createdAt_idx`(`solutionDesignId`, `createdAt`),
     UNIQUE INDEX `SolutionDesignVersion_solutionDesignId_version_revisionNumbe_key`(`solutionDesignId`, `version`, `revisionNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionServiceItem` (
     `id` VARCHAR(191) NOT NULL,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `SolutionServiceItem` (
     INDEX `SolutionServiceItem_solutionDesignId_serviceCategoryId_idx`(`solutionDesignId`, `serviceCategoryId`),
     INDEX `SolutionServiceItem_productId_idx`(`productId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionInstallationSite` (
     `id` VARCHAR(191) NOT NULL,
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS `SolutionInstallationSite` (
     INDEX `SolutionInstallationSite_accountId_active_idx`(`accountId`, `active`),
     UNIQUE INDEX `SolutionInstallationSite_solutionDesignId_siteCode_key`(`solutionDesignId`, `siteCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionComponent` (
     `id` VARCHAR(191) NOT NULL,
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `SolutionComponent` (
     INDEX `SolutionComponent_solutionDesignId_implementationSequence_idx`(`solutionDesignId`, `implementationSequence`),
     UNIQUE INDEX `SolutionComponent_solutionDesignId_componentNumber_key`(`solutionDesignId`, `componentNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionNetworkConnection` (
     `id` VARCHAR(191) NOT NULL,
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS `SolutionNetworkConnection` (
     INDEX `SolutionNetworkConnection_sourceSiteId_destinationSiteId_idx`(`sourceSiteId`, `destinationSiteId`),
     UNIQUE INDEX `SolutionNetworkConnection_solutionDesignId_connectionNumber_key`(`solutionDesignId`, `connectionNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionRequirementMapping` (
     `id` VARCHAR(191) NOT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS `SolutionRequirementMapping` (
     INDEX `SolutionRequirementMapping_requirementId_coverageStatus_idx`(`requirementId`, `coverageStatus`),
     UNIQUE INDEX `SolutionRequirementMapping_solutionDesignId_requirementId_so_key`(`solutionDesignId`, `requirementId`, `solutionComponentId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionDesignRisk` (
     `id` VARCHAR(191) NOT NULL,
@@ -237,7 +237,7 @@ CREATE TABLE IF NOT EXISTS `SolutionDesignRisk` (
 
     INDEX `SolutionDesignRisk_solutionDesignId_recordType_status_idx`(`solutionDesignId`, `recordType`, `status`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SiteSurveyRequest` (
     `id` VARCHAR(191) NOT NULL,
@@ -294,7 +294,7 @@ CREATE TABLE IF NOT EXISTS `SiteSurveyRequest` (
     INDEX `SiteSurveyRequest_scheduledSurveyDate_statusCode_idx`(`scheduledSurveyDate`, `statusCode`),
     INDEX `SiteSurveyRequest_externalRequestId_idx`(`externalRequestId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SiteSurveyContact` (
     `id` VARCHAR(191) NOT NULL,
@@ -319,7 +319,7 @@ CREATE TABLE IF NOT EXISTS `SiteSurveyContact` (
     INDEX `SiteSurveyContact_siteSurveyRequestId_primaryContact_idx`(`siteSurveyRequestId`, `primaryContact`),
     INDEX `SiteSurveyContact_contactId_idx`(`contactId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SiteSurveyResult` (
     `id` VARCHAR(191) NOT NULL,
@@ -358,7 +358,7 @@ CREATE TABLE IF NOT EXISTS `SiteSurveyResult` (
     INDEX `SiteSurveyResult_siteSurveyRequestId_statusCode_idx`(`siteSurveyRequestId`, `statusCode`),
     UNIQUE INDEX `SiteSurveyResult_siteSurveyRequestId_revisionNumber_key`(`siteSurveyRequestId`, `revisionNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SiteSurveyEstimatedItem` (
     `id` VARCHAR(191) NOT NULL,
@@ -376,7 +376,7 @@ CREATE TABLE IF NOT EXISTS `SiteSurveyEstimatedItem` (
 
     INDEX `SiteSurveyEstimatedItem_siteSurveyResultId_itemType_idx`(`siteSurveyResultId`, `itemType`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SiteSurveyIntegrationLog` (
     `id` VARCHAR(191) NOT NULL,
@@ -394,7 +394,7 @@ CREATE TABLE IF NOT EXISTS `SiteSurveyIntegrationLog` (
     INDEX `SiteSurveyIntegrationLog_siteSurveyRequestId_createdAt_idx`(`siteSurveyRequestId`, `createdAt`),
     INDEX `SiteSurveyIntegrationLog_correlationId_idx`(`correlationId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `BoqHeader` (
     `id` VARCHAR(191) NOT NULL,
@@ -429,7 +429,7 @@ CREATE TABLE IF NOT EXISTS `BoqHeader` (
     INDEX `BoqHeader_solutionDesignId_statusCode_idx`(`solutionDesignId`, `statusCode`),
     INDEX `BoqHeader_siteSurveyRequestId_statusCode_idx`(`siteSurveyRequestId`, `statusCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `BoqSection` (
     `id` VARCHAR(191) NOT NULL,
@@ -442,7 +442,7 @@ CREATE TABLE IF NOT EXISTS `BoqSection` (
 
     UNIQUE INDEX `BoqSection_code_key`(`code`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `BoqItem` (
     `id` VARCHAR(191) NOT NULL,
@@ -486,7 +486,7 @@ CREATE TABLE IF NOT EXISTS `BoqItem` (
     UNIQUE INDEX `BoqItem_boqId_lineNumber_key`(`boqId`, `lineNumber`),
     UNIQUE INDEX `BoqItem_boqId_sourceType_sourceReferenceId_key`(`boqId`, `sourceType`, `sourceReferenceId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `BoqVersion` (
     `id` VARCHAR(191) NOT NULL,
@@ -502,7 +502,7 @@ CREATE TABLE IF NOT EXISTS `BoqVersion` (
     INDEX `BoqVersion_boqId_createdAt_idx`(`boqId`, `createdAt`),
     UNIQUE INDEX `BoqVersion_boqId_version_revisionNumber_key`(`boqId`, `version`, `revisionNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `SolutionReviewDecision` (
     `id` VARCHAR(191) NOT NULL,
@@ -517,31 +517,31 @@ CREATE TABLE IF NOT EXISTS `SolutionReviewDecision` (
 
     INDEX `SolutionReviewDecision_solutionDesignId_reviewType_createdAt_idx`(`solutionDesignId`, `reviewType`, `createdAt`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Referential integrity is explicit even though the application keeps cross-module
 -- access behind public service contracts.
 -- MariaDB 5.5 requires identical collations on both sides of every varchar FK.
-ALTER TABLE `ServiceCategoryConfig` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionStatusDefinition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionStatusTransition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionDesignVersion` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionServiceItem` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionInstallationSite` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionComponent` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionNetworkConnection` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionRequirementMapping` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionDesignRisk` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SiteSurveyRequest` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SiteSurveyContact` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SiteSurveyResult` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SiteSurveyEstimatedItem` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SiteSurveyIntegrationLog` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `BoqHeader` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `BoqSection` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `BoqItem` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `BoqVersion` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-ALTER TABLE `SolutionReviewDecision` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+ALTER TABLE `ServiceCategoryConfig` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionStatusDefinition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionStatusTransition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionDesignVersion` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionServiceItem` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionInstallationSite` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionComponent` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionNetworkConnection` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionRequirementMapping` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionDesignRisk` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SiteSurveyRequest` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SiteSurveyContact` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SiteSurveyResult` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SiteSurveyEstimatedItem` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SiteSurveyIntegrationLog` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `BoqHeader` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `BoqSection` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `BoqItem` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `BoqVersion` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `SolutionReviewDecision` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `SolutionDesignVersion` ADD CONSTRAINT `SolutionDesignVersion_solutionDesignId_fkey` FOREIGN KEY (`solutionDesignId`) REFERENCES `SolutionDesign`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `SolutionServiceItem`
   ADD CONSTRAINT `SolutionServiceItem_solutionDesignId_fkey` FOREIGN KEY (`solutionDesignId`) REFERENCES `SolutionDesign`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,

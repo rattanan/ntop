@@ -10,7 +10,7 @@ CREATE TABLE `OpportunityPainPoint` (
   INDEX `OpportunityPainPoint_owner_updated_idx` (`ownerId`,`updatedAt`),
   CONSTRAINT `OpportunityPainPoint_opportunityId_fkey` FOREIGN KEY (`opportunityId`) REFERENCES `Opportunity`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `OpportunityPainPoint_ownerId_fkey` FOREIGN KEY (`ownerId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE `OpportunityRequirement` (
   `id` VARCHAR(191) NOT NULL, `opportunityId` VARCHAR(191) NOT NULL, `requirementNumber` VARCHAR(64) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE `OpportunityRequirement` (
   PRIMARY KEY (`id`), UNIQUE INDEX `OpportunityRequirement_opportunity_number_key` (`opportunityId`,`requirementNumber`),
   INDEX `OpportunityRequirement_opportunity_type_status_idx` (`opportunityId`,`requirementType`,`status`),
   CONSTRAINT `OpportunityRequirement_opportunityId_fkey` FOREIGN KEY (`opportunityId`) REFERENCES `Opportunity`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE `OpportunityStakeholder` (
   `id` VARCHAR(191) NOT NULL, `opportunityId` VARCHAR(191) NOT NULL, `contactId` VARCHAR(191) NULL,
@@ -38,7 +38,7 @@ CREATE TABLE `OpportunityStakeholder` (
   INDEX `OpportunityStakeholder_contactId_idx` (`contactId`),
   CONSTRAINT `OpportunityStakeholder_opportunityId_fkey` FOREIGN KEY (`opportunityId`) REFERENCES `Opportunity`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `OpportunityStakeholder_contactId_fkey` FOREIGN KEY (`contactId`) REFERENCES `Contact`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE `OpportunityCompetitor` (
   `id` VARCHAR(191) NOT NULL, `opportunityId` VARCHAR(191) NOT NULL, `competitorName` VARCHAR(255) NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE `OpportunityCompetitor` (
   `differentiation` TEXT NULL, `notes` TEXT NULL, `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, `updatedAt` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`), INDEX `OpportunityCompetitor_opportunity_threat_idx` (`opportunityId`,`threatLevel`),
   CONSTRAINT `OpportunityCompetitor_opportunityId_fkey` FOREIGN KEY (`opportunityId`) REFERENCES `Opportunity`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE `OpportunityRelatedCommandReceipt` (
   `id` VARCHAR(191) NOT NULL, `actorId` VARCHAR(191) NOT NULL, `idempotencyKey` VARCHAR(191) NOT NULL,
@@ -58,4 +58,4 @@ CREATE TABLE `OpportunityRelatedCommandReceipt` (
   INDEX `OpportunityRelatedReceipt_opportunity_created_idx` (`opportunityId`,`createdAt`),
   CONSTRAINT `OpportunityRelatedReceipt_actorId_fkey` FOREIGN KEY (`actorId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `OpportunityRelatedReceipt_opportunityId_fkey` FOREIGN KEY (`opportunityId`) REFERENCES `Opportunity`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

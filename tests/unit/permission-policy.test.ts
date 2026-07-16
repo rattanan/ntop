@@ -17,6 +17,7 @@ const expectedPermissions: Record<Role, readonly Permission[]> = {
     PERMISSIONS.recordUpdate,
     PERMISSIONS.aiMeetingDraftConfirm,
     PERMISSIONS.aiRiskExplain,
+    PERMISSIONS.activityComplete,
     PERMISSIONS.opportunityTransition,
     PERMISSIONS.quoteManage,
     PERMISSIONS.quoteSubmit,

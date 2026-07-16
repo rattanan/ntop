@@ -16,7 +16,7 @@ CREATE TABLE `OpportunityNumberSequence` (
   `nextValue` INTEGER NOT NULL DEFAULT 0,
   `updatedAt` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO `OpportunityNumberSequence` (`id`,`nextValue`,`updatedAt`)
 SELECT CONCAT('OPP-', YEAR(UTC_TIMESTAMP())), COALESCE(MAX(CAST(RIGHT(`opportunityNumber`, 6) AS UNSIGNED)), 0), UTC_TIMESTAMP(3)
@@ -39,4 +39,4 @@ CREATE TABLE `OpportunityProbabilityHistory` (
   INDEX `OpportunityProbabilityHistory_actor_time_idx` (`changedById`,`changedAt`),
   CONSTRAINT `OpportunityProbabilityHistory_opportunityId_fkey` FOREIGN KEY (`opportunityId`) REFERENCES `Opportunity`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `OpportunityProbabilityHistory_changedById_fkey` FOREIGN KEY (`changedById`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

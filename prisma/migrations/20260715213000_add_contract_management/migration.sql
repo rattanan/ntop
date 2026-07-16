@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `ContractStatusDefinition` (
 
     INDEX `ContractStatusDefinition_active_sortOrder_idx`(`active`, `sortOrder`),
     PRIMARY KEY (`code`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractStatusTransition` (
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `ContractStatusTransition` (
     INDEX `ContractStatusTransition_fromStatusCode_active_idx`(`fromStatusCode`, `active`),
     UNIQUE INDEX `ContractStatusTransition_fromStatusCode_toStatusCode_key`(`fromStatusCode`, `toStatusCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractTypeDefinition` (
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `ContractTypeDefinition` (
 
     INDEX `ContractTypeDefinition_active_name_idx`(`active`, `name`),
     PRIMARY KEY (`code`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `Contract` (
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `Contract` (
     INDEX `Contract_endDate_statusCode_idx`(`endDate`, `statusCode`),
     INDEX `Contract_nextRenewalAt_statusCode_idx`(`nextRenewalAt`, `statusCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractVersion` (
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS `ContractVersion` (
     INDEX `ContractVersion_amendmentId_idx`(`amendmentId`),
     UNIQUE INDEX `ContractVersion_contractId_versionNumber_key`(`contractId`, `versionNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractItem` (
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS `ContractItem` (
     INDEX `ContractItem_productId_idx`(`productId`),
     INDEX `ContractItem_solutionInstallationSiteId_idx`(`solutionInstallationSiteId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractReview` (
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `ContractReview` (
 
     INDEX `ContractReview_contractId_reviewType_status_createdAt_idx`(`contractId`, `reviewType`, `status`, `createdAt`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractDocument` (
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS `ContractDocument` (
 
     INDEX `ContractDocument_contractId_category_updatedAt_idx`(`contractId`, `category`, `updatedAt`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractDocumentVersion` (
@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS `ContractDocumentVersion` (
     INDEX `ContractDocumentVersion_documentId_createdAt_idx`(`documentId`, `createdAt`),
     UNIQUE INDEX `ContractDocumentVersion_documentId_versionNumber_key`(`documentId`, `versionNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractSignature` (
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS `ContractSignature` (
     INDEX `ContractSignature_contractId_status_signedAt_idx`(`contractId`, `status`, `signedAt`),
     UNIQUE INDEX `ContractSignature_contractVersionId_partyCode_key`(`contractVersionId`, `partyCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractAmendment` (
@@ -244,7 +244,7 @@ CREATE TABLE IF NOT EXISTS `ContractAmendment` (
     INDEX `ContractAmendment_contractId_status_createdAt_idx`(`contractId`, `status`, `createdAt`),
     UNIQUE INDEX `ContractAmendment_contractId_amendmentNo_key`(`contractId`, `amendmentNo`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractRenewal` (
@@ -262,7 +262,7 @@ CREATE TABLE IF NOT EXISTS `ContractRenewal` (
     INDEX `ContractRenewal_renewalDate_status_idx`(`renewalDate`, `status`),
     INDEX `ContractRenewal_contractId_status_renewalDate_idx`(`contractId`, `status`, `renewalDate`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractRenewalReminder` (
@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS `ContractRenewalReminder` (
     INDEX `ContractRenewalReminder_status_dueAt_idx`(`status`, `dueAt`),
     UNIQUE INDEX `ContractRenewalReminder_renewalId_daysBefore_key`(`renewalId`, `daysBefore`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractPurchaseOrder` (
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS `ContractPurchaseOrder` (
     INDEX `ContractPurchaseOrder_contractId_poDate_idx`(`contractId`, `poDate`),
     UNIQUE INDEX `ContractPurchaseOrder_contractId_poNumber_key`(`contractId`, `poNumber`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractServiceOrder` (
@@ -313,7 +313,7 @@ CREATE TABLE IF NOT EXISTS `ContractServiceOrder` (
     UNIQUE INDEX `ContractServiceOrder_orderNo_key`(`orderNo`),
     INDEX `ContractServiceOrder_contractId_status_createdAt_idx`(`contractId`, `status`, `createdAt`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractCommandReceipt` (
@@ -328,7 +328,7 @@ CREATE TABLE IF NOT EXISTS `ContractCommandReceipt` (
     INDEX `ContractCommandReceipt_contractId_createdAt_idx`(`contractId`, `createdAt`),
     UNIQUE INDEX `ContractCommandReceipt_actorId_idempotencyKey_command_key`(`actorId`, `idempotencyKey`, `command`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE IF NOT EXISTS `ContractNumberSequence` (
@@ -337,7 +337,7 @@ CREATE TABLE IF NOT EXISTS `ContractNumberSequence` (
     `updatedAt` DATETIME NOT NULL,
 
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
 ALTER TABLE `Contract` ADD CONSTRAINT `Contract_contractTypeCode_fkey` FOREIGN KEY (`contractTypeCode`) REFERENCES `ContractTypeDefinition`(`code`) ON DELETE RESTRICT ON UPDATE CASCADE;

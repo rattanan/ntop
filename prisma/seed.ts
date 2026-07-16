@@ -57,8 +57,14 @@ async function main() {
   for(const[sortOrder,[code,label,reportingCategory,terminal]]of contractStatuses.entries())await prisma.contractStatusDefinition.upsert({where:{code},update:{label,sortOrder,reportingCategory,terminal,active:true},create:{code,label,sortOrder,reportingCategory,terminal}});
   const contractTransitions = [["DRAFT","INTERNAL_REVIEW",null,false,[]],["INTERNAL_REVIEW","LEGAL_REVIEW","contract.review.manager",true,[]],["LEGAL_REVIEW","CUSTOMER_REVIEW","contract.review.legal",true,[]],["CUSTOMER_REVIEW","REVISION_REQUIRED","contract.manage",false,[]],["REVISION_REQUIRED","INTERNAL_REVIEW","contract.manage",false,[]],["CUSTOMER_REVIEW","PENDING_APPROVAL","contract.review.manager",true,[]],["PENDING_APPROVAL","CUSTOMER_SIGN_PENDING","contract.approve",true,[]],["CUSTOMER_SIGN_PENDING","NT_SIGN_PENDING","contract.signature.manage",false,["CUSTOMER"]],["NT_SIGN_PENDING","EFFECTIVE","contract.signature.manage",true,["CUSTOMER","NT"]],["EFFECTIVE","READY_FOR_SERVICE_ORDER","contract.service-order.create",false,["CUSTOMER","NT"]],["READY_FOR_SERVICE_ORDER","COMPLETED","contract.manage",true,[]]] as const;
   for(const[fromStatusCode,toStatusCode,requiredPermission,makerChecker,requiredSignatureParties]of contractTransitions)await prisma.contractStatusTransition.upsert({where:{fromStatusCode_toStatusCode:{fromStatusCode,toStatusCode}},update:{requiredPermission,makerChecker,requiredSignatureParties:[...requiredSignatureParties],active:true},create:{fromStatusCode,toStatusCode,requiredPermission,makerChecker,requiredSignatureParties:[...requiredSignatureParties]}});
-  const contractPermissionMatrix:Record<string,string[]>={ADMIN:["contract.view","contract.manage","contract.review.manager","contract.review.legal","contract.approve","contract.signature.manage","contract.service-order.create"],KAM:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"],TEAM_MANAGER:["contract.view","contract.review.manager"],LEGAL:["contract.view","contract.review.legal"],SALES_DIRECTOR:["contract.view","contract.approve"]};
+  const contractPermissionMatrix:Record<string,string[]>={ADMIN:["contract.view","contract.manage","contract.review.manager","contract.review.legal","contract.approve","contract.signature.manage","contract.service-order.create"],KAM:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"],TEAM_MANAGER:["contract.view","contract.review.manager"],LEGAL:["contract.view","contract.review.legal"],SALES_DIRECTOR:["contract.view","contract.approve"],ORDER_OPERATIONS:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"]};
   for(const[roleCode,codes]of Object.entries(contractPermissionMatrix))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
+  const activityStatuses = [["OPEN","Open","OPEN",false],["IN_PROGRESS","In Progress","ACTIVE",false],["COMPLETED","Completed","CLOSED",true],["CANCELLED","Cancelled","CLOSED",true]] as const;
+  for(const[sortOrder,[code,label,reportingCategory,terminal]]of activityStatuses.entries())await prisma.activityStatusDefinition.upsert({where:{code},update:{label,sortOrder,reportingCategory,terminal,active:true},create:{code,label,sortOrder,reportingCategory,terminal}});
+  const activityTransitions = [["OPEN","IN_PROGRESS"],["OPEN","COMPLETED"],["IN_PROGRESS","OPEN"],["IN_PROGRESS","COMPLETED"]] as const;
+  for(const[fromStatusCode,toStatusCode]of activityTransitions)await prisma.activityStatusTransition.upsert({where:{fromStatusCode_toStatusCode:{fromStatusCode,toStatusCode}},update:{requiredPermission:"activity.complete",ownerOnly:true,active:true},create:{fromStatusCode,toStatusCode,requiredPermission:"activity.complete",ownerOnly:true}});
+  const activityPermissionMatrix:Record<string,string[]>={ADMIN:["activity.assign","activity.complete"],TEAM_MANAGER:["activity.assign","activity.complete"],KAM:["activity.complete"],PRESALES:["activity.complete"],SOLUTION_ARCHITECT:["activity.complete"],COVERAGE:["activity.complete"],ORDER_OPERATIONS:["activity.complete"]};
+  for(const[roleCode,codes]of Object.entries(activityPermissionMatrix))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
   if (!demoMode) return;
   const demoPassword = process.env.SEED_DEMO_PASSWORD;
   if (!demoPassword || demoPassword.length < 12) throw new Error("Set SEED_DEMO_PASSWORD to 12+ characters when SEED_DEMO_DATA=1.");
@@ -69,15 +75,19 @@ async function main() {
     ["sales2@example.test", "พนักงานขายทดสอบ 2", "KAM", "SELF"],
     ["sales3@example.test", "พนักงานขายทดสอบ 3", "KAM", "SELF"],
     ["manager@example.test", "ผู้จัดการฝ่ายขายทดสอบ", "TEAM_MANAGER", "TEAM"],
+    ["director@example.test", "ผู้อำนวยการฝ่ายขายทดสอบ", "SALES_DIRECTOR", "ORG_UNIT"],
     ["marketing@example.test", "การตลาดทดสอบ", "MARKETING", "ORG_UNIT"],
     ["architect@example.test", "Solution Architect ทดสอบ", "SOLUTION_ARCHITECT", "ORG_UNIT"],
     ["presales@example.test", "Pre-Sales Engineer ทดสอบ", "PRESALES", "ORG_UNIT"],
     ["survey@example.test", "Survey Engineer ทดสอบ", "COVERAGE", "ASSIGNED_TASK"],
     ["pricing@example.test", "Commercial Approver ทดสอบ", "PRICING_APPROVER", "ORG_UNIT"],
+    ["legal@example.test", "Legal Reviewer ทดสอบ", "LEGAL", "ORG_UNIT"],
+    ["contract@example.test", "Contract Officer ทดสอบ", "ORDER_OPERATIONS", "ORG_UNIT"],
+    ["contract2@example.test", "Contract Officer ทดสอบ 2", "ORDER_OPERATIONS", "ORG_UNIT"],
   ] as const;
   const users = [];
   for (const [userEmail, name, roleCode, scopeCode] of people) {
-    const user = await prisma.user.upsert({ where: { email: userEmail }, update: { name, active: true }, create: { email: userEmail, name, passwordHash, role: Role.SALES } });
+    const user = await prisma.user.upsert({ where: { email: userEmail }, update: { name, passwordHash, active: true }, create: { email: userEmail, name, passwordHash, role: Role.SALES } });
     users.push(user);
     const existing = await prisma.userRoleAssignment.findFirst({ where: { userId: user.id, roleCode, scopeCode, organizationUnitId: unit.id, active: true } });
     if (!existing) await prisma.userRoleAssignment.create({ data: { userId: user.id, roleCode, scopeCode, organizationUnitId: unit.id, effectiveFrom: new Date("2026-01-01T00:00:00Z") } });
@@ -87,6 +97,9 @@ async function main() {
   const prospectPermissions = ["prospect.view","prospect.create","prospect.update","prospect.assign","prospect.convert","prospect.merge","prospect.archive","prospect.import","prospect.export","prospect.view_all"];
   const permissionMatrix:Record<string,string[]>={ADMIN:[...prospectPermissions,"prospect.soft_delete","prospect.view_deleted","prospect.restore","lead.archive","customer.lifecycle.manage"],SYSTEM_ADMIN:["prospect.view_deleted","prospect.restore","prospect.permanent_delete"],SALES_DIRECTOR:prospectPermissions,TEAM_MANAGER:[...prospectPermissions.filter(code=>code!=="prospect.view_all"),"prospect.soft_delete"],KAM:["prospect.view","prospect.create","prospect.update","prospect.convert","prospect.export"],MARKETING:["prospect.view","prospect.create","prospect.import","prospect.export"]};
   permissionMatrix.ADMIN.push("opportunity.probability.override");
+  permissionMatrix.ADMIN.push("activity.assign","activity.complete");
+  permissionMatrix.TEAM_MANAGER.push("activity.assign","activity.complete");
+  permissionMatrix.KAM.push("activity.complete");
   permissionMatrix.ADMIN.push("solution-design.view","solution-design.manage","solution-design.submit","solution-design.technical.approve","solution-design.commercial.approve","site-survey.view","site-survey.request","site-survey.coordinate","site-survey.perform","site-survey.result.approve","boq.view","boq.manage","boq.cost.view","boq.approve");
   permissionMatrix.KAM.push("solution-design.view","solution-design.manage","site-survey.view","site-survey.request","boq.view");
   permissionMatrix.PRESALES=["solution-design.view","solution-design.manage","solution-design.submit","site-survey.view","site-survey.request","site-survey.perform","boq.view","boq.manage","boq.cost.view"];
@@ -105,7 +118,7 @@ async function main() {
     {code:"NT-MPLS-100",name:"NT MPLS 100 Mbps",category:"Data Network",serviceCategoryCode:"MPLS",listPrice:"42000.0000",standardCost:"23000.0000",requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true},
     {code:"NT-CLOUD-MANAGED",name:"NT Managed Cloud Service",category:"Cloud",serviceCategoryCode:"CLOUD",listPrice:"30000.0000",standardCost:"18000.0000",requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false},
   ];
-  for(const product of productSeeds)await prisma.product.upsert({where:{code:product.code},update:product,create:product});
+  for(const product of productSeeds){const data={...product,costConfirmedAt:new Date("2026-01-01T00:00:00Z")};await prisma.product.upsert({where:{code:product.code},update:data,create:data});}
   const industries=await Promise.all([["GOV","ภาครัฐ"],["FIN","การเงินและธนาคาร"],["MFG","การผลิต"],["RET","ค้าปลีก"],["HEALTH","สาธารณสุข"]].map(([code,name])=>prisma.industry.upsert({where:{code},update:{active:true},create:{code,name}})));
   const territories=await Promise.all([["BKK","กรุงเทพมหานคร","CENTRAL"],["NORTH","ภาคเหนือ","NORTH"],["NE","ภาคตะวันออกเฉียงเหนือ","NORTHEAST"],["SOUTH","ภาคใต้","SOUTH"]].map(([code,name,region])=>prisma.salesTerritory.upsert({where:{code},update:{active:true},create:{code,name,region}})));
   await prisma.prospectScoringRuleVersion.upsert({where:{version:1},update:{active:true},create:{version:1,active:true,createdById:admin.id,hotThreshold:75,warmThreshold:40,weights:{estimatedValue:15,companySize:8,branches:7,industryFit:8,contractTiming:8,contactFrequency:8,interest:10,budget:8,purchasePeriod:7,sourceQuality:6,aiScore:8,recency:4,completeness:3}}});

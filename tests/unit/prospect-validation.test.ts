@@ -1,1 +1,22 @@
-import{describe,expect,it}from"vitest";import{prospectCommandSchema,prospectContactSchema}from"../../lib/prospect/prospect-validation";describe("Prospect validation",()=>{it("requires company and validates tax, URL and nonnegative money",()=>{expect(prospectCommandSchema.safeParse({companyName:"A",source:"MANUAL"}).success).toBe(false);expect(prospectCommandSchema.safeParse({companyName:"Valid Company",source:"MANUAL",taxId:"123",website:"bad",expectedBudget:"-1"}).success).toBe(false);expect(prospectCommandSchema.safeParse({companyName:"Valid Company",source:"MANUAL",taxId:"1234567890123",website:"https://example.test",expectedBudget:"0.0000"}).success).toBe(true);});it("requires a contact channel",()=>{expect(prospectContactSchema.safeParse({name:"Person",isPrimary:true}).success).toBe(false);expect(prospectContactSchema.safeParse({name:"Person",email:"p@example.test",isPrimary:true}).success).toBe(true);});});
+import { describe, expect, it } from "vitest";
+
+import { prospectCommandSchema } from "../../lib/prospect/prospect-validation";
+
+describe("prospectCommandSchema", () => {
+  it("accepts blank optional date fields from the browser form", () => {
+    const result = prospectCommandSchema.safeParse({
+      companyName: "Enterprise Test",
+      source: "MANUAL",
+      status: "NEW",
+      numberOfEmployees: undefined,
+      currentContractEndDate: "",
+      nextFollowUpAt: "",
+      contact: { name: "Test Contact", email: "contact@example.test", isPrimary: true },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.currentContractEndDate).toBeUndefined();
+      expect(result.data.nextFollowUpAt).toBeUndefined();
+    }
+  });
+});

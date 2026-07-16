@@ -17,7 +17,7 @@ import type { HeaderNotification } from "@/lib/notifications/header-notification
 
 function isActive(pathname: string, href: string) { return pathname === href || pathname.startsWith(`${href}/`); }
 
-export function AppShell({ children, user, notifications }: { children: React.ReactNode; user: { name: string; role: keyof typeof ROLE_LABELS }; notifications: HeaderNotification[] }) {
+export function AppShell({ children, user, notifications, version }: { children: React.ReactNode; user: { name: string; role: keyof typeof ROLE_LABELS }; notifications: HeaderNotification[]; version: string }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -50,7 +50,7 @@ export function AppShell({ children, user, notifications }: { children: React.Re
     <aside className={`app-sidebar ${mobileOpen ? "mobile-open" : ""}`}>
       <div className="sidebar-brand"><Link href="/dashboard"><Image src="/nt-logo.png" alt="NT" width={60} height={39} priority/><span><strong>NTOP</strong><small>Orchestration Platform</small></span></Link><button className="mobile-close" onClick={() => setMobileOpen(false)} aria-label="ปิดเมนู"><X/></button></div>
       <nav className="sidebar-nav" aria-label="เมนูหลัก">{navigation}</nav>
-      <div className="sidebar-footer"><button type="button" onClick={toggleCollapsed} aria-label={collapsed ? "ขยายเมนู" : "ย่อเมนู"}>{collapsed ? <PanelLeftOpen/> : <PanelLeftClose/>}<span>{collapsed ? "ขยาย" : "ย่อเมนู"}</span></button></div>
+      <div className="sidebar-footer"><button type="button" onClick={toggleCollapsed} aria-label={collapsed ? "ขยายเมนู" : "ย่อเมนู"}>{collapsed ? <PanelLeftOpen/> : <PanelLeftClose/>}<span>{collapsed ? "ขยาย" : "ย่อเมนู"}</span></button><small className="sidebar-version">Version {version}</small></div>
     </aside>
     <div className="app-workspace">
       <header className="workspace-header">

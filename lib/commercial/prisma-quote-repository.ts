@@ -233,6 +233,26 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
     return record ? toVersionRecord(record) : null;
   }
 
+  async transitionVersion(input: Parameters<QuoteRepository<Transaction>["transitionVersion"]>[0], transaction: Transaction) {
+    const changed = await transaction.quoteVersion.updateMany({
+      where: { id: input.version.id, status: input.version.status },
+      data: {
+        status: input.toStatus,
+        acceptedAt: input.toStatus === "ACCEPTED" ? input.transitionedAt : undefined,
+      },
+    });
+    if (!changed.count) throw new Error("Quote version changed concurrently.");
+    await transaction.quote.update({
+      where: { id: input.version.quoteId },
+      data: { status: input.toStatus, version: { increment: 1 } },
+    });
+    const record = await transaction.quoteVersion.findUniqueOrThrow({
+      where: { id: input.version.id },
+      include: versionInclude,
+    });
+    return toVersionRecord(record);
+  }
+
   async activeApprovalPolicy(transaction: Transaction): Promise<ActiveApprovalPolicy | null> {
     const record = await transaction.approvalPolicy.findFirst({
       where: { activeVersionId: { not: null } },

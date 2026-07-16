@@ -22,11 +22,13 @@ function quoteItems(form: FormData) {
 
 export async function createGovernedQuote(_: FormState, form: FormData): Promise<FormState> {
   const session = await requireSession();
+  const quoteId = text(form, "quoteId") || undefined;
   try {
     const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
     await createQuoteRuntime().createVersion(
       { ...session, authorization },
       {
+        quoteId,
         proposalId: text(form, "proposalId") || undefined,
         opportunityId: text(form, "opportunityId"),
         currency: "THB",
@@ -41,6 +43,7 @@ export async function createGovernedQuote(_: FormState, form: FormData): Promise
     return { message: error instanceof Error ? error.message : "ไม่สามารถสร้างใบเสนอราคาได้" };
   }
   revalidatePath("/quotes");
+  if (quoteId) revalidatePath(`/quotes/${quoteId}`);
   redirect("/quotes");
 }
 
@@ -54,5 +57,19 @@ export async function submitQuoteVersion(quoteId: string, quoteVersionId: string
     return { message: "ส่งขออนุมัติเรียบร้อย", status: "success" };
   } catch (error) {
     return { message: error instanceof Error ? error.message : "ไม่สามารถส่งอนุมัติได้" };
+  }
+}
+
+export async function transitionQuoteVersion(quoteId: string, quoteVersionId: string, toStatus: "SENT" | "ACCEPTED", _: FormState, form: FormData): Promise<FormState> {
+  const session = await requireSession();
+  try {
+    const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
+    await createQuoteRuntime().transition({ ...session, authorization }, quoteVersionId, toStatus, crypto.randomUUID(), text(form, "idempotencyKey"));
+    revalidatePath(`/quotes/${quoteId}`);
+    revalidatePath("/quotes");
+    revalidatePath("/contracts/new");
+    return { message: toStatus === "SENT" ? "บันทึกการส่งให้ลูกค้าแล้ว" : "บันทึกการยอมรับใบเสนอราคาแล้ว", status: "success" };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "ไม่สามารถเปลี่ยนสถานะใบเสนอราคาได้" };
   }
 }

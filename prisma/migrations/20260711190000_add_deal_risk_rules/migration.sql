@@ -24,7 +24,7 @@ CREATE TABLE `DealRiskRuleVersion` (
   `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   UNIQUE INDEX `DealRiskRuleVersion_ruleId_version_key`(`ruleId`, `version`),
   INDEX `DealRiskRuleVersion_ruleId_enabled_effectiveFrom_effectiveTo_idx`(`ruleId`, `enabled`, `effectiveFrom`, `effectiveTo`),
-  INDEX `DealRiskRuleVersion_riskType_enabled_effectiveFrom_effectiveTo_idx`(`riskType`, `enabled`, `effectiveFrom`, `effectiveTo`),
+  INDEX `DealRiskRuleVersion_risk_effective_idx`(`riskType`, `enabled`, `effectiveFrom`, `effectiveTo`),
   PRIMARY KEY (`id`),
   CONSTRAINT `DealRiskRuleVersion_effective_period_chk` CHECK (`effectiveTo` IS NULL OR `effectiveTo` > `effectiveFrom`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

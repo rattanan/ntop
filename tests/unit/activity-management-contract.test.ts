@@ -17,6 +17,7 @@ describe("Activity management contract", () => {
     expect(schema).toMatch(/model Activity[\s\S]*version\s+Int\s+@default\(1\)[\s\S]*deletedAt\s+DateTime\?/);
     expect(migration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
     expect(migration).toContain("Activity_owner_deleted_created_idx");
+    expect(migration).not.toContain("CURRENT_TIMESTAMP(3)");
   });
   it("provides scoped detail, edit and delete routes", () => {
     expect(list).toContain("buildActivityScopeWhere"); expect(list).toContain("/edit`}"); expect(detail).toContain("ActivityDeleteButton"); expect(edit).toContain("ActivityEditForm");

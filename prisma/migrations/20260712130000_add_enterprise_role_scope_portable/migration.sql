@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS `OrganizationUnit` (
   CONSTRAINT `OrganizationUnit_parentId_fkey`
     FOREIGN KEY (`parentId`) REFERENCES `OrganizationUnit`(`id`)
     ON DELETE SET NULL ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `UserRoleAssignment` (
   `id` VARCHAR(191) NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `UserRoleAssignment` (
   CONSTRAINT `UserRoleAssignment_organizationUnitId_fkey`
     FOREIGN KEY (`organizationUnitId`) REFERENCES `OrganizationUnit`(`id`)
     ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ALTER TABLE `Customer`
   ADD COLUMN `organizationUnitId` VARCHAR(191) NULL,
