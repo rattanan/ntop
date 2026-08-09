@@ -52,3 +52,18 @@ export async function loadAuthorizationContext(input: {
         : [legacyRoleAssignment(input.legacyRole)],
   };
 }
+
+export async function loadGrantedPermissions(
+  context: AuthorizationContext,
+): Promise<string[]> {
+  const roleCodes = [...new Set(context.assignments.map((assignment) => assignment.role))];
+  if (roleCodes.length === 0) return [];
+
+  const grants = await prisma.rolePermissionGrant.findMany({
+    where: { roleCode: { in: roleCodes } },
+    select: { permissionCode: true },
+    orderBy: { permissionCode: "asc" },
+  });
+
+  return [...new Set(grants.map((grant) => grant.permissionCode))];
+}

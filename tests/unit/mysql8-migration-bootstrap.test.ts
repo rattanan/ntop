@@ -61,8 +61,9 @@ describe("MySQL 8 bootstrap collation", () => {
       } catch {
         continue;
       }
-      expect(source, directory).not.toContain("utf8mb4_general_ci");
-      expect(source, directory).not.toMatch(/DEFAULT CHARACTER SET utf8mb4;/);
+      const executableSql = source.replace(/^\s*--.*$/gm, "");
+      expect(executableSql, directory).not.toContain("utf8mb4_general_ci");
+      expect(executableSql, directory).not.toMatch(/DEFAULT CHARACTER SET utf8mb4;/);
     }
   });
 

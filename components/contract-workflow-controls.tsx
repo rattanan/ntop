@@ -7,6 +7,7 @@ import { Notice, type NoticeVariant } from "@/components/notice";
 
 type TransitionOption = { code: string; label: string };
 type DocumentOption = { id: string; label: string };
+type ServiceOrderOption = { id: string; orderNo: string; status: string };
 
 async function payload(response: Response) {
   const result = await response.json();
@@ -14,9 +15,9 @@ async function payload(response: Response) {
   return result.data;
 }
 
-export function ContractWorkflowControls({ contractId, version, transitions, canUploadDocument, canSign, documents }: { contractId: string; version: number; transitions: TransitionOption[]; canUploadDocument: boolean; canSign: boolean; documents: DocumentOption[] }) {
+export function ContractWorkflowControls({ contractId, version, transitions, canUploadDocument, canSign, canCreateServiceOrder, documents, serviceOrders }: { contractId: string; version: number; transitions: TransitionOption[]; canUploadDocument: boolean; canSign: boolean; canCreateServiceOrder: boolean; documents: DocumentOption[]; serviceOrders: ServiceOrderOption[] }) {
   const router = useRouter();
-  const [pending, setPending] = useState<"transition" | "document" | "signature" | null>(null);
+  const [pending, setPending] = useState<"transition" | "document" | "signature" | "serviceOrder" | null>(null);
   const [message, setMessage] = useState<{ text: string; variant: NoticeVariant } | null>(null);
 
   return <div className="grid-2" data-testid="contract-workflow-controls">
@@ -42,6 +43,21 @@ export function ContractWorkflowControls({ contractId, version, transitions, can
       <label className="field full"><span>Comment / reason</span><textarea className="control" name="comment" minLength={3} required /></label>
       <div className="field full"><button className="primary" data-testid="contract-transition-submit" disabled={pending !== null}>{pending === "transition" ? "กำลังเปลี่ยนสถานะ…" : "ยืนยัน Transition"}</button></div>
     </div></form>}
+
+    {(canCreateServiceOrder || serviceOrders.length > 0) && <section className="card" data-testid="contract-service-order-panel"><div className="card-header"><strong>Order Handoff</strong><span className="badge muted">NTOP orchestration record</span></div><div className="card-body">
+      {serviceOrders.length > 0 ? <div className="proposal-status-cards">{serviceOrders.map((order) => <div key={order.id}><span>Service Order</span><strong>{order.orderNo}</strong><small>{order.status} · ยังไม่ถือว่า NTSP integration สำเร็จ</small></div>)}</div> : <form onSubmit={async (event) => {
+        event.preventDefault();
+        if (!window.confirm("ยืนยันสร้าง Service Order จาก Contract Version ปัจจุบัน?")) return;
+        setPending("serviceOrder"); setMessage(null);
+        try {
+          const result = await payload(await fetch(`/api/v1/contracts/${contractId}/service-orders`, { method: "POST", headers: { "idempotency-key": crypto.randomUUID() } }));
+          setMessage({ text: result.reused ? `มี Service Order ${result.orderNo} อยู่แล้ว` : `สร้าง Service Order ${result.orderNo} เรียบร้อย`, variant: "success" });
+          router.refresh();
+        } catch (error) {
+          setMessage({ text: error instanceof Error ? error.message : "สร้าง Service Order ไม่สำเร็จ", variant: "error" });
+        } finally { setPending(null); }
+      }}><p className="help">สร้าง handoff record แบบ DRAFT เท่านั้น ระบบจะไม่แสดง Integration Success จนกว่าจะได้รับ acknowledgement จากระบบปลายทางจริง</p><button className="primary" data-testid="contract-service-order-submit" disabled={pending !== null}>{pending === "serviceOrder" ? "กำลังสร้าง…" : "สร้าง Service Order"}</button></form>}
+    </div></section>}
 
     {canUploadDocument && <form className="card" onSubmit={async (event) => {
       event.preventDefault();

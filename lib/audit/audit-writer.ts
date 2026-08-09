@@ -39,8 +39,8 @@ export interface AuditWriter<TTransaction = unknown> {
 }
 
 export class AuditWriteError extends Error {
-  constructor() {
-    super("Required audit event could not be recorded.");
+  constructor(cause?: unknown) {
+    super("Required audit event could not be recorded.", { cause });
     this.name = "AuditWriteError";
   }
 }
@@ -83,8 +83,8 @@ export class AppendOnlyAuditWriter<TTransaction = unknown>
 
     try {
       await this.store.append(event, options?.transaction);
-    } catch {
-      throw new AuditWriteError();
+    } catch (cause) {
+      throw new AuditWriteError(cause);
     }
 
     return event;

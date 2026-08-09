@@ -2,28 +2,29 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync("app/(portal)/dashboard/page.tsx", "utf8");
-const css = readFileSync("app/globals.css", "utf8");
+const component = readFileSync("components/dashboard/dashboard-view.tsx", "utf8");
 
-describe("dashboard insight panels", () => {
-  it("renders status data as an accessible dynamic chart", () => {
-    expect(page).toContain("statuses.map((item)");
-    expect(page).toContain("<progress value={count}");
-    expect(page).toContain("aria-label={`${item.status} ${count} รายการ คิดเป็น ${percentage}%`}");
-    expect(page).toContain("Math.max(totalLeads,1)");
+describe("dashboard states and insights", () => {
+  it("renders server-scoped data and a permission denied state", () => {
+    expect(page).toContain("loadDashboardData");
+    expect(page).toContain("DashboardAccessError");
+    expect(page).toContain('data-testid="dashboard-permission-denied"');
   });
 
-  it("presents scoped information as metrics and an overdue action", () => {
-    expect(page).toContain('className="scope-metrics"');
-    expect(page).toContain('className="scope-action" href="/leads?overdue=1"');
-    expect(page).toContain("customers.toLocaleString");
-    expect(page).toContain("activities.toLocaleString");
+  it("renders all requested pipeline dimensions and an accessible table alternative", () => {
+    for (const dimension of ["stage", "segment", "product", "owner", "month"]) {
+      expect(component).toContain(`data.charts.${dimension}`);
+    }
+    expect(component).toContain('<table className="sr-only">');
+    expect(component).toContain("role=\"img\"");
   });
 
-  it("keeps both cards equal-height and responsive", () => {
-    expect(css).toContain(".dashboard-insights { grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch; }");
-    expect(css).toContain(".dashboard-insights>.card+.card { margin-top:0; }");
-    expect(css).toContain(".dashboard-visual-card { height:100%;display:flex;flex-direction:column;overflow:hidden; }");
-    expect(css).toContain(".dashboard-insights { grid-template-columns:1fr; }");
-    expect(css).toContain(".scope-metrics { grid-template-columns:1fr; }");
+  it("supports filter persistence, drill-down, export and all explicit UI states", () => {
+    expect(component).toContain('localStorage.getItem("ntop-dashboard-filters")');
+    expect(component).toContain("item.href");
+    expect(component).toContain("/api/v1/dashboard/export");
+    expect(component).toContain('data-testid="dashboard-empty"');
+    expect(readFileSync("app/(portal)/dashboard/loading.tsx", "utf8")).toContain('data-testid="dashboard-loading"');
+    expect(readFileSync("app/(portal)/dashboard/error.tsx", "utf8")).toContain('data-testid="dashboard-error"');
   });
 });

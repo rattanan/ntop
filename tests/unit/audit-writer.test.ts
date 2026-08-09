@@ -65,18 +65,18 @@ describe("AppendOnlyAuditWriter", () => {
     expect(append).toHaveBeenCalledWith(event, transaction);
   });
 
-  it("fails closed without exposing the storage error", async () => {
+  it("fails closed, preserves the server-side cause, and keeps the public message generic", async () => {
+    const storageError = new Error("database secret details");
     const append = vi
       .fn<AuditAppendStore["append"]>()
-      .mockRejectedValue(new Error("database secret details"));
+      .mockRejectedValue(storageError);
     const writer = new AppendOnlyAuditWriter({ store: { append } });
 
-    await expect(writer.append(input)).rejects.toEqual(
-      new AuditWriteError(),
-    );
-    await expect(writer.append(input)).rejects.not.toThrow(
-      "database secret details",
-    );
+    const error = await writer.append(input).catch(cause => cause);
+    expect(error).toBeInstanceOf(AuditWriteError);
+    expect(error.message).toBe("Required audit event could not be recorded.");
+    expect(error.message).not.toContain("database secret details");
+    expect(error.cause).toBe(storageError);
     expect(AUDIT_FAILURE_POLICY).toBe("FAIL_CLOSED");
   });
 });

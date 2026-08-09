@@ -5,7 +5,7 @@ import { calculateContractFinancials } from "./contract-financials";
 import type { ContractCreateInput, ContractEditInput } from "./contracts";
 
 export type ContractActor = { id: string; role: "ADMIN" | "SALES" | "VIEWER"; authorization: AuthorizationContext };
-export type ContractRecord = { id: string; contractNo: string; customerId: string; ownerId: string; version: number; statusCode: string; terminal: boolean; latestVersionId: string; cleanSignatureParties: string[] };
+export type ContractRecord = { id: string; contractNo: string; customerId: string; ownerId: string; version: number; statusCode: string; reportingCategory: string; terminal: boolean; latestVersionId: string; cleanSignatureParties: string[] };
 type QuoteSource = { quoteId: string; quoteVersionId: string; status: string; customerId: string; opportunityId: string | null; organizationUnitId: string | null; proposalId: string | null; currency: string; sourceSnapshot: Record<string, unknown> };
 type Transition = { requiredPermission: string | null; makerChecker: boolean; requiredSignatureParties: string[] };
 
@@ -25,6 +25,7 @@ export interface ContractRepository<Tx> {
   statusIsActive(code: string, tx: Tx): Promise<{ terminal: boolean } | null>;
   actorHasPermission(actorId: string, permission: string, tx: Tx): Promise<boolean>;
   createSignature(input: { contract: ContractRecord; actorId: string; partyCode: string; documentVersionId: string; signedByName: string; signedAt: Date }, tx: Tx): Promise<boolean>;
+  findServiceOrder(contractId: string, contractVersionId: string, tx: Tx): Promise<{ id: string; orderNo: string } | null>;
   createServiceOrder(input: { contract: ContractRecord; actorId: string; now: Date }, tx: Tx): Promise<{ id: string; orderNo: string }>;
 }
 
@@ -80,10 +81,12 @@ export class ContractService<Tx> {
     assertPermission(actor, PERMISSIONS.contractServiceOrderCreate, this.permissions);
     return this.repository.transaction(async (tx) => {
       const contract = await this.required(contractId, actor, tx);
-      if (!new Set(["EFFECTIVE", "READY_FOR_SERVICE_ORDER"]).has(contract.statusCode)) throw new ContractServiceOrderError();
+      if (contract.reportingCategory !== "ACTIVE") throw new ContractServiceOrderError();
+      const existing = await this.repository.findServiceOrder(contract.id, contract.latestVersionId, tx);
+      if (existing) return { ...existing, reused: true };
       const order = await this.repository.createServiceOrder({ contract, actorId: actor.id, now: this.now() }, tx);
       await this.audit.append({ actorId: actor.id, action: "contract.service-order.create", targetType: "ContractServiceOrder", targetId: order.id, targetVersion: "1", outcome: "SUCCESS", correlationId, data: { contractId } }, { transaction: tx });
-      return order;
+      return { ...order, reused: false };
     });
   }
 

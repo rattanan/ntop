@@ -1,0 +1,45 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  visibleNavigation,
+  visibleQuickCreate,
+} from "../../components/app-navigation";
+import {
+  NAVIGATION_PERMISSIONS,
+  QUICK_CREATE_PERMISSIONS,
+} from "../../lib/authorization/navigation-permissions";
+
+describe("permission-driven application navigation", () => {
+  it("shows only modules granted by server-side permission configuration", () => {
+    const groups = visibleNavigation([
+      NAVIGATION_PERMISSIONS.contracts,
+      NAVIGATION_PERMISSIONS.approvals,
+    ]);
+    const routes = groups.flatMap((group) => group.items.map((item) => item.href));
+
+    expect(routes).toEqual(["/contracts", "/approvals"]);
+    expect(routes).not.toContain("/prospects");
+    expect(routes).not.toContain("/admin/users");
+  });
+
+  it("allows audit navigation without exposing administration mutations", () => {
+    const groups = visibleNavigation([NAVIGATION_PERMISSIONS.adminAudit]);
+    const routes = groups.flatMap((group) => group.items.map((item) => item.href));
+
+    expect(routes).toEqual(["/admin/audit"]);
+  });
+
+  it("filters quick create independently from read navigation", () => {
+    const items = visibleQuickCreate([
+      NAVIGATION_PERMISSIONS.prospects,
+      QUICK_CREATE_PERMISSIONS.activity,
+    ]);
+
+    expect(items.map((item) => item.href)).toEqual(["/activities/new"]);
+  });
+
+  it("returns no protected modules when no permission was granted", () => {
+    expect(visibleNavigation([])).toEqual([]);
+    expect(visibleQuickCreate([])).toEqual([]);
+  });
+});

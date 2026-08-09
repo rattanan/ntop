@@ -22,11 +22,11 @@ function readRoutes(key: string) {
 export function EnterpriseCommandPalette({
   open,
   onOpenChange,
-  isAdmin,
+  grantedPermissions,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isAdmin: boolean;
+  grantedPermissions: readonly string[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -37,8 +37,8 @@ export function EnterpriseCommandPalette({
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
   const items = useMemo(
-    () => visibleNavigation(isAdmin).flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))),
-    [isAdmin],
+    () => visibleNavigation(grantedPermissions).flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))),
+    [grantedPermissions],
   );
 
   useEffect(() => {
