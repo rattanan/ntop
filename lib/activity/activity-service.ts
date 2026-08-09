@@ -40,6 +40,7 @@ export interface ActivityRepository {
   assignVersioned(id: string, expectedVersion: number, ownerId: string, transaction: ActivityTransaction): Promise<{ id: string; version: number } | null>;
   findTransition(fromStatusCode: string, toStatusCode: string, transaction: ActivityTransaction): Promise<{ requiredPermission: string | null; ownerOnly: boolean; targetTerminal: boolean } | null>;
   transitionVersioned(id: string, expectedVersion: number, input: { toStatusCode: string; completedAt: Date | null; completionOutcome: string | null }, transaction: ActivityTransaction): Promise<{ id: string; version: number; statusCode: string } | null>;
+  recordStatusHistory(input: { activityId: string; fromStatusCode: string; toStatusCode: string; reason: string; outcome: string | null; actorId: string; correlationId: string }, transaction: ActivityTransaction): Promise<void>;
 }
 
 export class ActivityService {
@@ -108,6 +109,15 @@ export class ActivityService {
       if (edge.ownerOnly && current.ownerId !== actor.id) throw new PermissionDeniedError(PERMISSIONS.activityComplete);
       const updated = await this.repository.transitionVersioned(id, parsed.data.expectedVersion, { toStatusCode: parsed.data.toStatusCode, completedAt: edge.targetTerminal && parsed.data.toStatusCode === "COMPLETED" ? new Date() : null, completionOutcome: parsed.data.outcome || null }, transaction);
       if (!updated) throw new ActivityConflictError();
+      await this.repository.recordStatusHistory({
+        activityId: id,
+        fromStatusCode: current.statusCode,
+        toStatusCode: updated.statusCode,
+        reason: parsed.data.reason,
+        outcome: parsed.data.outcome || null,
+        actorId: actor.id,
+        correlationId,
+      }, transaction);
       await this.audit.append({ actorId: actor.id, action: "activity.transition", targetType: "Activity", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, reason: parsed.data.reason, data: { fromStatusCode: current.statusCode, toStatusCode: updated.statusCode, completionOutcome: parsed.data.outcome || null } }, { transaction });
       return updated;
     });

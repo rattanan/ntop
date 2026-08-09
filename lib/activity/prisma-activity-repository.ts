@@ -50,4 +50,7 @@ export class PrismaActivityRepository implements ActivityRepository {
     const updated = await transaction.activity.updateMany({ where: { id, version: expectedVersion, deletedAt: null }, data: { statusCode: input.toStatusCode, completedAt: input.completedAt, completionOutcome: input.completionOutcome, version: { increment: 1 } } });
     return updated.count === 1 ? transaction.activity.findUniqueOrThrow({ where: { id }, select: { id: true, version: true, statusCode: true } }) : null;
   }
+  async recordStatusHistory(input: { activityId: string; fromStatusCode: string; toStatusCode: string; reason: string; outcome: string | null; actorId: string; correlationId: string }, transaction: ActivityTransaction) {
+    await transaction.activityStatusHistory.create({ data: input });
+  }
 }

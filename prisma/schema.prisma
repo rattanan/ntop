@@ -327,6 +327,7 @@ model User {
   ownedDeals                      Opportunity[]                      @relation("OpportunityOwner")
   ownedLeads                      Lead[]                             @relation("LeadOwner")
   activities                      Activity[]                         @relation("ActivityOwner")
+  activityStatusActions           ActivityStatusHistory[]            @relation("ActivityStatusActor")
   requestedAiJobs                 AiJob[]                            @relation("AiJobRequester")
   confirmedAiOutputs              AiOutput[]                         @relation("AiOutputConfirmer")
   aiFeedback                      AiFeedback[]                       @relation("AiFeedbackActor")
@@ -794,6 +795,7 @@ model Activity {
   deletedById                        String?
   meetingDraftConfirmation           MeetingDraftConfirmation? @relation("MeetingConfirmationActivity")
   meetingDraftNextActionConfirmation MeetingDraftConfirmation? @relation("MeetingConfirmationNextAction")
+  statusHistory                      ActivityStatusHistory[]
 
   @@index([leadId, createdAt])
   @@index([prospectId, createdAt])
@@ -812,6 +814,8 @@ model ActivityStatusDefinition {
   activities        Activity[]
   fromTransitions   ActivityStatusTransition[] @relation("ActivityTransitionFrom")
   toTransitions     ActivityStatusTransition[] @relation("ActivityTransitionTo")
+  historyFrom       ActivityStatusHistory[]    @relation("ActivityHistoryFromStatus")
+  historyTo         ActivityStatusHistory[]    @relation("ActivityHistoryToStatus")
   createdAt         DateTime                   @default(now())
   updatedAt         DateTime                   @updatedAt
 
@@ -832,6 +836,25 @@ model ActivityStatusTransition {
 
   @@unique([fromStatusCode, toStatusCode])
   @@index([fromStatusCode, active])
+}
+
+model ActivityStatusHistory {
+  id             String                   @id @default(cuid())
+  activityId     String
+  activity       Activity                 @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  fromStatusCode String                   @db.VarChar(32)
+  fromStatus     ActivityStatusDefinition @relation("ActivityHistoryFromStatus", fields: [fromStatusCode], references: [code], onDelete: Restrict)
+  toStatusCode   String                   @db.VarChar(32)
+  toStatus       ActivityStatusDefinition @relation("ActivityHistoryToStatus", fields: [toStatusCode], references: [code], onDelete: Restrict)
+  reason         String                   @db.VarChar(1000)
+  outcome        String?                  @db.Text
+  actorId        String
+  actor          User                     @relation("ActivityStatusActor", fields: [actorId], references: [id], onDelete: Restrict)
+  correlationId  String                   @db.VarChar(191)
+  transitionedAt DateTime                 @default(now())
+
+  @@index([activityId, transitionedAt])
+  @@index([actorId, transitionedAt])
 }
 
 model Industry {

@@ -11,7 +11,10 @@ describe("Pipeline dashboard UI", () => {
     expect(page).toContain("loadAuthorizationContext");
     expect(page).toContain("repository.listFacts");
     expect(page).toContain("prisma.salesTarget.findMany");
+    expect(page).toContain("prisma.opportunityStageHistory.findMany");
     expect(page).toContain('toStage: "WON"');
+    expect(page).toContain("id: { in: wonTransitions.map");
+    expect(page).not.toContain("stageHistory: { some:");
     expect(page).not.toContain("mock");
   });
 

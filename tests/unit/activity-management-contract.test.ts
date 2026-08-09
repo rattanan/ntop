@@ -11,6 +11,8 @@ const component = readFileSync("components/activity-management.tsx", "utf8");
 const opportunity = readFileSync("lib/opportunity/opportunity-query-service.ts", "utf8");
 const prospect = readFileSync("app/(portal)/prospects/[id]/page.tsx", "utf8");
 const lead = readFileSync("app/(portal)/leads/[id]/page.tsx", "utf8");
+const permissionMigration = readFileSync("prisma/migrations/20260716224500_provision_activity_permissions/migration.sql", "utf8");
+const historyMigration = readFileSync("prisma/migrations/20260716230000_add_activity_status_history/migration.sql", "utf8");
 
 describe("Activity management contract", () => {
   it("uses additive versioned soft delete schema", () => {
@@ -30,5 +32,28 @@ describe("Activity management contract", () => {
     expect(opportunity).toContain("activities: { where: { deletedAt: null }");
     expect(prospect).toContain("activities: { where: { deletedAt: null }");
     expect(lead).toContain("activities:{where:{deletedAt:null}");
+  });
+  it("provisions workflow permissions without relying on demo seed", () => {
+    expect(permissionMigration).toContain("'activity.assign'");
+    expect(permissionMigration).toContain("'activity.complete'");
+    expect(permissionMigration).toContain("'TEAM_MANAGER'");
+    expect(permissionMigration).toContain("'KAM'");
+    expect(permissionMigration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
+  });
+  it("explains why a non-owner cannot change status and how to continue", () => {
+    expect(detail).toContain("const isOwner = activity.ownerId === session.id");
+    expect(detail).toContain("ผู้รับผิดชอบจึงเป็นผู้เปลี่ยนสถานะ");
+    expect(detail).toContain("ให้มอบหมาย Activity ให้ตัวเองก่อน");
+    expect(detail).toContain("activity.complete");
+  });
+  it("persists and displays Activity status history", () => {
+    expect(schema).toContain("model ActivityStatusHistory");
+    expect(historyMigration).toContain("CREATE TABLE `ActivityStatusHistory`");
+    expect(historyMigration).toContain("ActivityStatusHistory_activityId_transitionedAt_idx");
+    expect(historyMigration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
+    expect(detail).toContain("statusHistory:");
+    expect(detail).toContain("ประวัติสถานะ");
+    expect(detail).toContain("history.fromStatus.label");
+    expect(detail).toContain("history.actor.name");
   });
 });

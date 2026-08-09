@@ -26,4 +26,9 @@ describe("dashboard insight panels", () => {
     expect(css).toContain(".dashboard-insights { grid-template-columns:1fr; }");
     expect(css).toContain(".scope-metrics { grid-template-columns:1fr; }");
   });
+
+  it("isolates proposal chart layout from the dashboard status rows", () => {
+    expect(css).toContain(".proposal-dashboard-grid .status-chart>div");
+    expect(css).not.toMatch(/(?:^|\n)\.status-chart>div\s*\{/);
+  });
 });

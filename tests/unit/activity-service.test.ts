@@ -14,6 +14,7 @@ function setup() {
     assignVersioned: vi.fn(async () => ({ id: "activity-1", version: 3 })),
     findTransition: vi.fn(async () => ({ requiredPermission: "activity.complete", ownerOnly: true, targetTerminal: true })),
     transitionVersioned: vi.fn(async () => ({ id: "activity-1", version: 3, statusCode: "COMPLETED" })),
+    recordStatusHistory: vi.fn(async () => undefined),
   };
   const audit = { append: vi.fn(async () => ({ id: "audit-1" })) };
   const service = new ActivityService(repository as never, audit as never);
@@ -58,6 +59,7 @@ describe("ActivityService", () => {
     await expect(service.transition(actor as never, "activity-1", { expectedVersion: 2, toStatusCode: "COMPLETED", reason: "Customer follow-up finished", outcome: "Kickoff confirmed" }, "corr-5")).resolves.toMatchObject({ statusCode: "COMPLETED" });
     expect(repository.findTransition).toHaveBeenCalledWith("OPEN", "COMPLETED", tx);
     expect(repository.transitionVersioned).toHaveBeenCalledWith("activity-1", 2, expect.objectContaining({ toStatusCode: "COMPLETED", completionOutcome: "Kickoff confirmed", completedAt: expect.any(Date) }), tx);
+    expect(repository.recordStatusHistory).toHaveBeenCalledWith({ activityId: "activity-1", fromStatusCode: "OPEN", toStatusCode: "COMPLETED", reason: "Customer follow-up finished", outcome: "Kickoff confirmed", actorId: "user-1", correlationId: "corr-5" }, tx);
     expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.transition", data: expect.objectContaining({ fromStatusCode: "OPEN", toStatusCode: "COMPLETED" }) }), { transaction: tx });
   });
 
@@ -66,5 +68,6 @@ describe("ActivityService", () => {
     vi.mocked(repository.findAccessible).mockResolvedValue({ id: "activity-1", version: 2, ownerId: "user-2", statusCode: "OPEN", terminal: false, customerId: "customer-1", opportunityId: null });
     await expect(service.transition(actor as never, "activity-1", { expectedVersion: 2, toStatusCode: "COMPLETED", reason: "Try complete" }, "corr-6")).rejects.toThrow("Permission denied");
     expect(repository.transitionVersioned).not.toHaveBeenCalled();
+    expect(repository.recordStatusHistory).not.toHaveBeenCalled();
   });
 });

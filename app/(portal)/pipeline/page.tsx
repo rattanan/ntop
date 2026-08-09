@@ -46,8 +46,18 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
     select: { targetAmount: true }, take: 100,
   });
   const salesTarget = money(targets.reduce((sum, target) => sum.plus(target.targetAmount), ZERO));
+  const wonTransitions = await prisma.opportunityStageHistory.findMany({
+    where: { toStage: "WON", transitionedAt: { gte: period.periodStart, lt: period.periodEnd } },
+    select: { opportunityId: true },
+    distinct: ["opportunityId"],
+    take: 10_000,
+  });
   const wonRecords = await prisma.opportunity.findMany({
-    where: { ...buildOpportunityScopeWhere(context), stage: "WON", stageHistory: { some: { toStage: "WON", transitionedAt: { gte: period.periodStart, lt: period.periodEnd } } } },
+    where: {
+      ...buildOpportunityScopeWhere(context),
+      id: { in: wonTransitions.map((transition) => transition.opportunityId) },
+      stage: "WON",
+    },
     select: { estimatedValue: true }, take: 10_000,
   });
   const actualClosedWon = money(wonRecords.reduce((sum, record) => sum.plus(record.estimatedValue), ZERO));

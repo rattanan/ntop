@@ -11,7 +11,7 @@ describe("application version footer contract", () => {
     const layout = read("app/(portal)/layout.tsx");
     const shell = read("components/app-shell.tsx");
 
-    expect(packageMetadata.version).toBe("0.1.0");
+    expect(packageMetadata.version).toBe("0.1.1");
     expect(layout).toContain("version={packageMetadata.version}");
     expect(shell).toContain('className="sidebar-version"');
     expect(shell).toContain("Version {version}");
