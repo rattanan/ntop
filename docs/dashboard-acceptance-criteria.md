@@ -12,3 +12,4 @@
 10. The page exposes loading, empty, recoverable error, and permission-denied states and shows the last successful refresh time in Asia/Bangkok.
 11. The dashboard uses semantic NT yellow/white design tokens, a persisted light/dark/system-compatible theme, visible focus states, reduced-motion support, and layouts verified at desktop, tablet, and mobile widths.
 12. Unit, real-database integration, and Playwright tests prove role visibility, cross-owner isolation, filters, drill-down, source-count reconciliation, export, responsive layouts, and state rendering.
+13. In dark mode, the dashboard hero, sidebar identity, breadcrumb, signed-in user identity, and sidebar footer use explicit semantic foreground tokens; normal text has WCAG AA contrast of at least 4.5:1 and secondary text at least 3:1 against their darkest applicable surfaces.
