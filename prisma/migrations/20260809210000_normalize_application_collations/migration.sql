@@ -60,7 +60,22 @@ ALTER TABLE `LeadCommandReceipt` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb
 ALTER TABLE `LeadNumberSequence` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `LeadSavedView` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `LeadStatusHistory` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-ALTER TABLE `LegacySchemaMigration` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- LegacySchemaMigration exists only on MariaDB compatibility installations.
+-- Keep the MySQL 8 migration path independent from that optional table.
+SET @legacy_schema_migration_exists = (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.TABLES
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'LegacySchemaMigration'
+);
+SET @legacy_schema_migration_sql = IF(
+  @legacy_schema_migration_exists > 0,
+  'ALTER TABLE `LegacySchemaMigration` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+  'SELECT 1'
+);
+PREPARE legacy_schema_migration_statement FROM @legacy_schema_migration_sql;
+EXECUTE legacy_schema_migration_statement;
+DEALLOCATE PREPARE legacy_schema_migration_statement;
 ALTER TABLE `LoginEvent` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `OpportunityCommandReceipt` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE `OpportunityCompetitor` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
