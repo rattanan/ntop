@@ -33,6 +33,8 @@ describe("login page branding", () => {
 
     expect(css).toContain(".login-showcase-lockup img { display:block;width:100%;height:auto;object-fit:contain;");
     expect(css).toContain(".login-network-lines path");
+    expect(css).toContain("font-size:clamp(54px,6.3vw,92px)");
+    expect(css).toContain("min-height:48px");
     expect(css).toContain("@media (max-width:1050px)");
     expect(css).toContain("@media (max-width:560px) { .login");
   });
