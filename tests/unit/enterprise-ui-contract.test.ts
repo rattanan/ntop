@@ -18,14 +18,16 @@ describe("enterprise UI contract", () => {
     expect(palette).toContain('event.key === "Tab"');
   });
 
-  it("keeps admin navigation role-aware and exposes quick create as navigation only", () => {
+  it("filters navigation and quick create from server-provided permissions", () => {
     const navigation = read("components/app-navigation.ts");
     const shell = read("components/app-shell.tsx");
 
-    expect(navigation).toContain("adminOnly: true");
-    expect(shell).toContain('user.role === "ADMIN"');
+    expect(navigation).toContain("requiredPermission");
+    expect(navigation).toContain("granted.has(item.requiredPermission)");
+    expect(shell).toContain("user.grantedPermissions");
+    expect(shell).not.toContain('user.role === "ADMIN"');
     expect(navigation).toContain("QUICK_CREATE_ITEMS");
-    expect(shell).toContain("QUICK_CREATE_ITEMS.map");
+    expect(shell).toContain("quickCreateItems.map");
     expect(shell).not.toContain("fetch(");
   });
 

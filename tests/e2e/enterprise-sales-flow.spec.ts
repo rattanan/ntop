@@ -35,8 +35,8 @@ async function transitionContract(page: Page, target: string, reason: string) {
 test.describe("Enterprise Sales authenticated workflow", () => {
   test.skip(!password, "Set E2E_PASSWORD to the local seeded test-account password.");
 
-  test("Enterprise Sales completes Prospect through Contract and Customer Activity", async ({ page, browser }) => {
-    test.setTimeout(240_000);
+  test("Enterprise Sales completes Prospect through Contract, Service Order and Customer Activity", async ({ page, browser }) => {
+    test.setTimeout(900_000);
     const suffix = Date.now().toString();
     const company = `E2E Broadband Enterprise ${suffix}`;
     const opportunity = `${company} — Managed Broadband`;
@@ -481,6 +481,26 @@ test.describe("Enterprise Sales authenticated workflow", () => {
     await expect(signaturePage.getByText("บันทึกหลักฐานลายเซ็นเรียบร้อย")).toBeVisible();
     await signatureContext.close();
     await contractRoleTransition("contract2@example.test", "EFFECTIVE", "Both clean verified signatures are present; activate contract.");
+
+    const serviceOrderContext = await browser.newContext();
+    const serviceOrderPage = await serviceOrderContext.newPage();
+    await login(serviceOrderPage, "contract@example.test");
+    await serviceOrderPage.goto(contractDetailHref);
+    serviceOrderPage.once("dialog", (dialog) => dialog.accept());
+    await serviceOrderPage.locator('[data-testid="contract-service-order-submit"]').click();
+    const serviceOrderNumber = serviceOrderPage.locator('[data-testid="contract-service-order-panel"] strong').filter({ hasText: /^SO-/ });
+    await expect(serviceOrderNumber).toBeVisible();
+    const createdServiceOrderNo = await serviceOrderNumber.textContent();
+    const duplicateServiceOrder = await serviceOrderPage.evaluate(async (id) => {
+      const response = await fetch(`/api/v1/contracts/${id}/service-orders`, {
+        method: "POST",
+        headers: { "idempotency-key": crypto.randomUUID() },
+      });
+      return { status: response.status, body: await response.json() };
+    }, contractId);
+    expect(duplicateServiceOrder.status).toBe(201);
+    expect(duplicateServiceOrder.body.data).toMatchObject({ orderNo: createdServiceOrderNo, reused: true });
+    await serviceOrderContext.close();
 
     await page.goto("/activities/new");
     const activityFormPage = page.locator("form").filter({ hasText: "บันทึกกิจกรรม / การประชุม" });

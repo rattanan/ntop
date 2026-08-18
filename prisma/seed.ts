@@ -1,6 +1,9 @@
 import { ActivityType, LeadSource, LeadStatus, LeadTemperature, PrismaClient, ProspectHeatLevel, ProspectSource, ProspectStatus, Role } from "@prisma/client";
 import { hash } from "bcryptjs";
 
+import { NAVIGATION_PERMISSIONS, QUICK_CREATE_PERMISSIONS } from "../lib/authorization/navigation-permissions";
+import { DASHBOARD_PERMISSIONS } from "../lib/dashboard/dashboard-permissions";
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -57,14 +60,65 @@ async function main() {
   for(const[sortOrder,[code,label,reportingCategory,terminal]]of contractStatuses.entries())await prisma.contractStatusDefinition.upsert({where:{code},update:{label,sortOrder,reportingCategory,terminal,active:true},create:{code,label,sortOrder,reportingCategory,terminal}});
   const contractTransitions = [["DRAFT","INTERNAL_REVIEW",null,false,[]],["INTERNAL_REVIEW","LEGAL_REVIEW","contract.review.manager",true,[]],["LEGAL_REVIEW","CUSTOMER_REVIEW","contract.review.legal",true,[]],["CUSTOMER_REVIEW","REVISION_REQUIRED","contract.manage",false,[]],["REVISION_REQUIRED","INTERNAL_REVIEW","contract.manage",false,[]],["CUSTOMER_REVIEW","PENDING_APPROVAL","contract.review.manager",true,[]],["PENDING_APPROVAL","CUSTOMER_SIGN_PENDING","contract.approve",true,[]],["CUSTOMER_SIGN_PENDING","NT_SIGN_PENDING","contract.signature.manage",false,["CUSTOMER"]],["NT_SIGN_PENDING","EFFECTIVE","contract.signature.manage",true,["CUSTOMER","NT"]],["EFFECTIVE","READY_FOR_SERVICE_ORDER","contract.service-order.create",false,["CUSTOMER","NT"]],["READY_FOR_SERVICE_ORDER","COMPLETED","contract.manage",true,[]]] as const;
   for(const[fromStatusCode,toStatusCode,requiredPermission,makerChecker,requiredSignatureParties]of contractTransitions)await prisma.contractStatusTransition.upsert({where:{fromStatusCode_toStatusCode:{fromStatusCode,toStatusCode}},update:{requiredPermission,makerChecker,requiredSignatureParties:[...requiredSignatureParties],active:true},create:{fromStatusCode,toStatusCode,requiredPermission,makerChecker,requiredSignatureParties:[...requiredSignatureParties]}});
-  const contractPermissionMatrix:Record<string,string[]>={ADMIN:["contract.view","contract.manage","contract.review.manager","contract.review.legal","contract.approve","contract.signature.manage","contract.service-order.create"],KAM:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"],TEAM_MANAGER:["contract.view","contract.review.manager"],LEGAL:["contract.view","contract.review.legal"],SALES_DIRECTOR:["contract.view","contract.approve"],ORDER_OPERATIONS:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"]};
+  const contractPermissionMatrix:Record<string,string[]>={ADMIN:["contract.view","contract.manage","contract.review.manager","contract.review.legal","contract.approve","contract.signature.manage","contract.service-order.create"],KAM:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"],TEAM_MANAGER:["contract.view","contract.review.manager"],LEGAL:["contract.view","contract.review.legal"],SALES_DIRECTOR:["contract.view","contract.approve"],ORDER_OPERATIONS:["contract.view","contract.manage","contract.signature.manage","contract.service-order.create"],CUSTOMER_SUCCESS:["contract.view"]};
   for(const[roleCode,codes]of Object.entries(contractPermissionMatrix))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
   const activityStatuses = [["OPEN","Open","OPEN",false],["IN_PROGRESS","In Progress","ACTIVE",false],["COMPLETED","Completed","CLOSED",true],["CANCELLED","Cancelled","CLOSED",true]] as const;
   for(const[sortOrder,[code,label,reportingCategory,terminal]]of activityStatuses.entries())await prisma.activityStatusDefinition.upsert({where:{code},update:{label,sortOrder,reportingCategory,terminal,active:true},create:{code,label,sortOrder,reportingCategory,terminal}});
   const activityTransitions = [["OPEN","IN_PROGRESS"],["OPEN","COMPLETED"],["IN_PROGRESS","OPEN"],["IN_PROGRESS","COMPLETED"]] as const;
   for(const[fromStatusCode,toStatusCode]of activityTransitions)await prisma.activityStatusTransition.upsert({where:{fromStatusCode_toStatusCode:{fromStatusCode,toStatusCode}},update:{requiredPermission:"activity.complete",ownerOnly:true,active:true},create:{fromStatusCode,toStatusCode,requiredPermission:"activity.complete",ownerOnly:true}});
-  const activityPermissionMatrix:Record<string,string[]>={ADMIN:["activity.assign","activity.complete"],TEAM_MANAGER:["activity.assign","activity.complete"],KAM:["activity.complete"],PRESALES:["activity.complete"],SOLUTION_ARCHITECT:["activity.complete"],COVERAGE:["activity.complete"],ORDER_OPERATIONS:["activity.complete"]};
+  const activityPermissionMatrix:Record<string,string[]>={ADMIN:["activity.assign","activity.complete"],TEAM_MANAGER:["activity.assign","activity.complete"],KAM:["activity.complete"],PRESALES:["activity.complete"],SOLUTION_ARCHITECT:["activity.complete"],COVERAGE:["activity.complete"],ORDER_OPERATIONS:["activity.complete"],CUSTOMER_SUCCESS:["activity.complete"]};
   for(const[roleCode,codes]of Object.entries(activityPermissionMatrix))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
+  const salesNavigation = [NAVIGATION_PERMISSIONS.prospects,NAVIGATION_PERMISSIONS.leads,NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.activities];
+  const commercialNavigation = [NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.coverage,NAVIGATION_PERMISSIONS.solutionDesigns,NAVIGATION_PERMISSIONS.siteSurveys,NAVIGATION_PERMISSIONS.boqs,NAVIGATION_PERMISSIONS.products,NAVIGATION_PERMISSIONS.proposals,NAVIGATION_PERMISSIONS.quotes,NAVIGATION_PERMISSIONS.contracts,NAVIGATION_PERMISSIONS.approvals];
+  const adminNavigation = [NAVIGATION_PERMISSIONS.adminUsers,NAVIGATION_PERMISSIONS.adminOrganization,NAVIGATION_PERMISSIONS.adminAudit,NAVIGATION_PERMISSIONS.adminDeletedRecords,NAVIGATION_PERMISSIONS.adminAiSettings,NAVIGATION_PERMISSIONS.adminRiskRules,NAVIGATION_PERMISSIONS.adminWorkflow,NAVIGATION_PERMISSIONS.adminLeadManagement];
+  const salesCreate = [QUICK_CREATE_PERMISSIONS.prospect,QUICK_CREATE_PERMISSIONS.lead,QUICK_CREATE_PERMISSIONS.customer,QUICK_CREATE_PERMISSIONS.opportunity,QUICK_CREATE_PERMISSIONS.activity,QUICK_CREATE_PERMISSIONS.proposal,QUICK_CREATE_PERMISSIONS.quote,QUICK_CREATE_PERMISSIONS.contract];
+  const roleNavigationPermissionMatrix:Record<string,string[]>={
+    ADMIN:[...salesNavigation,...commercialNavigation,...adminNavigation,...salesCreate],
+    SYSTEM_ADMIN:[...adminNavigation],
+    EXECUTIVE:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.quotes,NAVIGATION_PERMISSIONS.contracts],
+    SALES_DIRECTOR:[...salesNavigation,...commercialNavigation,...salesCreate],
+    TEAM_MANAGER:[...salesNavigation,...commercialNavigation,...salesCreate],
+    KAM:[...salesNavigation,...commercialNavigation,...salesCreate],
+    PRESALES:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.coverage,NAVIGATION_PERMISSIONS.solutionDesigns,NAVIGATION_PERMISSIONS.siteSurveys,NAVIGATION_PERMISSIONS.boqs,NAVIGATION_PERMISSIONS.products,NAVIGATION_PERMISSIONS.proposals,QUICK_CREATE_PERMISSIONS.activity,QUICK_CREATE_PERMISSIONS.proposal],
+    SOLUTION_ARCHITECT:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.coverage,NAVIGATION_PERMISSIONS.solutionDesigns,NAVIGATION_PERMISSIONS.siteSurveys,NAVIGATION_PERMISSIONS.boqs,NAVIGATION_PERMISSIONS.products,QUICK_CREATE_PERMISSIONS.activity],
+    MARKETING:[NAVIGATION_PERMISSIONS.prospects,NAVIGATION_PERMISSIONS.leads,NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.activities,QUICK_CREATE_PERMISSIONS.prospect,QUICK_CREATE_PERMISSIONS.lead,QUICK_CREATE_PERMISSIONS.activity],
+    COVERAGE:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.coverage,NAVIGATION_PERMISSIONS.solutionDesigns,NAVIGATION_PERMISSIONS.siteSurveys,NAVIGATION_PERMISSIONS.boqs,QUICK_CREATE_PERMISSIONS.activity],
+    PRICING_APPROVER:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.solutionDesigns,NAVIGATION_PERMISSIONS.boqs,NAVIGATION_PERMISSIONS.products,NAVIGATION_PERMISSIONS.proposals,NAVIGATION_PERMISSIONS.quotes,NAVIGATION_PERMISSIONS.approvals],
+    LEGAL:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.contracts,NAVIGATION_PERMISSIONS.approvals,QUICK_CREATE_PERMISSIONS.activity],
+    ORDER_OPERATIONS:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.coverage,NAVIGATION_PERMISSIONS.contracts,QUICK_CREATE_PERMISSIONS.activity],
+    CUSTOMER_SUCCESS:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.contracts,QUICK_CREATE_PERMISSIONS.activity],
+    VIEWER:[...salesNavigation,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.proposals,NAVIGATION_PERMISSIONS.quotes,NAVIGATION_PERMISSIONS.contracts],
+    AUDITOR:[...salesNavigation,...commercialNavigation,NAVIGATION_PERMISSIONS.adminAudit],
+    CUSTOMER_DATA_OWNER:[NAVIGATION_PERMISSIONS.prospects,NAVIGATION_PERMISSIONS.leads,NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities],
+    DATA_STEWARD:[NAVIGATION_PERMISSIONS.prospects,NAVIGATION_PERMISSIONS.leads,NAVIGATION_PERMISSIONS.customers],
+    COMMERCIAL_COMMITTEE:[NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.proposals,NAVIGATION_PERMISSIONS.quotes,NAVIGATION_PERMISSIONS.contracts,NAVIGATION_PERMISSIONS.approvals],
+  };
+  for(const[roleCode,codes]of Object.entries(roleNavigationPermissionMatrix))for(const permissionCode of new Set(codes))await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
+  const dashboardBase=[DASHBOARD_PERMISSIONS.view,DASHBOARD_PERMISSIONS.export];
+  const dashboardPermissionMatrix:Record<string,string[]>={
+    ADMIN:[...dashboardBase,DASHBOARD_PERMISSIONS.executive,DASHBOARD_PERMISSIONS.sales,DASHBOARD_PERMISSIONS.salesManager,DASHBOARD_PERMISSIONS.solution,DASHBOARD_PERMISSIONS.approver,DASHBOARD_PERMISSIONS.operations,DASHBOARD_PERMISSIONS.customerSuccess,DASHBOARD_PERMISSIONS.admin],
+    SYSTEM_ADMIN:[...dashboardBase,DASHBOARD_PERMISSIONS.admin],
+    EXECUTIVE:[...dashboardBase,DASHBOARD_PERMISSIONS.executive],
+    SALES_DIRECTOR:[...dashboardBase,DASHBOARD_PERMISSIONS.executive,DASHBOARD_PERMISSIONS.salesManager,DASHBOARD_PERMISSIONS.approver],
+    TEAM_MANAGER:[...dashboardBase,DASHBOARD_PERMISSIONS.salesManager,DASHBOARD_PERMISSIONS.approver],
+    KAM:[...dashboardBase,DASHBOARD_PERMISSIONS.sales],
+    PRESALES:[...dashboardBase,DASHBOARD_PERMISSIONS.solution],
+    SOLUTION_ARCHITECT:[...dashboardBase,DASHBOARD_PERMISSIONS.solution],
+    MARKETING:[...dashboardBase,DASHBOARD_PERMISSIONS.sales],
+    COVERAGE:[...dashboardBase,DASHBOARD_PERMISSIONS.solution],
+    PRICING_APPROVER:[...dashboardBase,DASHBOARD_PERMISSIONS.approver],
+    LEGAL:[...dashboardBase,DASHBOARD_PERMISSIONS.approver],
+    ORDER_OPERATIONS:[...dashboardBase,DASHBOARD_PERMISSIONS.operations],
+    CUSTOMER_SUCCESS:[...dashboardBase,DASHBOARD_PERMISSIONS.customerSuccess],
+    VIEWER:[DASHBOARD_PERMISSIONS.view],
+    AUDITOR:[...dashboardBase,DASHBOARD_PERMISSIONS.executive,DASHBOARD_PERMISSIONS.admin],
+    CUSTOMER_DATA_OWNER:[...dashboardBase,DASHBOARD_PERMISSIONS.customerSuccess],
+    DATA_STEWARD:[...dashboardBase,DASHBOARD_PERMISSIONS.customerSuccess],
+    COMMERCIAL_COMMITTEE:[...dashboardBase,DASHBOARD_PERMISSIONS.approver],
+  };
+  for(const[roleCode,codes]of Object.entries(dashboardPermissionMatrix))for(const permissionCode of new Set(codes))await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
+  const dashboardDrilldownPermissions=[NAVIGATION_PERMISSIONS.prospects,NAVIGATION_PERMISSIONS.leads,NAVIGATION_PERMISSIONS.customers,NAVIGATION_PERMISSIONS.opportunities,NAVIGATION_PERMISSIONS.pipeline,NAVIGATION_PERMISSIONS.approvals,NAVIGATION_PERMISSIONS.activities,NAVIGATION_PERMISSIONS.contracts,"prospect.view","prospect.view_all","contract.view"];
+  for(const roleCode of Object.keys(dashboardPermissionMatrix))for(const permissionCode of dashboardDrilldownPermissions)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
   if (!demoMode) return;
   const demoPassword = process.env.SEED_DEMO_PASSWORD;
   if (!demoPassword || demoPassword.length < 12) throw new Error("Set SEED_DEMO_PASSWORD to 12+ characters when SEED_DEMO_DATA=1.");
@@ -84,6 +138,8 @@ async function main() {
     ["legal@example.test", "Legal Reviewer ทดสอบ", "LEGAL", "ORG_UNIT"],
     ["contract@example.test", "Contract Officer ทดสอบ", "ORDER_OPERATIONS", "ORG_UNIT"],
     ["contract2@example.test", "Contract Officer ทดสอบ 2", "ORDER_OPERATIONS", "ORG_UNIT"],
+    ["executive@example.test", "Executive Dashboard ทดสอบ", "EXECUTIVE", "ENTERPRISE"],
+    ["success@example.test", "Customer Success ทดสอบ", "CUSTOMER_SUCCESS", "ORG_UNIT"],
   ] as const;
   const users = [];
   for (const [userEmail, name, roleCode, scopeCode] of people) {
@@ -92,6 +148,9 @@ async function main() {
     const existing = await prisma.userRoleAssignment.findFirst({ where: { userId: user.id, roleCode, scopeCode, organizationUnitId: unit.id, active: true } });
     if (!existing) await prisma.userRoleAssignment.create({ data: { userId: user.id, roleCode, scopeCode, organizationUnitId: unit.id, effectiveFrom: new Date("2026-01-01T00:00:00Z") } });
   }
+  const dashboardAdmin=await prisma.user.upsert({where:{email:"admin-dashboard@example.test"},update:{name:"Dashboard Admin ทดสอบ",passwordHash,active:true,role:Role.ADMIN},create:{email:"admin-dashboard@example.test",name:"Dashboard Admin ทดสอบ",passwordHash,role:Role.ADMIN}});
+  const dashboardAdminAssignment=await prisma.userRoleAssignment.findFirst({where:{userId:dashboardAdmin.id,roleCode:"ADMIN",scopeCode:"ENTERPRISE",organizationUnitId:null,active:true}});
+  if(!dashboardAdminAssignment)await prisma.userRoleAssignment.create({data:{userId:dashboardAdmin.id,roleCode:"ADMIN",scopeCode:"ENTERPRISE",effectiveFrom:new Date("2026-01-01T00:00:00Z")}});
   const adminAssignment = await prisma.userRoleAssignment.findFirst({ where: { userId: admin.id, roleCode: "ADMIN", scopeCode: "ENTERPRISE", active: true } });
   if (!adminAssignment) await prisma.userRoleAssignment.create({ data: { userId: admin.id, roleCode: "ADMIN", scopeCode: "ENTERPRISE", effectiveFrom: new Date("2026-01-01T00:00:00Z") } });
   const prospectPermissions = ["prospect.view","prospect.create","prospect.update","prospect.assign","prospect.convert","prospect.merge","prospect.archive","prospect.import","prospect.export","prospect.view_all"];
