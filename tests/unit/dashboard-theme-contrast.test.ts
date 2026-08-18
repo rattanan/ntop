@@ -28,6 +28,8 @@ describe("dashboard dark-theme contrast", () => {
     ["danger text", "#ffb2ab", "#351c1d", 4.5],
     ["success text", "#91ddb0", "#173126", 4.5],
     ["info text", "#b6d6ff", "#172a40", 4.5],
+    ["quick-create light interaction", "#5f4900", "#fffbea", 4.5],
+    ["quick-create dark interaction", "#ffe58a", "#292719", 4.5],
     ["hero primary text", "#f8fafc", "#4b3e0a", 4.5],
     ["hero secondary text", "#e0d6aa", "#4b3e0a", 3],
   ])("keeps %s readable", (_label, foreground, background, minimum) => {
@@ -44,6 +46,12 @@ describe("dashboard dark-theme contrast", () => {
     expect(dashboardCss).toContain('[data-theme="dark"] .breadcrumb a');
     expect(dashboardCss).toContain('[data-theme="dark"] .user-chip strong');
     expect(dashboardCss).toContain('[data-theme="dark"] .sidebar-footer button{color:var(--foreground)}');
+  });
+
+  it("keeps quick-create links readable in every interaction state", () => {
+    expect(globalCss).toContain(".quick-create-menu a { min-height:42px;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--foreground)");
+    expect(globalCss).toContain(".quick-create-menu a:is(:hover,:focus-visible,:active) { background:var(--surface-hover);color:var(--on-warning); }");
+    expect(globalCss).not.toContain(".quick-create-menu a:hover { background:#fff8d3; }");
   });
 
   it.each([

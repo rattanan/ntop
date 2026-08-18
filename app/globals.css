@@ -316,8 +316,8 @@ kbd { padding:2px 6px;border:1px solid var(--nt-gray-300);border-bottom-width:2p
 .quick-create summary svg { width:17px; }
 .quick-create-menu { position:absolute;top:calc(100% + 9px);right:0;z-index:80;width:235px;display:grid;padding:8px;border:1px solid var(--border);border-radius:var(--radius-lg);background:#fff;box-shadow:var(--shadow-lg); }
 .quick-create-menu strong { padding:7px 10px 9px;color:var(--muted-foreground);font-size:11px;text-transform:uppercase;letter-spacing:.06em; }
-.quick-create-menu a { min-height:42px;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);font-size:13px;font-weight:650; }
-.quick-create-menu a:hover { background:#fff8d3; }
+.quick-create-menu a { min-height:42px;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--foreground);font-size:13px;font-weight:650; }
+.quick-create-menu a:is(:hover,:focus-visible,:active) { background:var(--surface-hover);color:var(--on-warning); }
 .quick-create-menu svg { width:15px; }
 .notification-panel { border-color:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg); }
 
