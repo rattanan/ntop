@@ -53,8 +53,14 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The active development environment is deployed directly on the NTOP server
+without Docker or Cloud Run:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Application path: `/opt/apps/ntop-dev`
+- Public URL: `https://ntop-dev.rattanan.dev`
+
+See [Self-hosted server deployment](docs/server-deployment.md) for the current
+deployment decision and acceptance criteria. The former Cloud Run deployment is
+retained only as historical documentation and is not an active target.

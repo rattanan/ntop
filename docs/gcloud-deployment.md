@@ -1,5 +1,10 @@
 # Google Cloud Run deployment
 
+> **Status: retired.** This document is retained for deployment history only.
+> Cloud Run and container deployment are no longer active targets. The current
+> development target is the NTOP server documented in
+> [server-deployment.md](server-deployment.md).
+
 ## Production target
 
 - Project: `ntop-502523`
