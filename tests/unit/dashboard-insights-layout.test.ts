@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync("app/(portal)/dashboard/page.tsx", "utf8");
 const component = readFileSync("components/dashboard/dashboard-view.tsx", "utf8");
+const css = readFileSync("app/globals.css", "utf8");
 
 describe("dashboard states and insights", () => {
   it("renders server-scoped data and a permission denied state", () => {
