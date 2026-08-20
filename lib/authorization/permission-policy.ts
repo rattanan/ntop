@@ -5,7 +5,10 @@ export const PERMISSIONS = {
   recordViewAll: "record.view.all",
   recordCreate: "record.create",
   recordUpdate: "record.update",
+  productCatalogView: "product.catalog.view",
   productCatalogManage: "product.catalog.manage",
+  coverageView: "coverage.view",
+  coverageManage: "coverage.manage",
   aiConfigManage: "ai.config.manage",
   aiMeetingDraftConfirm: "ai.meeting-draft.confirm",
   aiRiskExplain: "ai.risk.explain",
@@ -83,6 +86,9 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.recordViewOwned,
     PERMISSIONS.recordCreate,
     PERMISSIONS.recordUpdate,
+    PERMISSIONS.productCatalogView,
+    PERMISSIONS.coverageView,
+    PERMISSIONS.coverageManage,
     PERMISSIONS.aiMeetingDraftConfirm,
     PERMISSIONS.aiRiskExplain,
     PERMISSIONS.activityComplete,
@@ -96,7 +102,7 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.contractSignatureManage,
     PERMISSIONS.contractServiceOrderCreate,
   ],
-  VIEWER: [PERMISSIONS.recordViewOwned, PERMISSIONS.proposalView, PERMISSIONS.contractView],
+  VIEWER: [PERMISSIONS.recordViewOwned, PERMISSIONS.productCatalogView, PERMISSIONS.coverageView, PERMISSIONS.proposalView, PERMISSIONS.contractView],
 } as const satisfies Record<Role, readonly Permission[]>;
 
 class RolePermissionPolicy implements PermissionPolicy {

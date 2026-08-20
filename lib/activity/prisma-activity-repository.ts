@@ -9,6 +9,15 @@ import type { ActivityRepository, ActivityTransaction } from "./activity-service
 export class PrismaActivityRepository implements ActivityRepository {
   constructor(private client: PrismaClient) {}
   transaction<T>(work: (transaction: ActivityTransaction) => Promise<T>) { return this.client.$transaction(work); }
+  findCreateReceipt(actorId: string, idempotencyKey: string, transaction: ActivityTransaction) {
+    return transaction.activityCommandReceipt.findUnique({ where: { actorId_idempotencyKey_command: { actorId, idempotencyKey, command: "activity.create" } }, select: { requestHash: true, targetId: true, targetVersion: true } });
+  }
+  create(input: { subject: string; type: ActivityType; dueAt: Date | null; notes: string | null; aiSummary: string | null; actionItems: string | null; customerId: string | null; opportunityId: string | null; ownerId: string }, transaction: ActivityTransaction) {
+    return transaction.activity.create({ data: input, select: { id: true, version: true } });
+  }
+  async saveCreateReceipt(input: { actorId: string; idempotencyKey: string; requestHash: string; targetId: string; targetVersion: number }, transaction: ActivityTransaction) {
+    await transaction.activityCommandReceipt.create({ data: { ...input, command: "activity.create" } });
+  }
   findAccessible(id: string, context: AuthorizationContext, transaction: ActivityTransaction) {
     return transaction.activity.findFirst({ where: { id, deletedAt: null, ...buildActivityScopeWhere(context) }, select: { id: true, version: true, ownerId: true, statusCode: true, status: { select: { terminal: true } }, customerId: true, opportunityId: true } }).then((value) => value ? { ...value, terminal: value.status.terminal } : null);
   }

@@ -15,6 +15,9 @@ const expectedPermissions: Record<Role, readonly Permission[]> = {
     PERMISSIONS.recordViewOwned,
     PERMISSIONS.recordCreate,
     PERMISSIONS.recordUpdate,
+    PERMISSIONS.productCatalogView,
+    PERMISSIONS.coverageView,
+    PERMISSIONS.coverageManage,
     PERMISSIONS.aiMeetingDraftConfirm,
     PERMISSIONS.aiRiskExplain,
     PERMISSIONS.activityComplete,
@@ -28,7 +31,7 @@ const expectedPermissions: Record<Role, readonly Permission[]> = {
     PERMISSIONS.contractSignatureManage,
     PERMISSIONS.contractServiceOrderCreate,
   ],
-  VIEWER: [PERMISSIONS.recordViewOwned, PERMISSIONS.proposalView, PERMISSIONS.contractView],
+  VIEWER: [PERMISSIONS.recordViewOwned, PERMISSIONS.productCatalogView, PERMISSIONS.coverageView, PERMISSIONS.proposalView, PERMISSIONS.contractView],
 };
 
 describe("legacy role permission policy", () => {

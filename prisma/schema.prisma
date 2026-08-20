@@ -807,6 +807,20 @@ model Activity {
   @@index([statusCode, dueAt, deletedAt])
 }
 
+model ActivityCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  requestHash    String   @db.Char(64)
+  targetId       String
+  targetVersion  Int
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([targetId, createdAt])
+}
+
 model ActivityStatusDefinition {
   code              String                     @id @db.VarChar(32)
   label             String                     @db.VarChar(100)
@@ -1438,6 +1452,7 @@ model OpportunityCommandReceipt {
 
 model Product {
   id                           String                @id @default(cuid())
+  version                      Int                   @default(1)
   code                         String                @unique
   name                         String
   category                     String
@@ -1451,12 +1466,16 @@ model Product {
   requiresBoq                  Boolean               @default(false)
   requiresPhysicalInstallation Boolean               @default(false)
   active                       Boolean               @default(true)
+  deletedAt                    DateTime?
+  deletedById                  String?
   quoteItems                   QuoteItem[]
   solutionServiceItems         SolutionServiceItem[]
   solutionComponents           SolutionComponent[]
   boqItems                     BoqItem[]
   createdAt                    DateTime              @default(now())
   updatedAt                    DateTime              @updatedAt
+
+  @@index([deletedAt, active, category, name])
 }
 
 model Quote {
@@ -1948,6 +1967,7 @@ model SalesTarget {
 
 model CoverageCheck {
   id                  String         @id @default(cuid())
+  version             Int            @default(1)
   opportunityId       String
   opportunity         Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   siteAddress         String         @db.Text
@@ -1961,8 +1981,27 @@ model CoverageCheck {
   expectedInstallDate DateTime?
   confirmedCost       Decimal?       @db.Decimal(15, 2)
   responderNotes      String?        @db.Text
+  deletedAt           DateTime?
+  deletedById         String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
+
+  @@index([opportunityId, deletedAt, createdAt])
+}
+
+model PresalesCommandReceipt {
+  id             String   @id @default(cuid())
+  actorId        String
+  idempotencyKey String   @db.VarChar(191)
+  command        String   @db.VarChar(100)
+  requestHash    String   @db.Char(64)
+  targetType     String   @db.VarChar(100)
+  targetId       String
+  targetVersion  Int
+  createdAt      DateTime @default(now())
+
+  @@unique([actorId, idempotencyKey, command])
+  @@index([targetType, targetId, createdAt])
 }
 
 model SolutionDesign {

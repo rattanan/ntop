@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { ActivityType, type Prisma, type Role } from "@prisma/client";
 import { z } from "zod";
 
@@ -5,11 +7,20 @@ import type { AuditWriter } from "../audit/audit-writer";
 import type { AuthorizationContext } from "../authorization/authorization-context";
 import { assertPermission, PERMISSIONS, PermissionDeniedError, type Permission, type PermissionPolicy } from "../authorization/permission-policy";
 import { permissionPolicy } from "../authorization/permission-policy";
+import { createLegacyMeetingDraft } from "../ai/legacy-meeting-draft";
 
 export type ActivityActor = { id: string; role: Role; authorization: AuthorizationContext };
 export type ActivityTransaction = Prisma.TransactionClient;
 
 const nullableId = z.union([z.string().trim().min(1).max(191), z.literal(""), z.null()]).optional();
+const createSchema = z.strictObject({
+  subject: z.string().trim().min(2).max(255),
+  type: z.enum(ActivityType),
+  dueAt: z.coerce.date().nullable().optional(),
+  notes: z.string().trim().max(20_000).nullable().optional(),
+  customerId: nullableId,
+  opportunityId: nullableId,
+});
 const updateSchema = z.strictObject({
   expectedVersion: z.number().int().positive(),
   subject: z.string().trim().min(2).max(255),
@@ -25,12 +36,16 @@ const transitionSchema = z.strictObject({ expectedVersion: z.number().int().posi
 
 export class ActivityAccessError extends Error { constructor() { super("ไม่พบ Activity หรือไม่มีสิทธิ์เข้าถึง"); this.name = "ActivityAccessError"; } }
 export class ActivityConflictError extends Error { constructor() { super("Activity ถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดข้อมูลล่าสุด"); this.name = "ActivityConflictError"; } }
+export class ActivityIdempotencyConflictError extends Error { constructor() { super("Idempotency-Key ถูกใช้กับข้อมูล Activity อื่นแล้ว"); this.name = "ActivityIdempotencyConflictError"; } }
 export class ActivityValidationError extends Error {
   constructor(readonly issues: Record<string, string[]>) { super("ข้อมูล Activity ไม่ถูกต้อง"); this.name = "ActivityValidationError"; }
 }
 
 export interface ActivityRepository {
   transaction<T>(work: (transaction: ActivityTransaction) => Promise<T>): Promise<T>;
+  findCreateReceipt(actorId: string, idempotencyKey: string, transaction: ActivityTransaction): Promise<{ requestHash: string; targetId: string; targetVersion: number } | null>;
+  create(input: { subject: string; type: ActivityType; dueAt: Date | null; notes: string | null; aiSummary: string | null; actionItems: string | null; customerId: string | null; opportunityId: string | null; ownerId: string }, transaction: ActivityTransaction): Promise<{ id: string; version: number }>;
+  saveCreateReceipt(input: { actorId: string; idempotencyKey: string; requestHash: string; targetId: string; targetVersion: number }, transaction: ActivityTransaction): Promise<void>;
   findAccessible(id: string, context: AuthorizationContext, transaction: ActivityTransaction): Promise<{ id: string; version: number; ownerId: string; statusCode: string; terminal: boolean; customerId: string | null; opportunityId: string | null } | null>;
   targetIsAccessible(input: { customerId?: string | null; opportunityId?: string | null }, context: AuthorizationContext, transaction: ActivityTransaction): Promise<boolean>;
   updateVersioned(id: string, expectedVersion: number, data: { subject: string; type: ActivityType; dueAt: Date | null; notes: string | null; customerId: string | null; opportunityId: string | null }, transaction: ActivityTransaction): Promise<{ id: string; version: number } | null>;
@@ -45,6 +60,46 @@ export interface ActivityRepository {
 
 export class ActivityService {
   constructor(private repository: ActivityRepository, private audit: AuditWriter<ActivityTransaction>, private permissions: PermissionPolicy = permissionPolicy) {}
+
+  async create(actor: ActivityActor, input: unknown, correlationId: string, idempotencyKey: string) {
+    assertPermission(actor, PERMISSIONS.recordCreate, this.permissions);
+    const parsed = createSchema.safeParse(input);
+    if (!parsed.success) throw new ActivityValidationError(parsed.error.flatten().fieldErrors as Record<string, string[]>);
+    const normalized = {
+      ...parsed.data,
+      dueAt: parsed.data.dueAt?.toISOString() ?? null,
+      notes: parsed.data.notes || null,
+      customerId: parsed.data.customerId || null,
+      opportunityId: parsed.data.opportunityId || null,
+    };
+    const requestHash = createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
+    return this.repository.transaction(async (transaction) => {
+      const receipt = await this.repository.findCreateReceipt(actor.id, idempotencyKey, transaction);
+      if (receipt) {
+        if (receipt.requestHash !== requestHash) throw new ActivityIdempotencyConflictError();
+        return { id: receipt.targetId, version: receipt.targetVersion };
+      }
+      const customerId = parsed.data.customerId || null;
+      const opportunityId = parsed.data.opportunityId || null;
+      if (!await this.repository.targetIsAccessible({ customerId, opportunityId }, actor.authorization, transaction)) throw new ActivityAccessError();
+      const notes = parsed.data.notes || null;
+      const meetingDraft = parsed.data.type === ActivityType.MEETING ? createLegacyMeetingDraft(notes ?? "") : null;
+      const created = await this.repository.create({
+        subject: parsed.data.subject,
+        type: parsed.data.type,
+        dueAt: parsed.data.dueAt ?? null,
+        notes,
+        aiSummary: meetingDraft?.summary ?? null,
+        actionItems: meetingDraft?.actionItems ?? null,
+        customerId,
+        opportunityId,
+        ownerId: actor.id,
+      }, transaction);
+      await this.audit.append({ actorId: actor.id, action: "activity.create", targetType: "Activity", targetId: created.id, targetVersion: String(created.version), outcome: "SUCCESS", correlationId, data: { customerId, opportunityId, type: parsed.data.type } }, { transaction });
+      await this.repository.saveCreateReceipt({ actorId: actor.id, idempotencyKey, requestHash, targetId: created.id, targetVersion: created.version }, transaction);
+      return created;
+    });
+  }
 
   async update(actor: ActivityActor, id: string, input: unknown, correlationId: string) {
     assertPermission(actor, PERMISSIONS.recordUpdate, this.permissions);

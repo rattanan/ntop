@@ -5,6 +5,9 @@ function setup() {
   const tx = {};
   const repository = {
     transaction: vi.fn(async (work: (transaction: object) => Promise<unknown>) => work(tx)),
+    findCreateReceipt: vi.fn(async (): Promise<{ requestHash: string; targetId: string; targetVersion: number } | null> => null),
+    create: vi.fn(async () => ({ id: "activity-new", version: 1 })),
+    saveCreateReceipt: vi.fn(async () => undefined),
     findAccessible: vi.fn(async () => ({ id: "activity-1", version: 2, ownerId: "user-1", statusCode: "OPEN", terminal: false, customerId: "customer-1", opportunityId: null })),
     targetIsAccessible: vi.fn(async () => true),
     updateVersioned: vi.fn(async () => ({ id: "activity-1", version: 3 })),
@@ -23,6 +26,26 @@ function setup() {
 }
 
 describe("ActivityService", () => {
+  it("creates a scoped Activity idempotently with transactional audit", async () => {
+    const { service, repository, audit, actor, tx } = setup();
+    const result = await service.create(actor as never, { subject: "Customer kickoff", type: "MEETING", dueAt: "2026-08-21T02:00:00+07:00", notes: "Confirm scope", customerId: "customer-1", opportunityId: null }, "corr-create", "key-create");
+    expect(result).toEqual({ id: "activity-new", version: 1 });
+    expect(repository.targetIsAccessible).toHaveBeenCalledWith({ customerId: "customer-1", opportunityId: null }, actor.authorization, tx);
+    expect(repository.create).toHaveBeenCalledWith(expect.objectContaining({ ownerId: "user-1", type: "MEETING" }), tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.create", targetVersion: "1" }), { transaction: tx });
+    expect(repository.saveCreateReceipt).toHaveBeenCalledWith(expect.objectContaining({ actorId: "user-1", idempotencyKey: "key-create", targetId: "activity-new" }), tx);
+  });
+
+  it("returns an idempotent Activity replay without creating another row", async () => {
+    const { service, repository, actor } = setup();
+    const input = { subject: "Call customer", type: "CALL", dueAt: null, notes: null, customerId: null, opportunityId: null };
+    const { createHash } = await import("node:crypto");
+    const requestHash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
+    vi.mocked(repository.findCreateReceipt).mockResolvedValue({ requestHash, targetId: "activity-existing", targetVersion: 1 });
+    await expect(service.create(actor as never, input, "corr-replay", "key-replay")).resolves.toEqual({ id: "activity-existing", version: 1 });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
   it("updates a scoped Activity with optimistic version and transactional audit", async () => {
     const { service, repository, audit, actor, tx } = setup();
     const result = await service.update(actor as never, "activity-1", { expectedVersion: 2, subject: "Follow up customer", type: "FOLLOW_UP", dueAt: null, notes: "Confirm next meeting", customerId: "customer-1", opportunityId: null }, "corr-1");
