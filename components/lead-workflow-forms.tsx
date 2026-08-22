@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
@@ -11,7 +12,7 @@ import { FormField, Input, Textarea } from "./form-field";
 import { FormNotice, Notice } from "./notice";
 
 const initial: FormState = {};
-type LeadValue = { id:string; version:number; company:string; contactName:string; contactEmail:string|null; contactPhone:string|null; source:string; status:string; score:number; recommendedProducts:string|null; notes:string|null; disqualificationReason?:string|null; customerId:string|null };
+type LeadValue = { id:string; version:number; company:string; taxId:string|null; contactName:string; contactEmail:string|null; contactPhone:string|null; source:string; status:string; score:number; recommendedProducts:string|null; requirementSummary:string|null; estimatedBudget:string|null; notes:string|null; disqualificationReason?:string|null; customerId:string|null };
 type CustomerOption = { id:string; name:string; taxId:string; province:string };
 type OwnerOption = { id:string; name:string; email:string };
 
@@ -61,13 +62,15 @@ export function LeadConvertForm({ lead, customers, duplicateCandidates }: { lead
   const [mode, setMode] = useState<"CREATE"|"LINK">(lead.customerId||duplicateCandidates.length ? "LINK" : "CREATE");
   const [state, action, pending] = useActionState(convertLead.bind(null, lead.id, lead.version), initial);
   const key = useState(() => crypto.randomUUID())[0];
-  return <section className="card"><div className="card-header"><div><strong>Convert เป็น Customer</strong><small>ทำรายการครั้งเดียวแบบ idempotent พร้อม audit</small></div></div><div className="card-body">
+  return <section id="lead-conversion" className="card conversion-panel"><div className="card-header conversion-panel-header"><div><strong>สร้าง Customer + Opportunity จาก Lead</strong><small>ข้อมูลต้นทางถูกนำมาเติมให้ และทำรายการครั้งเดียวพร้อม audit</small></div>{lead.status==="QUALIFIED"&&<span className="badge success">พร้อมสร้าง</span>}</div><div className="card-body">
     {lead.status!=="QUALIFIED"&&<Notice variant="warning">Lead ต้องอยู่สถานะ “ผ่านการคัดกรอง” ก่อน Convert กรุณาแก้ไขสถานะและบันทึกก่อน</Notice>}
     {duplicateCandidates.length>0&&<Notice variant="warning"><strong>พบ Customer ชื่อเดียวกัน {duplicateCandidates.length} รายการ</strong>{duplicateCandidates.map(customer=><p key={customer.id}><Link className="link" href={`/customers/${customer.id}`}>{customer.name}</Link> · {customer.taxId} · {customer.province}</p>)}</Notice>}
+    <div className="conversion-flow" aria-label="ลำดับการแปลงข้อมูล"><span>Lead</span><ArrowRight aria-hidden="true"/><strong>{mode==="LINK"?"Customer เดิม + Opportunity":"Customer ใหม่ + Opportunity"}</strong></div>
+    <div className="conversion-summary-grid"><div><span><Check aria-hidden="true"/>บริษัท</span><strong>{lead.company}</strong></div><div><span><Check aria-hidden="true"/>ผู้ติดต่อ</span><strong>{lead.contactName}</strong></div><div><span><Check aria-hidden="true"/>Requirement</span><strong>{lead.requirementSummary??"ยังไม่ระบุ"}</strong></div><div><span><Check aria-hidden="true"/>มูลค่าประมาณการ</span><strong>{lead.estimatedBudget?`${lead.estimatedBudget} บาท`:"ยังไม่ระบุ"}</strong></div></div>
     <div className="actions"><button type="button" className={mode==="LINK"?"primary":"secondary"} onClick={()=>setMode("LINK")}>เชื่อม Customer เดิม</button><button type="button" className={mode==="CREATE"?"primary":"secondary"} onClick={()=>setMode("CREATE")}>สร้าง Customer ใหม่</button></div>
     <form action={action} style={{marginTop:20}}><input type="hidden" name="idempotencyKey" value={key}/><input type="hidden" name="conversionMode" value={mode}/><div className="form-grid">
       {mode==="LINK"?<FormField label="Customer ที่ต้องการเชื่อม" name="existingCustomerId" required><select id="existingCustomerId" name="existingCustomerId" className="control" defaultValue={lead.customerId??duplicateCandidates[0]?.id??""} required><option value="" disabled>เลือก Customer</option>{customers.map(customer=><option key={customer.id} value={customer.id}>{customer.name} ({customer.taxId})</option>)}</select></FormField>:<>
-        <FormField label="เลขนิติบุคคล" name="taxId" required error={state.errors?.taxId}><Input id="taxId" name="taxId" inputMode="numeric" pattern="[0-9]{13}" required error={!!state.errors?.taxId}/></FormField>
+        <FormField label="เลขนิติบุคคล" name="taxId" required error={state.errors?.taxId}><Input id="taxId" name="taxId" inputMode="numeric" pattern="[0-9]{13}" defaultValue={lead.taxId??""} required error={!!state.errors?.taxId}/></FormField>
         <FormField label="ประเภทลูกค้า" name="type" required><select id="type" name="type" className="control" defaultValue="B2B"><option value="B2G">B2G — ภาครัฐ</option><option value="B2B">B2B — ภาคเอกชน</option></select></FormField>
         <FormField label="Segment" name="segment" required><select id="segment" name="segment" className="control" defaultValue="" required><option value="" disabled>เลือก Segment</option>{SEGMENTS.map(segment=><option key={segment}>{segment}</option>)}</select></FormField>
         <FormField label="จังหวัด" name="province" required><Input id="province" name="province" required/></FormField>
@@ -76,7 +79,7 @@ export function LeadConvertForm({ lead, customers, duplicateCandidates }: { lead
       <div className="field full"><h3>ข้อมูล Opportunity</h3></div>
       <FormField label="ชื่อ Opportunity" name="opportunityName" required error={state.errors?.opportunityName}><Input id="opportunityName" name="opportunityName" defaultValue={`${lead.company} — ${lead.recommendedProducts??"โอกาสขายใหม่"}`} required error={!!state.errors?.opportunityName}/></FormField>
       <FormField label="Sales Flow" name="opportunityFlow" required><select id="opportunityFlow" name="opportunityFlow" className="control" defaultValue="" required><option value="" disabled>เลือก Flow</option>{FLOWS.map(flow=><option key={flow} value={flow}>{flow}</option>)}</select></FormField>
-      <FormField label="มูลค่าประมาณการ (บาท)" name="estimatedValue" required error={state.errors?.estimatedValue}><Input id="estimatedValue" name="estimatedValue" type="number" min="0" step="0.0001" required error={!!state.errors?.estimatedValue}/></FormField>
+      <FormField label="มูลค่าประมาณการ (บาท)" name="estimatedValue" required error={state.errors?.estimatedValue}><Input id="estimatedValue" name="estimatedValue" type="number" min="0" step="0.0001" defaultValue={lead.estimatedBudget??""} required error={!!state.errors?.estimatedValue}/></FormField>
       <FormField label="วันที่คาดว่าจะปิด" name="expectedCloseAt" required error={state.errors?.expectedCloseAt}><Input id="expectedCloseAt" name="expectedCloseAt" type="date" required error={!!state.errors?.expectedCloseAt}/></FormField>
       <FormField label="โอกาสชนะ (%)" name="probability" required><Input id="probability" name="probability" type="number" min="0" max="100" defaultValue="40" required/></FormField>
       <FormField label="สินค้า/บริการที่สนใจ" name="productInterest"><Input id="productInterest" name="productInterest" defaultValue={lead.recommendedProducts??""}/></FormField>

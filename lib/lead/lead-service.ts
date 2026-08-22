@@ -58,6 +58,7 @@ export type LeadRecord = Omit<LeadCommand, "customerId"> & {
   contactId?: string | null;
   organizationUnitId?: string | null;
   temperature?: LeadTemperature;
+  requirementSummary?: string;
 };
 
 export interface LeadRepository<TTransaction> {

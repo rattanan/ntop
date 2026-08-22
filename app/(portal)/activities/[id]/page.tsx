@@ -17,7 +17,7 @@ const formatDate = (value: Date | null) => value?.toLocaleString("th-TH", { time
 export default async function ActivityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession(); const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role }); const { id } = await params;
   const activity = await prisma.activity.findFirst({ where: { id, deletedAt: null, ...buildActivityScopeWhere(authorization) }, include: { status: true, owner: { select: { id: true, name: true } }, customer: { select: { id: true, name: true } }, opportunity: { select: { id: true, name: true, opportunityNumber: true } }, lead: { select: { id: true, leadNumber: true, company: true } }, prospect: { select: { id: true, prospectCode: true, companyName: true } }, statusHistory: { include: { actor: { select: { name: true } }, fromStatus: { select: { label: true } }, toStatus: { select: { label: true } } }, orderBy: { transitionedAt: "desc" }, take: 100 } } });
-  if (!activity) notFound(); const canUpdate = session.role !== "VIEWER";
+  if (!activity) notFound(); const canUpdate = permissionPolicy.allows(session, PERMISSIONS.recordUpdate);
   const roleCodes = authorization.assignments.map((assignment) => assignment.role);
   const grants = new Set((await prisma.rolePermissionGrant.findMany({ where: { roleCode: { in: roleCodes } }, select: { permissionCode: true } })).map((grant) => grant.permissionCode));
   const canAssign = permissionPolicy.allows(session, PERMISSIONS.activityAssign) || grants.has(PERMISSIONS.activityAssign);

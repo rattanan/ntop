@@ -1,7 +1,8 @@
+import { ArrowRight, Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { LeadActivityForm, LeadAssignForm, LeadConvertForm, LeadEditForm, LeadLifecycleForm, LeadQualificationForm } from "@/components/lead-workflow-forms";
+import { LeadActivityForm, LeadAssignForm, LeadConvertForm, LeadLifecycleForm, LeadQualificationForm } from "@/components/lead-workflow-forms";
 import { requireSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
@@ -31,8 +32,8 @@ export default async function LeadDetail({params}:{params:Promise<{id:string}>})
   const canCoreUpdate=activeLead&&permissionPolicy.allows(session,PERMISSIONS.recordUpdate)&&context.assignments.some(item=>(LEAD_CORE_UPDATE_ROLES as readonly string[]).includes(item.role));
   const canAddActivity=activeLead&&context.assignments.some(item=>(LEAD_ACTIVITY_ROLES as readonly string[]).includes(item.role));
   const canAssign=context.assignments.some(item=>(LEAD_ASSIGNER_ROLES as readonly string[]).includes(item.role));
-  const formValue={id:lead.id,version:lead.version,company:lead.company,contactName:lead.contactName,contactEmail:lead.contactEmail,contactPhone:lead.contactPhone,source:lead.source,status:lead.status,score:lead.score,recommendedProducts:lead.recommendedProducts,notes:lead.notes,disqualificationReason:lead.disqualificationReason,customerId:lead.customerId};
-  return <><div className="page-head"><div><p className="eyebrow">Lead 360 · v{lead.version}</p><h1>{lead.company}</h1><p>{lead.contactName} · {source[lead.source]}</p></div><Link className="secondary" href="/leads">กลับรายการ Lead</Link></div>
+  const formValue={id:lead.id,version:lead.version,company:lead.company,taxId:lead.taxId,contactName:lead.contactName,contactEmail:lead.contactEmail,contactPhone:lead.contactPhone,source:lead.source,status:lead.status,score:lead.score,recommendedProducts:lead.recommendedProducts,requirementSummary:lead.requirementSummary,estimatedBudget:lead.estimatedBudget?.toString()??null,notes:lead.notes,disqualificationReason:lead.disqualificationReason,customerId:lead.customerId};
+  return <><div className="page-head"><div><p className="eyebrow">Lead 360 · v{lead.version}</p><h1>{lead.company}</h1><p>{lead.contactName} · {source[lead.source]}</p></div><div className="actions record-head-actions">{lead.status==="QUALIFIED"&&canCoreUpdate&&<Link className="primary" href="#lead-conversion">สร้าง Customer + Opportunity<ArrowRight aria-hidden="true"/></Link>}{lead.customer&&<Link className="secondary" href={`/customers/${lead.customer.id}`}>เปิด Customer</Link>}{lead.opportunity&&<Link className="primary" href={`/opportunities/${lead.opportunity.id}`}>เปิด Opportunity<ArrowRight aria-hidden="true"/></Link>}{canCoreUpdate&&<Link className="secondary" href={`/leads/${id}/edit`}><Pencil aria-hidden="true"/>แก้ไข</Link>}<Link className="secondary" href="/leads">กลับรายการ Lead</Link></div></div>
     <section className="card"><div className="card-header"><div><strong>ภาพรวม Lead</strong><small>อัปเดตล่าสุด {lead.updatedAt.toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}</small></div><span className="badge">{status[lead.status]}</span></div><div className="card-body detail-grid">
       <div><p className="detail-label">ผู้ติดต่อ</p><p className="detail-value">{lead.contactName}</p><small>{lead.contactEmail||lead.contactPhone||"—"}</small></div>
       <div><p className="detail-label">Lead Score</p><p className="detail-value">{lead.score}/100</p></div>
@@ -47,7 +48,7 @@ export default async function LeadDetail({params}:{params:Promise<{id:string}>})
       {!lead.activities.length&&!lead.statusHistory.length&&!lead.assignmentHistory.length&&<p className="empty">ยังไม่มีประวัติกิจกรรม</p>}
     </div></section>
     {lead.customer&&<p className="notice" style={{marginTop:20}}>Lead นี้เชื่อมกับ Customer แล้ว: <Link className="link" href={`/customers/${lead.customer.id}`}>{lead.customer.name}</Link></p>}
-    {(canAddActivity||canCoreUpdate)&&<div className="lead-workflow-stack">{canAddActivity&&<LeadActivityForm leadId={lead.id}/>} {canCoreUpdate&&<>{canAssign&&<LeadAssignForm lead={formValue} owners={owners}/>} {(LEAD_QUALIFIABLE_STATUSES as readonly string[]).includes(lead.status)&&<LeadQualificationForm lead={formValue}/>}<LeadLifecycleForm lead={formValue} canArchive={canArchive}/><LeadEditForm lead={formValue} customers={customers}/><LeadConvertForm lead={formValue} customers={customers} duplicateCandidates={duplicateCandidates}/></>}</div>}
+    {(canAddActivity||canCoreUpdate)&&<div className="lead-workflow-stack">{canAddActivity&&<LeadActivityForm leadId={lead.id}/>} {canCoreUpdate&&<>{canAssign&&<LeadAssignForm lead={formValue} owners={owners}/>} {(LEAD_QUALIFIABLE_STATUSES as readonly string[]).includes(lead.status)&&<LeadQualificationForm lead={formValue}/>}<LeadLifecycleForm lead={formValue} canArchive={canArchive}/><LeadConvertForm lead={formValue} customers={customers} duplicateCandidates={duplicateCandidates}/></>}</div>}
     {!canAddActivity&&!canCoreUpdate&&activeLead&&<p className="notice" style={{marginTop:20}}>บัญชีนี้ไม่มีสิทธิ์แก้ไขหรือ Convert Lead</p>}
   </>;
 }

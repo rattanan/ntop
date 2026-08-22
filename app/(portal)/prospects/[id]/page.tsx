@@ -1,4 +1,4 @@
-import { BadgeCheck, BrainCircuit, FileText, ShieldAlert, TrendingUp } from "lucide-react";
+import { ArrowRight, BadgeCheck, BrainCircuit, FileText, Pencil, ShieldAlert, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -53,6 +53,8 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
   ]);
   if (!prospect) notFound();
   const canUpdate = permissions.has(PERMISSIONS.prospectUpdate);
+  const canConvert = permissions.has(PERMISSIONS.prospectConvert);
+  const primaryContact = prospect.contacts.find((contact) => contact.isPrimary) ?? prospect.contacts[0];
 
   return <>
     <div className="customer-hero">
@@ -60,7 +62,7 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
         <p className="eyebrow">{prospect.prospectCode}</p><h1>{prospect.companyName}</h1>
         <div className="customer-meta"><span className="badge">{prospect.status}</span><span className={`badge prospect-${prospect.heatLevel.toLowerCase()}`}>{prospect.heatLevel} · {prospect.calculatedScore}</span><span>Owner: {prospect.owner.name}</span></div>
       </div>
-      <div className="actions">{prospect.convertedLead && <Link className="secondary" href={`/leads/${prospect.convertedLead.id}`}>Lead {prospect.convertedLead.leadNumber}</Link>}{permissions.has(PERMISSIONS.prospectSoftDelete)&&!prospect.convertedLead&&<ProspectSoftDeleteAction id={id} version={prospect.version}/>} {canUpdate && <Link className="primary" href={`/prospects/${id}/edit`}>Edit</Link>}</div>
+      <div className="actions record-head-actions">{prospect.convertedLead && <Link className="primary" href={`/leads/${prospect.convertedLead.id}`}>เปิด Lead {prospect.convertedLead.leadNumber}<ArrowRight aria-hidden="true" /></Link>}{canConvert && prospect.status === "QUALIFIED" && <Link className="primary" href="#prospect-conversion">สร้าง Lead จากข้อมูลนี้<ArrowRight aria-hidden="true" /></Link>}{permissions.has(PERMISSIONS.prospectSoftDelete)&&!prospect.convertedLead&&<ProspectSoftDeleteAction id={id} version={prospect.version}/>} {canUpdate && <Link className="secondary" href={`/prospects/${id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}</div>
     </div>
 
     <div className="detail-columns prospect-overview-row">
@@ -93,6 +95,6 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
 
     <section className="card prospect-documents"><div className="card-header"><div><span>Documents</span><small>เอกสารทั้งหมดถูกเก็บแบบ Private และตรวจ Malware ก่อนบันทึก</small></div><span className="badge muted">{prospect.documents.length} files</span></div><div className="card-body document-layout"><div className="document-list">{prospect.documents.map((document) => <article className="document-row" key={document.id}><span className="document-icon"><FileText aria-hidden="true" /></span><div><strong>{document.fileName}</strong><p>{document.category} · {document.mimeType} · {new Intl.NumberFormat("th-TH", { maximumFractionDigits: 1 }).format(document.sizeBytes / 1_000_000)} MB</p></div></article>)}{!prospect.documents.length && <div className="compact-empty">ยังไม่มีเอกสาร</div>}</div>{canUpdate && <ProspectDocumentUpload id={id} />}</div></section>
 
-    <ProspectActionForms id={id} version={prospect.version} status={prospect.status} owners={owners} canAssign={permissions.has(PERMISSIONS.prospectAssign)} canConvert={permissions.has(PERMISSIONS.prospectConvert)} canUpdate={canUpdate} />
+    <ProspectActionForms id={id} version={prospect.version} status={prospect.status} owners={owners} canAssign={permissions.has(PERMISSIONS.prospectAssign)} canConvert={canConvert} canUpdate={canUpdate} transferSummary={{ company: prospect.companyName, contact: primaryContact?.name ?? "—", score: prospect.calculatedScore, requirement: prospect.businessPainPoints, products: prospect.recommendedProducts, estimatedValue: prospect.estimatedOpportunityValue?.toString() ?? prospect.expectedBudget?.toString() ?? null }} />
   </>;
 }

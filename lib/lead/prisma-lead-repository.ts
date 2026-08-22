@@ -15,7 +15,7 @@ export function buildLeadScopeWhere(context: AuthorizationContext): Prisma.LeadW
   return qualifiedOnly ? { AND: [scope, { status: LeadStatus.QUALIFIED }] } : scope;
 }
 
-const select = { id: true, company: true, contactName: true, contactEmail: true, contactPhone: true, source: true, status: true, temperature: true, score: true, recommendedProducts: true, notes: true, disqualificationReason: true, ownerId: true, organizationUnitId: true, customerId: true, contactId: true, version: true } as const;
+const select = { id: true, company: true, contactName: true, contactEmail: true, contactPhone: true, source: true, status: true, temperature: true, score: true, recommendedProducts: true, requirementSummary: true, notes: true, disqualificationReason: true, ownerId: true, organizationUnitId: true, customerId: true, contactId: true, version: true } as const;
 
 function record(value: Awaited<ReturnType<LeadTransaction["lead"]["findFirst"]>> & Record<string, unknown>): LeadRecord {
   return {
@@ -29,6 +29,7 @@ function record(value: Awaited<ReturnType<LeadTransaction["lead"]["findFirst"]>>
     temperature: value.temperature as LeadRecord["temperature"],
     score: value.score as number,
     recommendedProducts: (value.recommendedProducts as string | null) ?? undefined,
+    requirementSummary: (value.requirementSummary as string | null) ?? undefined,
     notes: (value.notes as string | null) ?? undefined,
     disqualificationReason: (value.disqualificationReason as string | null) ?? undefined,
     ownerId: value.ownerId as string,
@@ -110,7 +111,8 @@ export class PrismaLeadRepository implements LeadRepository<LeadTransaction> {
     const sequenceId = `OPP-${year}`;
     await transaction.opportunityNumberSequence.upsert({ where: { id: sequenceId }, update: {}, create: { id: sequenceId, nextValue: 0 } });
     const sequence = await transaction.opportunityNumberSequence.update({ where: { id: sequenceId }, data: { nextValue: { increment: 1 } } });
-    const opportunity = await transaction.opportunity.create({ data: { opportunityNumber: `OPP-${year}-${String(sequence.nextValue).padStart(6, "0")}`, name: input.opportunityName, customerId: input.customerId, flow: input.opportunityFlow, estimatedValue: input.estimatedValue, probability: input.probability, expectedCloseAt: input.expectedCloseAt, organizationUnitId: input.lead.organizationUnitId ?? null, ownerId: input.lead.ownerId, requirements: input.lead.notes ?? null, nextAction: input.productInterest ?? input.lead.recommendedProducts ?? null, sourceLeadId: input.lead.id } });
+    const opportunityRequirements = [input.lead.requirementSummary, input.lead.notes].filter((value): value is string => Boolean(value)).join("\n\n") || null;
+    const opportunity = await transaction.opportunity.create({ data: { opportunityNumber: `OPP-${year}-${String(sequence.nextValue).padStart(6, "0")}`, name: input.opportunityName, customerId: input.customerId, flow: input.opportunityFlow, estimatedValue: input.estimatedValue, probability: input.probability, expectedCloseAt: input.expectedCloseAt, organizationUnitId: input.lead.organizationUnitId ?? null, ownerId: input.lead.ownerId, requirements: opportunityRequirements, nextAction: input.productInterest ?? input.lead.recommendedProducts ?? null, sourceLeadId: input.lead.id } });
     const updated = await transaction.lead.updateMany({ where: { id: input.lead.id, version: input.expectedVersion, status: LeadStatus.QUALIFIED }, data: { status: LeadStatus.CONVERTED, customerId: input.customerId, contactId: contact.id, convertedAt: new Date(), version: { increment: 1 } } });
     if (updated.count !== 1) return null;
     return { lead: record(await transaction.lead.findUniqueOrThrow({ where: { id: input.lead.id }, select }) as never), contactId: contact.id, opportunityId: opportunity.id };
