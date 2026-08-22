@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/organization-admin";
 import type { FormState } from "@/app/action-types";
 import { FormNotice } from "@/components/notice";
+import { ORGANIZATION_CODE_PATTERN_SOURCE } from "@/lib/administration/organization-code";
 import { ENTERPRISE_ROLES } from "@/lib/authorization/enterprise-role-policy";
 
 type OrganizationOption = { id: string; code: string; name: string; depth: number };
@@ -29,7 +30,7 @@ function OrganizationOptions({ organizations, excludeId }: { organizations: Orga
 
 export function CreateOrganizationForm({ organizations }: { organizations: OrganizationOption[] }) {
   const [state, action, pending] = useActionState(createOrganizationUnit, initial);
-  return <form action={action} className="card form-card"><div className="card-body"><h2>สร้างหน่วยงาน</h2><div className="form-grid"><label className="field"><span>รหัสหน่วยงาน</span><input className="control" name="code" placeholder="เช่น SALES-CENTRAL" minLength={2} maxLength={100} pattern="[A-Za-z0-9][A-Za-z0-9._-]*" required/></label><label className="field"><span>ชื่อหน่วยงาน</span><input className="control" name="name" minLength={2} maxLength={255} required/></label><label className="field"><span>หน่วยงานแม่</span><select className="control" name="parentId"><option value="">หน่วยงานระดับบนสุด</option><OrganizationOptions organizations={organizations}/></select></label></div><Result state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending ? "กำลังสร้าง…" : "สร้างหน่วยงาน"}</button></div></div></form>;
+  return <form action={action} className="card form-card"><div className="card-body"><h2>สร้างหน่วยงาน</h2><div className="form-grid"><label className="field"><span>รหัสหน่วยงาน</span><input className="control" name="code" placeholder="เช่น ออธ.3 หรือ SALES-CENTRAL" minLength={2} maxLength={100} pattern={ORGANIZATION_CODE_PATTERN_SOURCE} title="ใช้ตัวอักษร (รวมภาษาไทยและอังกฤษ) ตัวเลข จุด ขีดกลาง หรือขีดล่าง โดยต้องขึ้นต้นด้วยตัวอักษรหรือตัวเลข" required/><small className="help">ใช้ตัวอักษร (รวมภาษาไทยและอังกฤษ) ตัวเลข จุด (.) ขีดกลาง (-) หรือขีดล่าง (_)</small></label><label className="field"><span>ชื่อหน่วยงาน</span><input className="control" name="name" minLength={2} maxLength={255} required/></label><label className="field"><span>หน่วยงานแม่</span><select className="control" name="parentId"><option value="">หน่วยงานระดับบนสุด</option><OrganizationOptions organizations={organizations}/></select></label></div><Result state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending ? "กำลังสร้าง…" : "สร้างหน่วยงาน"}</button></div></div></form>;
 }
 
 export function UpdateHierarchyForm({ organizations }: { organizations: OrganizationOption[] }) {

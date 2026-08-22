@@ -13,17 +13,46 @@ function validationError(result: { success: boolean; error?: unknown }) {
 }
 
 describe("organizationAdminValidationMessage", () => {
+  it.each(["ออธ", "ออธ.3", "SALES-CENTRAL", "sales.central_3"])(
+    "accepts the supported organization code %s",
+    (code) => {
+      const result = createOrganizationUnitSchema.safeParse({
+        code,
+        name: "หน่วยงานทดสอบ",
+        parentId: null,
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success && code === "sales.central_3") {
+        expect(result.data.code).toBe("SALES.CENTRAL_3");
+      }
+    },
+  );
+
+  it.each([".ออธ", "-SALES", "ออธ 3", "ออธ@3"])(
+    "rejects the unsupported organization code %s",
+    (code) => {
+      const result = createOrganizationUnitSchema.safeParse({
+        code,
+        name: "หน่วยงานทดสอบ",
+        parentId: null,
+      });
+
+      expect(result.success).toBe(false);
+    },
+  );
+
   it("explains the organization code rule without exposing the raw Zod error", () => {
     const result = createOrganizationUnitSchema.safeParse({
-      code: "ฝ่ายขาย",
-      name: "ฝ่ายขาย",
+      code: "ออธ 3",
+      name: "หน่วยงานทดสอบ",
       parentId: null,
     });
 
     const message = organizationAdminValidationMessage(validationError(result));
 
     expect(message).toContain("รหัสหน่วยงานต้องมี 2–100 ตัวอักษร");
-    expect(message).toContain("A–Z, 0–9");
+    expect(message).toContain("รวมภาษาไทยและอังกฤษ");
     expect(message).not.toContain("invalid_format");
     expect(message).not.toContain("regex");
   });

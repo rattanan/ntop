@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { AuditWriter } from "../audit/audit-writer";
 import { ENTERPRISE_ROLES } from "../authorization/enterprise-role-policy";
+import { ORGANIZATION_CODE_PATTERN } from "./organization-code";
 import {
   assertPermission,
   PERMISSIONS,
@@ -15,7 +16,7 @@ const organizationCode = z
   .trim()
   .min(2)
   .max(100)
-  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+  .regex(ORGANIZATION_CODE_PATTERN)
   .transform((value) => value.toUpperCase());
 
 export const createOrganizationUnitSchema = z.strictObject({
