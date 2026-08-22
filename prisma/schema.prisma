@@ -323,6 +323,9 @@ model User {
   passwordHash                    String
   role                            Role                               @default(SALES)
   active                          Boolean                            @default(true)
+  apiKeyHash                      String?                            @unique @db.Char(64)
+  apiKeyPrefix                    String?                            @unique @db.VarChar(32)
+  apiKeyCreatedAt                 DateTime?
   ownedCustomers                  Customer[]                         @relation("CustomerOwner")
   ownedCustomerIncidents          CustomerIncident[]                 @relation("CustomerIncidentOwner")
   ownedDeals                      Opportunity[]                      @relation("OpportunityOwner")

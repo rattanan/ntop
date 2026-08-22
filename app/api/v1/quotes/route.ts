@@ -1,20 +1,43 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 import { getSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { createQuoteRuntime } from "@/lib/commercial/quote-runtime";
+import { buildOpportunityScopeWhere } from "@/lib/opportunity/opportunity-query";
+import { prisma } from "@/lib/prisma";
 
 import { requireIdempotencyKey, workflowApiError, workflowCorrelationId, workflowUnauthenticated } from "../workflow-api-response";
+import { quoteDraftSchema } from "./quote-schema";
 
-export const quoteDraftSchema = z.strictObject({
-  quoteId: z.string().trim().min(1).optional(), proposalId: z.string().trim().min(1).optional(), opportunityId: z.string().trim().min(1), currency: z.string().trim().length(3).default("THB"),
-  validUntil: z.string().datetime().nullable().optional(), notes: z.string().max(10000).optional(),
-  items: z.array(z.strictObject({ productId: z.string().trim().min(1), quantity: z.string().regex(/^\d+(\.\d{1,4})?$/), unitPrice: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(), discountAmount: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(), discountPct: z.string().regex(/^\d+(\.\d{1,4})?$/).optional() })).min(1).max(100),
-});
+export async function GET(request: Request) {
+  const correlationId = workflowCorrelationId(request);
+  const session = await getSession(request);
+  if (!session) return workflowUnauthenticated(correlationId);
+  try {
+    const url = new URL(request.url);
+    const query = url.searchParams.get("q")?.trim();
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? 50) || 50));
+    const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
+    const data = await prisma.quote.findMany({
+      where: {
+        opportunity: buildOpportunityScopeWhere(authorization),
+        ...(query ? { OR: [{ quoteNo: { contains: query } }, { opportunity: { name: { contains: query } } }, { customer: { name: { contains: query } } }] } : {}),
+      },
+      select: {
+        id: true, quoteNo: true, status: true, version: true, total: true, validUntil: true, updatedAt: true,
+        customer: { select: { id: true, name: true } },
+        opportunity: { select: { id: true, name: true } },
+        versions: { orderBy: { versionNumber: "desc" }, take: 1, select: { versionNumber: true, status: true, currency: true, total: true } },
+      },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: limit,
+    });
+    return NextResponse.json({ data, page: { limit, hasMore: data.length === limit }, meta: { correlationId } });
+  } catch (error) { return workflowApiError(error, correlationId); }
+}
 
 export async function POST(request: Request) {
-  const correlationId = workflowCorrelationId(request); const session = await getSession();
+  const correlationId = workflowCorrelationId(request); const session = await getSession(request);
   if (!session) return workflowUnauthenticated(correlationId);
   const key = requireIdempotencyKey(request, correlationId); if (typeof key !== "string") return key;
   try {

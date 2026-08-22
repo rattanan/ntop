@@ -11,7 +11,7 @@ export const MAX_LIMIT = 200;
 
 export async function catalogActor(request: Request) {
   const correlationId = workflowCorrelationId(request);
-  const session = await getSession();
+  const session = await getSession(request);
   if (!session) return { response: workflowUnauthenticated(correlationId), correlationId } as const;
   const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
   return { actor: { id: session.id, role: session.role, authorization }, correlationId } as const;

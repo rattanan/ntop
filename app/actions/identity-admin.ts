@@ -14,10 +14,13 @@ const nullableDate = (value: string) => value ? date(value) : null;
 async function execute(work: (actor: Awaited<ReturnType<typeof requirePermission>>, correlationId: string) => Promise<unknown>): Promise<FormState> {
   try {
     const actor = await requirePermission(PERMISSIONS.userAdminManage);
-    await work(actor, crypto.randomUUID());
+    const result = await work(actor, crypto.randomUUID());
     revalidatePath("/admin/users");
     revalidatePath("/admin/workflow");
-    return { message: "บันทึกเรียบร้อย", status: "success" };
+    const credential = result && typeof result === "object" && "apiKey" in result
+      ? result as { apiKey?: string; apiKeyPrefix?: string }
+      : null;
+    return { message: "บันทึกเรียบร้อย", status: "success", apiKey: credential?.apiKey, apiKeyPrefix: credential?.apiKeyPrefix };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { message: "ข้อมูลนี้มีอยู่แล้ว" };
     return { message: error instanceof Error ? error.message : "ไม่สามารถบันทึกข้อมูลได้" };
@@ -30,6 +33,10 @@ export async function createAdminUser(_: FormState, form: FormData) {
 
 export async function updateAdminUser(_: FormState, form: FormData) {
   return execute((actor, id) => createIdentityAdminRuntime().updateUser(actor, { id: text(form, "userId"), name: text(form, "name"), role: text(form, "role"), active: form.get("active") === "on" }, id));
+}
+
+export async function rotateAdminUserApiKey(_: FormState, form: FormData) {
+  return execute((actor, id) => createIdentityAdminRuntime().rotateUserApiKey(actor, text(form, "userId"), id));
 }
 
 export async function assignAdminRole(_: FormState, form: FormData) {

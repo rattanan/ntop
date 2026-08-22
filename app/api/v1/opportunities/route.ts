@@ -10,7 +10,7 @@ function payload(body: Record<string, unknown>, actorId: string) {
 }
 
 export async function GET(request: Request) {
-  const correlationId = workflowCorrelationId(request); const session = await getSession();
+  const correlationId = workflowCorrelationId(request); const session = await getSession(request);
   if (!session) return workflowUnauthenticated(correlationId);
   try {
     const url = new URL(request.url); const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const correlationId = workflowCorrelationId(request); const session = await getSession();
+  const correlationId = workflowCorrelationId(request); const session = await getSession(request);
   if (!session) return workflowUnauthenticated(correlationId);
   const key = requireIdempotencyKey(request, correlationId); if (key instanceof NextResponse) return key;
   try {

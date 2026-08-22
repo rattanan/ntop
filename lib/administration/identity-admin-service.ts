@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { AuditWriter } from "../audit/audit-writer";
 import { AUTHORIZATION_SCOPES, ENTERPRISE_ROLES } from "../authorization/enterprise-role-policy";
 import { assertPermission, PERMISSIONS, permissionPolicy, type PermissionPolicy } from "../authorization/permission-policy";
+import { generateUserApiKey } from "../identity/user-api-key";
 
 type Actor = { id: string; role: Role };
 type Tx = Prisma.TransactionClient;
@@ -39,10 +40,24 @@ export class IdentityAdminService {
     this.authorize(actor);
     const data = createUserSchema.parse(input);
     const passwordHash = await hash(data.password, 12);
+    const credential = generateUserApiKey();
     return this.repository.transaction(async (tx) => {
-      const user = await tx.user.create({ data: { name: data.name, email: data.email, passwordHash, role: data.role }, select: { id: true, name: true, email: true, role: true, active: true } });
-      await this.audit.append({ actorId: actor.id, action: "identity.user.create", targetType: "User", targetId: user.id, outcome: "SUCCESS", correlationId, data: { role: user.role, active: user.active } }, { transaction: tx });
-      return user;
+      const user = await tx.user.create({ data: { name: data.name, email: data.email, passwordHash, role: data.role, apiKeyHash: credential.hash, apiKeyPrefix: credential.prefix, apiKeyCreatedAt: new Date() }, select: { id: true, name: true, email: true, role: true, active: true } });
+      await this.audit.append({ actorId: actor.id, action: "identity.user.create", targetType: "User", targetId: user.id, outcome: "SUCCESS", correlationId, data: { role: user.role, active: user.active, apiKeyPrefix: credential.prefix } }, { transaction: tx });
+      return { ...user, apiKey: credential.apiKey, apiKeyPrefix: credential.prefix };
+    });
+  }
+
+  async rotateUserApiKey(actor: Actor, userId: string, correlationId: string) {
+    this.authorize(actor);
+    if (!userId) throw new IdentityAdministrationError("ไม่พบผู้ใช้งาน");
+    const credential = generateUserApiKey();
+    return this.repository.transaction(async (tx) => {
+      const existing = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
+      if (!existing) throw new IdentityAdministrationError("ไม่พบผู้ใช้งาน");
+      await tx.user.update({ where: { id: userId }, data: { apiKeyHash: credential.hash, apiKeyPrefix: credential.prefix, apiKeyCreatedAt: new Date() } });
+      await this.audit.append({ actorId: actor.id, action: "identity.user-api-key.rotate", targetType: "User", targetId: userId, outcome: "SUCCESS", correlationId, data: { apiKeyPrefix: credential.prefix } }, { transaction: tx });
+      return { apiKey: credential.apiKey, apiKeyPrefix: credential.prefix };
     });
   }
 

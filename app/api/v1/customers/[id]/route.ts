@@ -37,7 +37,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const requestCorrelationId = correlationId(request);
-  const session = await getSession();
+  const session = await getSession(request);
   if (!session) return unauthenticated(requestCorrelationId);
   try {
     const { id } = await params;
@@ -73,7 +73,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const requestCorrelationId = correlationId(request);
-  const session = await getSession();
+  const session = await getSession(request);
   if (!session) return unauthenticated(requestCorrelationId);
   const idempotencyKey = request.headers.get("idempotency-key")?.trim();
   const ifMatch = request.headers.get("if-match")?.replaceAll('"', "").trim();

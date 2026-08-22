@@ -6,13 +6,13 @@ import { createOpportunityRuntime } from "@/lib/opportunity/opportunity-runtime"
 import { requireIdempotencyKey, workflowApiError, workflowCorrelationId, workflowUnauthenticated } from "../../workflow-api-response";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const correlationId = workflowCorrelationId(request); const session = await getSession(); if (!session) return workflowUnauthenticated(correlationId);
+  const correlationId = workflowCorrelationId(request); const session = await getSession(request); if (!session) return workflowUnauthenticated(correlationId);
   try { const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role }); return NextResponse.json({ data: await getOpportunity(authorization, (await params).id), meta: { correlationId } }); }
   catch (error) { return workflowApiError(error, correlationId); }
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const correlationId = workflowCorrelationId(request); const session = await getSession(); if (!session) return workflowUnauthenticated(correlationId);
+  const correlationId = workflowCorrelationId(request); const session = await getSession(request); if (!session) return workflowUnauthenticated(correlationId);
   const key = requireIdempotencyKey(request, correlationId); if (key instanceof NextResponse) return key;
   const expectedVersion = Number(request.headers.get("if-match"));
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) return NextResponse.json({ error: { code: "IF_MATCH_REQUIRED", message: "If-Match version is required", retryable: false, correlationId } }, { status: 428 });

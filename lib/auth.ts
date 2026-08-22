@@ -1,11 +1,39 @@
-import { cookies } from "next/headers";
+import { timingSafeEqual } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import { jwtVerify, SignJWT } from "jose";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
 import { prisma } from "./prisma";
+import { apiKeyPrefix, verifyUserApiKey } from "./identity/user-api-key";
 
 const COOKIE_NAME = "ntop_session";
-type Session = { id: string; email: string; name: string; role: Role };
+export type Session = { id: string; email: string; name: string; role: Role };
+
+function safeSecretEqual(left: string, right: string) {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+async function serviceSession(request?: Request): Promise<Session | null> {
+  const header = (request?.headers.get("authorization") ?? (await headers()).get("authorization"))?.trim();
+  if (!header?.startsWith("Bearer ")) return null;
+  const supplied = header.slice(7).trim();
+  if (!supplied) return null;
+
+  const prefix = apiKeyPrefix(supplied);
+  if (prefix) {
+    const user = await prisma.user.findUnique({ where: { apiKeyPrefix: prefix }, select: { id: true, email: true, name: true, role: true, active: true, apiKeyHash: true } });
+    if (user?.active && user.apiKeyHash && verifyUserApiKey(supplied, user.apiKeyHash))
+      return { id: user.id, email: user.email, name: user.name, role: user.role };
+  }
+
+  const expected = process.env.NTOP_INTEGRATION_API_KEY?.trim();
+  const actorId = process.env.NTOP_INTEGRATION_ACTOR_ID?.trim();
+  if (!expected || !actorId || !safeSecretEqual(supplied, expected)) return null;
+  const legacyUser = await prisma.user.findUnique({ where: { id: actorId }, select: { id: true, email: true, name: true, role: true, active: true } });
+  return legacyUser?.active ? { id: legacyUser.id, email: legacyUser.email, name: legacyUser.name, role: legacyUser.role } : null;
+}
 
 function key() {
   const secret = process.env.AUTH_SECRET;
@@ -21,7 +49,9 @@ export async function createSession(session: Session) {
 
 export async function clearSession() { (await cookies()).delete(COOKIE_NAME); }
 
-export async function getSession(): Promise<Session | null> {
+export async function getSession(request?: Request): Promise<Session | null> {
+  const integration = await serviceSession(request);
+  if (integration) return integration;
   const token = (await cookies()).get(COOKIE_NAME)?.value;
   if (!token) return null;
   try {

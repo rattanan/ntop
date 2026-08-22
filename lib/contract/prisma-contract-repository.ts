@@ -22,6 +22,8 @@ export class PrismaContractRepository implements ContractRepository<Tx> {
   constructor(private readonly client: PrismaClient) {}
   transaction<T>(work: (tx: Tx) => Promise<T>) { return this.client.$transaction(work); }
   async findAcceptedQuoteVersion(id: string, context: AuthorizationContext, tx: Tx) {
+    const existingContract = await tx.contract.findUnique({ where: { quoteVersionId: id }, select: { id: true } });
+    if (existingContract) return null;
     const value = await tx.quoteVersion.findFirst({ where: { id, status: "ACCEPTED", quote: { opportunity: buildOpportunityScopeWhere(context) } }, include: { quote: { select: { id: true, customerId: true, opportunityId: true, proposalId: true, opportunity: { select: { organizationUnitId: true } } } }, items: true } });
     if (!value) return null;
     return { quoteId: value.quote.id, quoteVersionId: value.id, status: value.status, customerId: value.quote.customerId, opportunityId: value.quote.opportunityId, organizationUnitId: value.quote.opportunity?.organizationUnitId ?? null, proposalId: value.quote.proposalId, currency: value.currency, sourceSnapshot: { quoteVersionNumber: value.versionNumber, acceptedAt: value.acceptedAt?.toISOString() ?? null, total: value.total.toString(), items: value.items.map((i) => ({ productId: i.productId, productCode: i.productCode, productName: i.productName, quantity: i.quantity.toString(), unitPrice: i.unitPrice.toString(), lineTotal: i.lineTotal.toString() })) } };

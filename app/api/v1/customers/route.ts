@@ -33,7 +33,7 @@ function normalizeCreatePayload(value: unknown, actorId: string) {
 
 export async function GET(request: Request) {
   const requestCorrelationId = correlationId(request);
-  const session = await getSession();
+  const session = await getSession(request);
   if (!session) return unauthenticated(requestCorrelationId);
   try {
     const url = new URL(request.url);
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const requestCorrelationId = correlationId(request);
-  const session = await getSession();
+  const session = await getSession(request);
   if (!session) return unauthenticated(requestCorrelationId);
   const idempotencyKey = request.headers.get("idempotency-key")?.trim();
   if (!idempotencyKey || idempotencyKey.length > 191) {

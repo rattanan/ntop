@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { Role } from "@prisma/client";
-import { assignAdminRole, createAdminUser, revokeAdminRole, updateAdminUser } from "@/app/actions/identity-admin";
+import { assignAdminRole, createAdminUser, revokeAdminRole, rotateAdminUserApiKey, updateAdminUser } from "@/app/actions/identity-admin";
 import type { FormState } from "@/app/action-types";
 import { FormNotice } from "@/components/notice";
 import { AUTHORIZATION_SCOPES, ENTERPRISE_ROLES } from "@/lib/authorization/enterprise-role-policy";
@@ -13,14 +13,28 @@ type Org = { id: string; code: string; name: string };
 
 function Result({ state }: { state: FormState }) { return <FormNotice state={state}/>; }
 
+function ApiKeyReveal({ apiKey }: { apiKey: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    await navigator.clipboard.writeText(apiKey);
+    setCopied(true);
+  }
+  return <div className="notice success" role="status" aria-live="polite"><strong>API Key ใหม่ — แสดงครั้งเดียว</strong><code style={{display:"block", margin:"8px 0", overflowWrap:"anywhere"}}>{apiKey}</code><button className="secondary" type="button" onClick={copy}>{copied ? "คัดลอกแล้ว" : "Copy API Key"}</button><small className="help" style={{display:"block", marginTop:8}}>นำ Key นี้ไปบันทึกใน InsightKM ระบบ NTOP จะเก็บเฉพาะค่า hash และไม่สามารถแสดงค่าเดิมอีกได้</small></div>;
+}
+
 export function CreateUserForm() {
   const [state, action, pending] = useActionState(createAdminUser, initial);
-  return <form action={action} className="card form-card"><div className="card-body"><h2>สร้างผู้ใช้งาน</h2><div className="form-grid"><label className="field"><span>ชื่อ</span><input className="control" name="name" required minLength={2}/></label><label className="field"><span>อีเมล</span><input className="control" name="email" type="email" required/></label><label className="field"><span>รหัสผ่านเริ่มต้น</span><input className="control" name="password" type="password" minLength={12} autoComplete="new-password" required/><small className="help">อย่างน้อย 12 ตัวอักษร</small></label><label className="field"><span>Legacy role</span><select className="control" name="role" defaultValue="SALES">{legacyRoles.map(role=><option key={role}>{role}</option>)}</select></label></div><Result state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending ? "กำลังสร้าง…" : "สร้างผู้ใช้งาน"}</button></div></div></form>;
+  return <form action={action} className="card form-card"><div className="card-body"><h2>สร้างผู้ใช้งาน</h2><div className="form-grid"><label className="field"><span>ชื่อ</span><input className="control" name="name" required minLength={2}/></label><label className="field"><span>อีเมล</span><input className="control" name="email" type="email" required/></label><label className="field"><span>รหัสผ่านเริ่มต้น</span><input className="control" name="password" type="password" minLength={12} autoComplete="new-password" required/><small className="help">อย่างน้อย 12 ตัวอักษร</small></label><label className="field"><span>Legacy role</span><select className="control" name="role" defaultValue="SALES">{legacyRoles.map(role=><option key={role}>{role}</option>)}</select></label></div><Result state={state}/>{state.apiKey&&<ApiKeyReveal apiKey={state.apiKey}/>}<div className="actions"><button className="primary" disabled={pending}>{pending ? "กำลังสร้าง…" : "สร้างผู้ใช้งาน"}</button></div></div></form>;
 }
 
 export function UpdateUserForm({ user, self }: { user: { id: string; name: string; role: Role; active: boolean }; self: boolean }) {
   const [state, action, pending] = useActionState(updateAdminUser, initial);
   return <form action={action}><input type="hidden" name="userId" value={user.id}/><input className="control" name="name" defaultValue={user.name} required minLength={2}/><select className="control" name="role" defaultValue={user.role} disabled={self}>{legacyRoles.map(role=><option key={role}>{role}</option>)}</select>{self&&<input type="hidden" name="role" value={user.role}/>}<label className="help"><input type="checkbox" name="active" defaultChecked={user.active} disabled={self}/> เปิดใช้งาน</label>{self&&<input type="hidden" name="active" value="on"/>}<Result state={state}/><button className="secondary" disabled={pending}>{pending ? "กำลังบันทึก…" : "บันทึก"}</button></form>;
+}
+
+export function UserApiKeyForm({ user }: { user: { id: string; apiKeyPrefix: string | null; apiKeyCreatedAt: Date | null } }) {
+  const [state, action, pending] = useActionState(rotateAdminUserApiKey, initial);
+  return <div><div><span className={`badge ${user.apiKeyPrefix ? "success" : "muted"}`}>{user.apiKeyPrefix ? `ntop_${user.apiKeyPrefix}_••••` : "ยังไม่มี API Key"}</span></div><small className="help">{user.apiKeyCreatedAt ? `ออกเมื่อ ${user.apiKeyCreatedAt.toLocaleString("th-TH")}` : "สร้างหรือหมุน Key เพื่อเชื่อม InsightKM"}</small><form action={action} style={{marginTop:8}}><input type="hidden" name="userId" value={user.id}/><button className="secondary" disabled={pending}>{pending ? "กำลังออก Key…" : user.apiKeyPrefix ? "Rotate API Key" : "Create API Key"}</button><Result state={state}/>{state.apiKey&&<ApiKeyReveal apiKey={state.apiKey}/>}</form></div>;
 }
 
 export function AssignRoleForm({ users, orgs }: { users: { id: string; name: string; email: string }[]; orgs: Org[] }) {

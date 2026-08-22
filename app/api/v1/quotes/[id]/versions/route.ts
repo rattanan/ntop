@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { createQuoteRuntime } from "@/lib/commercial/quote-runtime";
 
-import { quoteDraftSchema } from "../../route";
+import { quoteDraftSchema } from "../../quote-schema";
 import { requireIdempotencyKey, workflowApiError, workflowCorrelationId, workflowUnauthenticated } from "../../../workflow-api-response";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
