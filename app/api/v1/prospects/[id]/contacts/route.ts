@@ -1,2 +1,19 @@
-import { NextResponse } from "next/server";import { createProspectRuntime } from "@/lib/prospect/prospect-runtime";import { prospectActor,prospectApiError,prospectIdempotencyKey } from "../../prospect-api";
-export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){const auth=await prospectActor(request);if("response"in auth)return auth.response;const key=prospectIdempotencyKey(request,auth.correlationId);if(key instanceof NextResponse)return key;try{const {id}=await params,data=await createProspectRuntime().addContact(auth.actor,id,await request.json(),auth.correlationId,key);return NextResponse.json({data,meta:{correlationId:auth.correlationId}},{status:201});}catch(error){return prospectApiError(error,auth.correlationId);}}
+import { NextResponse } from "next/server";
+
+import { createProspectRuntime } from "@/lib/prospect/prospect-runtime";
+import { prospectActor, prospectApiError, prospectIdempotencyKey } from "../../prospect-api";
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await prospectActor(request);
+  if ("response" in auth) return auth.response;
+  const key = prospectIdempotencyKey(request, auth.correlationId);
+  if (key instanceof NextResponse) return key;
+  try {
+    const { id } = await params;
+    const { expectedVersion, ...input } = await request.json();
+    const data = await createProspectRuntime().addContact(auth.actor, id, input, auth.correlationId, key, expectedVersion === undefined ? undefined : Number(expectedVersion));
+    return NextResponse.json({ data, meta: { correlationId: auth.correlationId } }, { status: 201 });
+  } catch (error) {
+    return prospectApiError(error, auth.correlationId);
+  }
+}

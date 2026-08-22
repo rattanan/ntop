@@ -2,7 +2,7 @@ import { ArrowRight, BadgeCheck, BrainCircuit, FileText, Pencil, ShieldAlert, Tr
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ProspectActionForms, ProspectDocumentUpload } from "@/components/prospect-action-forms";
+import { ProspectActionForms, ProspectAiInsightActions, ProspectContactManager, ProspectDocumentUpload, type ProspectAiInsightDraft } from "@/components/prospect-action-forms";
 import { ProspectSoftDeleteAction } from "@/components/data-retention-actions";
 import { requireSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
@@ -32,6 +32,21 @@ function AiScore({ label, score, description, inverse = false, icon }: { label: 
   );
 }
 
+function aiInsightDraft(value: unknown): ProspectAiInsightDraft | null {
+  const output = value && typeof value === "object" && "output" in value ? (value as { output?: unknown }).output : null;
+  if (!output || typeof output !== "object") return null;
+  const data = output as Record<string, unknown>;
+  if (typeof data.companySummary !== "string" || typeof data.opportunityScore !== "number" || typeof data.riskScore !== "number" || typeof data.confidenceScore !== "number") return null;
+  return {
+    companySummary: data.companySummary,
+    opportunityScore: data.opportunityScore,
+    riskScore: data.riskScore,
+    confidenceScore: data.confidenceScore,
+    recommendedProducts: Array.isArray(data.recommendedProducts) ? data.recommendedProducts.filter((item): item is string => typeof item === "string") : [],
+    suggestedNextAction: typeof data.suggestedNextAction === "string" ? data.suggestedNextAction : "",
+  };
+}
+
 export default async function ProspectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
@@ -55,6 +70,7 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
   const canUpdate = permissions.has(PERMISSIONS.prospectUpdate);
   const canConvert = permissions.has(PERMISSIONS.prospectConvert);
   const primaryContact = prospect.contacts.find((contact) => contact.isPrimary) ?? prospect.contacts[0];
+  const insightDraft = prospect.enrichmentStatus === "READY" ? aiInsightDraft(prospect.enrichmentData) : null;
 
   return <>
     <div className="customer-hero">
@@ -78,6 +94,7 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
       <section className="card ai-insight-card" aria-labelledby="ai-insight-heading">
         <div className="card-header ai-insight-header"><div><span className="ai-insight-icon"><BrainCircuit aria-hidden="true" /></span><div><span id="ai-insight-heading">AI Insight</span><small>ข้อมูลช่วยตัดสินใจจาก AI enrichment</small></div></div><span className="badge muted">{prospect.enrichmentStatus}</span></div>
         <div className="card-body">
+          <ProspectAiInsightActions id={id} status={prospect.enrichmentStatus} canUpdate={canUpdate} initialDraft={insightDraft} />
           <div className="ai-summary"><strong>Executive summary</strong><p>{prospect.aiSummary ?? "ยังไม่มี AI enrichment — ใช้คำสั่ง Enrich เพื่อสร้างข้อมูลวิเคราะห์"}</p></div>
           <div className="ai-score-grid">
             <AiScore label="Opportunity" score={prospect.aiOpportunityScore} description="ศักยภาพในการเปลี่ยนเป็นโอกาสขาย" icon={<TrendingUp aria-hidden="true" />} />
@@ -89,7 +106,7 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
       </section>
     </div>
 
-    <div className="detail-columns"><section className="card"><div className="card-header">Contacts</div><div className="card-body">{prospect.contacts.map((contact) => <div className="timeline" key={contact.id}><strong>{contact.isPrimary ? "★ " : ""}{contact.name}</strong><p>{contact.position ?? ""} · {contact.email ?? contact.mobile ?? contact.phone ?? contact.lineId}</p></div>)}{!prospect.contacts.length && <div className="empty">ยังไม่มี Contact</div>}</div></section>
+    <div className="detail-columns"><section className="card"><div className="card-header">Contacts</div><div className="card-body"><ProspectContactManager id={id} version={prospect.version} contacts={prospect.contacts} canUpdate={canUpdate} /></div></section>
       <section className="card"><div className="card-header">Activities & Timeline</div><div className="card-body">{prospect.activities.map((activity) => <div className="timeline" key={activity.id}><strong>{activity.type} · {activity.subject}</strong><p>{activity.description ?? activity.notes ?? ""}</p><small>{activity.owner.name} · {activity.createdAt.toLocaleString("th-TH")}</small></div>)}{prospect.statusHistory.map((history) => <div className="timeline" key={history.id}><strong>Status {history.fromStatus} → {history.toStatus}</strong><p>{history.reason}</p><small>{history.transitionedAt.toLocaleString("th-TH")}</small></div>)}</div></section>
     </div>
 

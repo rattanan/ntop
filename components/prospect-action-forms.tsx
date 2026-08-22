@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, FileUp, LoaderCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, FileUp, LoaderCircle, Pencil, Plus, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Notice, type NoticeVariant } from "@/components/notice";
@@ -10,6 +10,135 @@ async function command(path: string, body: object) {
   const result = await response.json();
   if (!response.ok) throw new Error(result.error?.message ?? "ดำเนินการไม่สำเร็จ");
   return result.data;
+}
+
+async function contactCommand(path: string, method: "POST" | "PATCH" | "DELETE", body: object) {
+  const response = await fetch(path, { method, headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() }, body: JSON.stringify(body) });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error?.message ?? "จัดการ Contact ไม่สำเร็จ");
+  return result.data;
+}
+
+export type ProspectAiInsightDraft = {
+  companySummary: string;
+  opportunityScore: number;
+  riskScore: number;
+  confidenceScore: number;
+  recommendedProducts: string[];
+  suggestedNextAction: string;
+};
+
+export function ProspectAiInsightActions({ id, status, canUpdate, initialDraft }: { id: string; status: string; canUpdate: boolean; initialDraft: ProspectAiInsightDraft | null }) {
+  const router = useRouter();
+  const [draft, setDraft] = useState(initialDraft);
+  const [pending, setPending] = useState<"request" | "confirm" | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  if (!canUpdate) return null;
+  const requestInsight = async () => {
+    setPending("request"); setMessage(null);
+    try {
+      const response = await fetch(`/api/v1/prospects/${id}/enrich`, { method: "POST", headers: { "idempotency-key": crypto.randomUUID() } });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Request AI Insight ไม่สำเร็จ");
+      setDraft(result.data as ProspectAiInsightDraft);
+      setMessage({ type: "success", text: "AI Insight พร้อมให้ตรวจสอบแล้ว กรุณายืนยันก่อนนำไปใช้กับ Prospect" });
+      router.refresh();
+    } catch (error) { setMessage({ type: "error", text: error instanceof Error ? error.message : "Request AI Insight ไม่สำเร็จ" }); }
+    finally { setPending(null); }
+  };
+  const confirmInsight = async () => {
+    setPending("confirm"); setMessage(null);
+    try {
+      const response = await fetch(`/api/v1/prospects/${id}/enrich/confirm`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "ยืนยัน AI Insight ไม่สำเร็จ");
+      setMessage({ type: "success", text: "ยืนยันและบันทึก AI Insight แล้ว" });
+      setDraft(null);
+      router.refresh();
+    } catch (error) { setMessage({ type: "error", text: error instanceof Error ? error.message : "ยืนยัน AI Insight ไม่สำเร็จ" }); }
+    finally { setPending(null); }
+  };
+  return <div className="ai-insight-actions">
+    <div className="actions ai-insight-action-buttons">
+      <button className={draft || status === "READY" ? "secondary" : "primary"} type="button" disabled={pending !== null || status === "PROCESSING"} onClick={() => void requestInsight()}>{pending === "request" || status === "PROCESSING" ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังวิเคราะห์…</> : <><Sparkles aria-hidden="true" />Request AI Insight</>}</button>
+      {(draft || status === "READY") && <button className="primary" type="button" disabled={pending !== null} onClick={() => void confirmInsight()}>{pending === "confirm" ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังยืนยัน…</> : <><Check aria-hidden="true" />ยืนยันใช้ AI Insight</>}</button>}
+    </div>
+    {draft && <section className="ai-draft-review" aria-label="AI Insight draft awaiting confirmation"><div className="ai-draft-review-heading"><strong>AI draft — รอการยืนยัน</strong><span className="badge ai">Human review required</span></div><p>{draft.companySummary}</p><div className="ai-draft-score-row"><span>Opportunity <strong>{draft.opportunityScore}/100</strong></span><span>Risk <strong>{draft.riskScore}/100</strong></span><span>Confidence <strong>{draft.confidenceScore}/100</strong></span></div>{draft.recommendedProducts.length > 0 && <small>แนะนำ: {draft.recommendedProducts.join(", ")}</small>}{draft.suggestedNextAction && <small>Next action: {draft.suggestedNextAction}</small>}</section>}
+    {message && <p className={`form-feedback ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
+  </div>;
+}
+
+export type ProspectContactItem = {
+  id: string;
+  name: string;
+  position: string | null;
+  department: string | null;
+  phone: string | null;
+  mobile: string | null;
+  email: string | null;
+  lineId: string | null;
+  preferredContactChannel: "PHONE" | "MOBILE" | "EMAIL" | "LINE" | "MEETING" | "OTHER" | null;
+  isPrimary: boolean;
+};
+
+function optional(form: FormData, name: string) {
+  const value = String(form.get(name) ?? "").trim();
+  return value || undefined;
+}
+
+function contactPayload(form: FormData) {
+  return {
+    name: String(form.get("name") ?? "").trim(),
+    position: optional(form, "position"),
+    department: optional(form, "department"),
+    phone: optional(form, "phone"),
+    mobile: optional(form, "mobile"),
+    email: optional(form, "email"),
+    lineId: optional(form, "lineId"),
+    preferredContactChannel: optional(form, "preferredContactChannel"),
+    isPrimary: form.get("isPrimary") === "on",
+  };
+}
+
+function ContactFields({ contact }: { contact?: ProspectContactItem }) {
+  return <div className="prospect-contact-fields">
+    <label><span>ชื่อ Contact <span className="required">*</span></span><input className="control" name="name" defaultValue={contact?.name} minLength={2} maxLength={255} required /></label>
+    <label><span>ตำแหน่ง</span><input className="control" name="position" defaultValue={contact?.position ?? ""} maxLength={191} /></label>
+    <label><span>ฝ่าย / แผนก</span><input className="control" name="department" defaultValue={contact?.department ?? ""} maxLength={191} /></label>
+    <label><span>อีเมล</span><input className="control" name="email" type="email" defaultValue={contact?.email ?? ""} /></label>
+    <label><span>มือถือ</span><input className="control" name="mobile" defaultValue={contact?.mobile ?? ""} maxLength={100} /></label>
+    <label><span>โทรศัพท์</span><input className="control" name="phone" defaultValue={contact?.phone ?? ""} maxLength={100} /></label>
+    <label><span>LINE ID</span><input className="control" name="lineId" defaultValue={contact?.lineId ?? ""} maxLength={191} /></label>
+    <label><span>ช่องทางที่ต้องการ</span><select className="control" name="preferredContactChannel" defaultValue={contact?.preferredContactChannel ?? ""}><option value="">ไม่ระบุ</option><option value="PHONE">โทรศัพท์</option><option value="MOBILE">มือถือ</option><option value="EMAIL">อีเมล</option><option value="LINE">LINE</option><option value="MEETING">ประชุม</option><option value="OTHER">อื่น ๆ</option></select></label>
+    <label className="checkbox-field prospect-contact-primary"><input type="checkbox" name="isPrimary" defaultChecked={contact?.isPrimary} /> Contact หลัก</label>
+  </div>;
+}
+
+export function ProspectContactManager({ id, version, contacts, canUpdate }: { id: string; version: number; contacts: ProspectContactItem[]; canUpdate: boolean }) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const run = async (key: string, action: () => Promise<unknown>, success: string) => {
+    setPending(key); setMessage(null);
+    try { await action(); setMessage({ type: "success", text: success }); setCreating(false); setEditingId(null); router.refresh(); }
+    catch (error) { setMessage({ type: "error", text: error instanceof Error ? error.message : "จัดการ Contact ไม่สำเร็จ" }); }
+    finally { setPending(null); }
+  };
+  return <div className="prospect-contact-manager">
+    {canUpdate && <div className="prospect-contact-toolbar"><button className="secondary" type="button" onClick={() => { setCreating(value => !value); setEditingId(null); setMessage(null); }}>{creating ? <><X aria-hidden="true" />ยกเลิก</> : <><Plus aria-hidden="true" />เพิ่ม Contact</>}</button></div>}
+    {creating && <form className="prospect-contact-form" onSubmit={event => { event.preventDefault(); const form = event.currentTarget; const payload = contactPayload(new FormData(form)); void run("create", () => contactCommand(`/api/v1/prospects/${id}/contacts`, "POST", { expectedVersion: version, ...payload }), "เพิ่ม Contact แล้ว"); }}>
+      <ContactFields />
+      <p className="help">ต้องระบุช่องทางติดต่ออย่างน้อยหนึ่งรายการ: อีเมล มือถือ โทรศัพท์ หรือ LINE ID</p>
+      <button className="primary" disabled={pending !== null}>{pending === "create" ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึก Contact"}</button>
+    </form>}
+    <div className="prospect-contact-list">{contacts.map(contact => <article className="prospect-contact-row" key={contact.id}>
+      <div className="prospect-contact-summary"><div><strong>{contact.isPrimary ? "★ " : ""}{contact.name}</strong><p>{[contact.position, contact.department].filter(Boolean).join(" · ") || "ไม่ระบุตำแหน่ง"}</p><small>{[contact.email, contact.mobile, contact.phone, contact.lineId].filter(Boolean).join(" · ")}</small></div>{canUpdate && <div className="actions"><button className="icon-action" type="button" aria-label={`แก้ไข Contact ${contact.name}`} title="แก้ไข Contact" onClick={() => { setEditingId(value => value === contact.id ? null : contact.id); setCreating(false); setMessage(null); }}><Pencil aria-hidden="true" /></button><button className="icon-action danger" type="button" aria-label={`ลบ Contact ${contact.name}`} title="ลบ Contact" disabled={pending !== null} onClick={() => { if (!window.confirm(`ยืนยันลบ Contact ${contact.name}?`)) return; void run(`delete-${contact.id}`, () => contactCommand(`/api/v1/prospects/${id}/contacts/${contact.id}`, "DELETE", { expectedVersion: version }), "ลบ Contact แล้ว"); }}><Trash2 aria-hidden="true" /></button></div>}</div>
+      {editingId === contact.id && <form className="prospect-contact-form inline" onSubmit={event => { event.preventDefault(); const payload = contactPayload(new FormData(event.currentTarget)); void run(`edit-${contact.id}`, () => contactCommand(`/api/v1/prospects/${id}/contacts/${contact.id}`, "PATCH", { expectedVersion: version, ...payload }), "แก้ไข Contact แล้ว"); }}><ContactFields contact={contact} /><p className="help">ต้องระบุช่องทางติดต่ออย่างน้อยหนึ่งรายการ</p><div className="actions"><button className="secondary" type="button" onClick={() => setEditingId(null)}>ยกเลิก</button><button className="primary" disabled={pending !== null}>{pending === `edit-${contact.id}` ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึกการแก้ไข"}</button></div></form>}
+    </article>)}{!contacts.length && <div className="empty">ยังไม่มี Contact</div>}</div>
+    {message && <p className={`form-feedback ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
+  </div>;
 }
 
 export function ProspectDocumentUpload({ id }: { id: string }) {

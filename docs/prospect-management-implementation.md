@@ -7,12 +7,15 @@
 - Permission checks use `prospect.*` permission grants; list and detail use the same ownership/organization predicate.
 - Status transitions use an allowlist. `CONVERTED` is conversion-command-only and conversion cannot be repeated.
 - Contacts support one transactionally enforced primary contact. Activities update contact/follow-up facts and timeline.
+- Authorized users can create, edit, and soft-delete Contacts from the Prospect detail page. Contact mutations enforce Prospect scope and permission on the server, use the parent Prospect version for optimistic concurrency, promote a replacement when the primary Contact is removed, and append audit evidence in the same transaction.
+- Existing environments receive the approved `prospect.*` role grants through a forward data migration, so edit and document-upload actions do not depend on reseeding.
 - Duplicate detection considers normalized Thai/English company names, tax ID, contact email/phone/mobile and website domain.
 - Assignment, status, activity, contact, merge, conversion, import-created rows and AI confirmation write audit evidence.
 - Conversion creates Lead and links Prospect contacts, activities and document metadata in one transaction without copying objects.
 - Money uses `Decimal(19,4)`, operational dates are UTC instants, and deletion is soft-delete only.
 - CSV/XLSX import follows preview and promote steps with persistent batches/rows. Export uses authorization scope and current supported filters.
 - AI enrichment uses the configured provider, stores a READY draft with provenance, and changes primary AI fields only after confirmation.
+- The Prospect detail page exposes `Request AI Insight` to authorized users, previews the READY draft, and requires an explicit `ยืนยันใช้ AI Insight` action before applying AI fields.
 - The company-research API uses authoritative public sources, a strict allowlist schema, no personal-contact collection, and never infers commercial or security facts.
 - Every company-research success or provider failure writes an audit event with provider provenance and source URLs; provider outage leaves the manual create flow available.
 - `/prospects/new` exposes the company name as a normal form field without an AI Search button; the manual create flow remains unchanged.
@@ -22,6 +25,7 @@
 - `GET|POST /api/v1/prospects`
 - `GET|PATCH|DELETE /api/v1/prospects/{id}`
 - `POST /api/v1/prospects/{id}/contacts|activities|assign|status|convert|merge|enrich`
+- `PATCH|DELETE /api/v1/prospects/{id}/contacts/{contactId}`
 - `POST /api/v1/prospects/{id}/documents` (multipart, private storage + malware scan required)
 - `POST /api/v1/prospects/{id}/enrich/confirm`
 - `POST /api/v1/prospects/check-duplicate|bulk`

@@ -1,0 +1,45 @@
+-- Prospect management shipped before its role grants were installed by a
+-- forward migration. Backfill the approved baseline matrix for existing
+-- environments; INSERT IGNORE keeps this safe where seed data already exists.
+INSERT IGNORE INTO `RolePermissionGrant` (`id`, `roleCode`, `permissionCode`, `createdAt`)
+SELECT UUID(), grants.roleCode, grants.permissionCode, CURRENT_TIMESTAMP(3)
+FROM (
+  SELECT 'ADMIN' roleCode, 'prospect.view' permissionCode
+  UNION ALL SELECT 'ADMIN', 'prospect.create'
+  UNION ALL SELECT 'ADMIN', 'prospect.update'
+  UNION ALL SELECT 'ADMIN', 'prospect.assign'
+  UNION ALL SELECT 'ADMIN', 'prospect.convert'
+  UNION ALL SELECT 'ADMIN', 'prospect.merge'
+  UNION ALL SELECT 'ADMIN', 'prospect.archive'
+  UNION ALL SELECT 'ADMIN', 'prospect.import'
+  UNION ALL SELECT 'ADMIN', 'prospect.export'
+  UNION ALL SELECT 'ADMIN', 'prospect.view_all'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.view'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.create'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.update'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.assign'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.convert'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.merge'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.archive'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.import'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.export'
+  UNION ALL SELECT 'SALES_DIRECTOR', 'prospect.view_all'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.view'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.create'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.update'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.assign'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.convert'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.merge'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.archive'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.import'
+  UNION ALL SELECT 'TEAM_MANAGER', 'prospect.export'
+  UNION ALL SELECT 'KAM', 'prospect.view'
+  UNION ALL SELECT 'KAM', 'prospect.create'
+  UNION ALL SELECT 'KAM', 'prospect.update'
+  UNION ALL SELECT 'KAM', 'prospect.convert'
+  UNION ALL SELECT 'KAM', 'prospect.export'
+  UNION ALL SELECT 'MARKETING', 'prospect.view'
+  UNION ALL SELECT 'MARKETING', 'prospect.create'
+  UNION ALL SELECT 'MARKETING', 'prospect.import'
+  UNION ALL SELECT 'MARKETING', 'prospect.export'
+) grants;
