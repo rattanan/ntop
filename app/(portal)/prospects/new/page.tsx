@@ -3,8 +3,6 @@ import { requireSession } from "@/lib/auth";
 
 export default async function NewProspectPage() {
   await requireSession();
-  const companyResearchEnabled =
-    process.env.PROSPECT_AI_SEARCH_ENABLED === "true";
   return (
     <>
       <div className="page-head">
@@ -14,7 +12,7 @@ export default async function NewProspectPage() {
           <p>ระบบจะตรวจข้อมูลซ้ำก่อนบันทึก</p>
         </div>
       </div>
-      <ProspectForm companyResearchEnabled={companyResearchEnabled} />
+      <ProspectForm />
     </>
   );
 }

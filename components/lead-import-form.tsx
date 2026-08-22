@@ -28,7 +28,7 @@ export function LeadImportForm() {
       } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ตรวจสอบไฟล์ไม่สำเร็จ", variant: "error" }); }
       finally { setPending(false); }
     }}>
-      <div className="card-body actions"><label>นำเข้า CSV <input type="file" name="file" accept=".csv,text/csv" required/></label><button className="secondary" disabled={pending}>{pending ? "กำลังตรวจสอบ…" : "Preview"}</button><Link className="link" href="/api/v1/leads/import/template">ดาวน์โหลด Template</Link></div>
+      <div className="card-body actions"><label><span>นำเข้า CSV</span> <input type="file" name="file" accept=".csv,text/csv" required/></label><button className="secondary" disabled={pending}>{pending ? "กำลังตรวจสอบ…" : "Preview"}</button><Link className="link" href="/api/v1/leads/import/template">ดาวน์โหลด Template</Link></div>
     </form>
     {preview && <div className="card-body"><p>ทั้งหมด {preview.total} · ผ่าน {preview.valid} · ผิดพลาด {preview.invalid} · อาจซ้ำ {preview.duplicates}</p><button className="primary" disabled={pending || preview.valid === 0} onClick={async () => {
       setPending(true);

@@ -27,7 +27,7 @@ export function ProspectImportForm() {
         setMessage({ text: result.error?.message ?? "Preview ไม่สำเร็จ", variant: "error" });
       }
     }}>
-      <label>Import CSV/XLSX <input type="file" name="file" accept=".csv,.xlsx" required/></label>
+      <label><span>Import CSV/XLSX</span> <input type="file" name="file" accept=".csv,.xlsx" required/></label>
       <button className="secondary">Preview</button>
       <Link className="link" href="/api/v1/prospects/import/template">Template</Link>
     </form>

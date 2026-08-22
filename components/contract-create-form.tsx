@@ -53,7 +53,7 @@ export function ContractCreateForm({
     </div>
     <div className="table-wrap">
       <table className="table">
-        <thead><tr><th>Service</th><th>Qty</th><th>Monthly</th><th>One-time</th><th>Months</th><th>Discount</th></tr></thead>
+        <thead><tr><th><span className="required-label">Service</span></th><th><span className="required-label">Qty</span></th><th><span className="required-label">Monthly</span></th><th><span className="required-label">One-time</span></th><th><span className="required-label">Months</span></th><th><span className="required-label">Discount</span></th></tr></thead>
         <tbody>{quote.items.map((item, index) => <tr key={item.id}>
           <td>
             <input type="hidden" name={`productId.${index}`} value={item.productId} />

@@ -13,10 +13,9 @@
 - Money uses `Decimal(19,4)`, operational dates are UTC instants, and deletion is soft-delete only.
 - CSV/XLSX import follows preview and promote steps with persistent batches/rows. Export uses authorization scope and current supported filters.
 - AI enrichment uses the configured provider, stores a READY draft with provenance, and changes primary AI fields only after confirmation.
-- On `/prospects/new`, an inline Search action requires a valid company name, server-side `prospect.create` authorization, and a configured provider/model that supports Responses API web search.
-- Company research uses authoritative public sources, a strict allowlist schema, no personal-contact collection, and never infers commercial or security facts. It fills empty visible fields only, preserves user-entered values, shows confidence/warnings/source links, and creates no Prospect until the user submits the form.
+- The company-research API uses authoritative public sources, a strict allowlist schema, no personal-contact collection, and never infers commercial or security facts.
 - Every company-research success or provider failure writes an audit event with provider provenance and source URLs; provider outage leaves the manual create flow available.
-- The inline company Search button is temporarily disabled by default. Set `PROSPECT_AI_SEARCH_ENABLED=true` only after a compatible web-search provider has passed capability verification; the manual create flow remains unchanged while disabled.
+- `/prospects/new` exposes the company name as a normal form field without an AI Search button; the manual create flow remains unchanged.
 
 ## API
 
