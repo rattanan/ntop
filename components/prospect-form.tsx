@@ -114,10 +114,15 @@ export function ProspectForm({
     },
   );
 
-  const field = (name: keyof ProspectCommand, label: string, type = "text") => (
+  const field = (
+    name: keyof ProspectCommand,
+    label: string,
+    type = "text",
+    required = false,
+  ) => (
     <label className="field">
       <span>{label}</span>
-      <input className="control" type={type} {...register(name as never)} />
+      <input className="control" type={type} required={required} {...register(name as never)} />
       {errors[name] && (
         <small className="error">
           {String(errors[name]?.message ?? "ข้อมูลไม่ถูกต้อง")}
@@ -132,7 +137,7 @@ export function ProspectForm({
         <section className="form-section">
           <h2>1. Company Information</h2>
           <div className="form-grid">
-            {field("companyName", "ชื่อบริษัท/หน่วยงาน")}
+            {field("companyName", "ชื่อบริษัท/หน่วยงาน", "text", true)}
             {field("companyNameEnglish", "ชื่อภาษาอังกฤษ")}
             {field("taxId", "เลขผู้เสียภาษี 13 หลัก")}
             {field("branchNumber", "เลขสาขา")}
@@ -194,8 +199,8 @@ export function ProspectForm({
         <section className="form-section">
           <h2>7–9. Source, Ownership and Notes</h2>
           <div className="form-grid">
-            <label className="field"><span>Source</span><select className="control" {...register("source")}>{sources.map((value) => <option key={value}>{value}</option>)}</select></label>
-            <label className="field"><span>Status</span><select className="control" {...register("status")}>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
+            <label className="field"><span>Source</span><select className="control" required {...register("source")}>{sources.map((value) => <option key={value}>{value}</option>)}</select></label>
+            <label className="field"><span>Status</span><select className="control" required {...register("status")}>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
             {field("sourceName", "ชื่อแหล่งที่มา")}
             {field("referralName", "ผู้แนะนำ")}
             <label className="field full"><span>Notes</span><textarea className="control" {...register("notes")} /></label>

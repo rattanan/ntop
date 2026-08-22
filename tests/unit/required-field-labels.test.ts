@@ -38,6 +38,14 @@ describe("required field labels", () => {
     expect(styles).toContain("color:var(--destructive)");
   });
 
+  it("marks Prospect schema-required fields as required in the rendered form", () => {
+    const prospectForm = readFileSync(join(root, "components/prospect-form.tsx"), "utf8");
+    expect(prospectForm).toContain('field("companyName", "ชื่อบริษัท/หน่วยงาน", "text", true)');
+    expect(prospectForm).toContain("required={required}");
+    expect(prospectForm).toContain('<select className="control" required {...register("source")}');
+    expect(prospectForm).toContain('<select className="control" required {...register("status")}');
+  });
+
   it("keeps every native required control associated with a marked label or required table heading", () => {
     const uncovered: string[] = [];
 

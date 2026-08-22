@@ -47,6 +47,20 @@ production target and readiness approval are confirmed separately.
 7. An unauthenticated request is redirected to `/login`, and no runtime secret
    value is exposed in the response or logs.
 
+## Development deployment runbook
+
+When the user asks to deploy NTOP development, use this sequence:
+
+1. Commit the approved local changes to Git.
+2. Push the commit to `origin`.
+3. Connect to the development server with `ssh ntop`.
+4. Change to the deployed application directory with `cd /opt/apps/ntop-dev`.
+5. Run `./deploy.sh` and wait for it to finish successfully.
+6. Verify `https://ntop-dev.rattanan.dev` after the script completes.
+
+Do not substitute Docker, Cloud Run or another deployment path for this
+environment unless the user explicitly changes the deployment procedure.
+
 ## Retained files
 
 The repository may still contain a `Dockerfile` and historical Cloud Run notes.
