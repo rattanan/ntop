@@ -38,6 +38,18 @@ describe("permission-driven application navigation", () => {
     expect(items.map((item) => item.href)).toEqual(["/activities/new"]);
   });
 
+  it("distinguishes proposal documents from commercial quotations", () => {
+    const items = visibleQuickCreate([
+      QUICK_CREATE_PERMISSIONS.proposal,
+      QUICK_CREATE_PERMISSIONS.quote,
+    ]);
+
+    expect(items.map(({ label, href }) => ({ label, href }))).toEqual([
+      { label: "สร้างเอกสารข้อเสนอ (Proposal)", href: "/proposals/new" },
+      { label: "สร้างใบเสนอราคา (Quotation)", href: "/quotes/new" },
+    ]);
+  });
+
   it("returns no protected modules when no permission was granted", () => {
     expect(visibleNavigation([])).toEqual([]);
     expect(visibleQuickCreate([])).toEqual([]);

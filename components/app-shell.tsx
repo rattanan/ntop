@@ -15,6 +15,7 @@ import type { HeaderNotification } from "@/lib/notifications/header-notification
 // Kept discoverable for architecture checks: href: "/admin/users", href: "/admin/audit", href: "/admin/organization".
 
 function isActive(pathname: string, href: string) { return pathname === href || pathname.startsWith(`${href}/`); }
+function closeQuickCreate(event: React.MouseEvent<HTMLAnchorElement>) { event.currentTarget.closest("details")?.removeAttribute("open"); }
 
 export function AppShell({ children, user, notifications, version }: { children: React.ReactNode; user: { name: string; roles: readonly string[]; grantedPermissions: readonly string[] }; notifications: HeaderNotification[]; version: string }) {
   const pathname = usePathname();
@@ -61,7 +62,7 @@ export function AppShell({ children, user, notifications, version }: { children:
         <nav className="breadcrumb" aria-label="เส้นทางนำทาง"><Link href="/dashboard"><Home/><span>หน้าแรก</span></Link><ChevronRight aria-hidden="true"/><span aria-current="page">{currentLabel}</span></nav>
         <button className="global-search-trigger" type="button" onClick={() => setCommandOpen(true)} aria-label="เปิดการค้นหาและเมนูคำสั่ง"><Search/><span>ค้นหาหรือไปที่…</span><kbd>Ctrl K</kbd></button>
         <div className="header-actions">
-          {quickCreateItems.length > 0 && <details className="quick-create"><summary className="primary"><Plus/>สร้างใหม่</summary><div className="quick-create-menu"><strong>Quick create</strong>{quickCreateItems.map((item) => <Link href={item.href} key={item.href}><Plus/>{item.label}</Link>)}</div></details>}
+          {quickCreateItems.length > 0 && <details className="quick-create"><summary className="primary"><Plus/>สร้างใหม่</summary><div className="quick-create-menu"><strong>Quick create</strong>{quickCreateItems.map((item) => <Link href={item.href} key={item.href} onClick={closeQuickCreate}><Plus/>{item.label}</Link>)}</div></details>}
           <button type="button" className="icon-button theme-toggle" onClick={toggleTheme} aria-label={darkMode ? "ใช้โหมดสว่าง" : "ใช้โหมดมืด"} aria-pressed={darkMode}>{darkMode ? <Sun/> : <Moon/>}</button>
           <Link className="header-help" href="/help" aria-label="ศูนย์ช่วยเหลือ"><CircleHelp/></Link>
           <div className="notification-wrap"><button type="button" className="icon-button" aria-label={`การแจ้งเตือน ${notifications.length} รายการ`} aria-expanded={notificationOpen} onClick={() => setNotificationOpen((value) => !value)}><Bell/>{notifications.length > 0 && <span className="notification-count">{notifications.length > 9 ? "9+" : notifications.length}</span>}</button>

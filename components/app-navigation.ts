@@ -86,8 +86,8 @@ export const QUICK_CREATE_ITEMS = [
   { label: "สร้างลูกค้า", href: "/customers/new", requiredPermission: QUICK_CREATE_PERMISSIONS.customer },
   { label: "สร้างโอกาสขาย", href: "/opportunities/new", requiredPermission: QUICK_CREATE_PERMISSIONS.opportunity },
   { label: "บันทึกกิจกรรม", href: "/activities/new", requiredPermission: QUICK_CREATE_PERMISSIONS.activity },
-  { label: "สร้าง Proposal", href: "/proposals/new", requiredPermission: QUICK_CREATE_PERMISSIONS.proposal },
-  { label: "สร้างใบเสนอราคา", href: "/quotes/new", requiredPermission: QUICK_CREATE_PERMISSIONS.quote },
+  { label: "สร้างเอกสารข้อเสนอ (Proposal)", href: "/proposals/new", requiredPermission: QUICK_CREATE_PERMISSIONS.proposal },
+  { label: "สร้างใบเสนอราคา (Quotation)", href: "/quotes/new", requiredPermission: QUICK_CREATE_PERMISSIONS.quote },
   { label: "สร้างสัญญา", href: "/contracts/new", requiredPermission: QUICK_CREATE_PERMISSIONS.contract },
 ];
 
