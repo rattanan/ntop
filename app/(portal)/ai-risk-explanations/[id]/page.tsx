@@ -4,7 +4,9 @@ import { DealRiskExplanationReviewForm } from "@/components/deal-risk-explanatio
 import { DEAL_RISK_EXPLANATION_CAPABILITY } from "@/lib/ai/deal-risk-explanation-service";
 import { parseMeetingDraftOutput } from "@/lib/ai/meeting-draft-schema";
 import { PERMISSIONS } from "@/lib/authorization/permission-policy";
+import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { requirePermission } from "@/lib/authorization/require-permission";
+import { buildOpportunityScopeWhere } from "@/lib/opportunity/opportunity-query";
 import { prisma } from "@/lib/prisma";
 
 function opportunityIdFromSources(value: unknown) {
@@ -45,10 +47,11 @@ export default async function DealRiskExplanationReviewPage({
   if (!output?.validatedOutput) notFound();
   const opportunityId = opportunityIdFromSources(output.inputSourceReferences);
   if (!opportunityId) notFound();
+  const authorization = await loadAuthorizationContext({ actorId: actor.id, legacyRole: actor.role });
   const opportunity = await prisma.opportunity.findFirst({
     where: {
       id: opportunityId,
-      ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }),
+      ...buildOpportunityScopeWhere(authorization),
     },
     select: {
       id: true,

@@ -1010,6 +1010,28 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
 [data-theme="dark"] .proposal-sticky-actions { border-color:#665a25;background:rgb(35 32 21 / .96); }
 [data-theme="dark"] .timeline article:not(:last-child)::after { background:#544d2c; }
 
+/* Identity administration table keeps editable controls within their columns. */
+.identity-user-table-wrap { max-width:100%; }
+.identity-user-table { min-width:1180px;table-layout:fixed; }
+.identity-user-table th:nth-child(1) { width:15%; }
+.identity-user-table th:nth-child(2) { width:13%; }
+.identity-user-table th:nth-child(3) { width:19%; }
+.identity-user-table th:nth-child(4) { width:33%; }
+.identity-user-table th:nth-child(5) { width:20%; }
+.identity-user-table td,.identity-user-table td:has(.secondary) { min-width:0;white-space:normal;overflow-wrap:anywhere; }
+.identity-user-table form,.identity-user-table .control { min-width:0;max-width:100%; }
+.identity-user-edit-form { display:grid;gap:8px; }
+.identity-user-edit-form .field-label,.identity-assignment-edit .field-label { margin:0; }
+.identity-user-active { display:flex;align-items:center;gap:7px; }
+.identity-assignment { min-width:0;padding:0 0 14px; }
+.identity-assignment+.identity-assignment { padding-top:14px;border-top:1px solid var(--border); }
+.identity-assignment-summary { display:flex;align-items:center;flex-wrap:wrap;gap:6px; }
+.identity-assignment-edit { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 8px;align-items:end;margin-top:10px; }
+.identity-assignment-edit .field-label { grid-column:1/-1; }
+.identity-assignment-edit .notice { grid-column:1/-1;margin:0; }
+.identity-assignment>form:last-child { margin-top:8px; }
+.identity-assignment .secondary { min-height:38px;justify-content:center;white-space:normal;text-align:center; }
+
 @media (max-width:600px) {
   [data-theme="dark"] .form-card .actions { background:none; }
 }

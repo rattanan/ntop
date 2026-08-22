@@ -1,23 +1,23 @@
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { buildAuthorizedUserWhere, type AuthorizationContext } from "../authorization/authorization-context";
 import { prisma } from "../prisma";
 import { calculateForecast } from "./forecast-calculator";
 import { PrismaForecastRepository } from "./prisma-forecast-repository";
 import { ForecastValidationError } from "./forecast-service";
 
-function enterprise(context: AuthorizationContext) { return context.assignments.some((item) => item.scope === "ENTERPRISE"); }
-
 export async function listForecastSnapshots(context: AuthorizationContext, limit = 50) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 200) throw new ForecastValidationError();
+  const authorizedUsers = await prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true } });
   return prisma.forecastSnapshot.findMany({
-    where: enterprise(context) ? {} : { createdById: context.actorId },
+    where: { createdById: { in: authorizedUsers.map((user) => user.id) } },
     select: { id: true, snapshotKey: true, periodStart: true, periodEnd: true, cutoffAt: true, timezone: true, formulaVersion: true, currency: true, pipelineAmount: true, weightedAmount: true, qualitySnapshot: true, createdById: true, createdAt: true, _count: { select: { items: true } } },
     orderBy: [{ cutoffAt: "desc" }, { id: "desc" }], take: limit,
   });
 }
 
 export async function getForecastSnapshot(context: AuthorizationContext, id: string) {
+  const authorizedUsers = await prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true } });
   const result = await prisma.forecastSnapshot.findFirst({
-    where: { id, ...(enterprise(context) ? {} : { createdById: context.actorId }) },
+    where: { id, createdById: { in: authorizedUsers.map((user) => user.id) } },
     include: { items: { orderBy: [{ expectedCloseAt: "asc" }, { opportunityId: "asc" }], take: 10_000 } },
   });
   if (!result) throw new ForecastValidationError();

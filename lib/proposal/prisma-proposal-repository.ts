@@ -203,7 +203,7 @@ export class PrismaProposalRepository implements ProposalRepository<Transaction>
 
   async find(input: { id: string; actorId: string; context: AuthorizationContext }, transaction: Transaction) {
     const record = await transaction.proposal.findFirst({
-      where: { id: input.id, deletedAt: null, OR: [{ ownerId: input.actorId }, { opportunity: buildOpportunityScopeWhere(input.context) }] },
+      where: { id: input.id, deletedAt: null, opportunity: buildOpportunityScopeWhere(input.context) },
       include: proposalInclude,
     });
     return record ? toRecord(record) : null;
@@ -211,7 +211,7 @@ export class PrismaProposalRepository implements ProposalRepository<Transaction>
 
   async findVersion(input: { proposalId: string; versionNumber: number; actorId: string; context: AuthorizationContext }, transaction: Transaction) {
     const record = await transaction.proposalVersion.findFirst({
-      where: { proposalId: input.proposalId, versionNumber: input.versionNumber, proposal: { deletedAt: null, OR: [{ ownerId: input.actorId }, { opportunity: buildOpportunityScopeWhere(input.context) }] } },
+      where: { proposalId: input.proposalId, versionNumber: input.versionNumber, proposal: { deletedAt: null, opportunity: buildOpportunityScopeWhere(input.context) } },
       include: { sections: { orderBy: { sortOrder: "asc" } }, proposal: { include: { status: { select: { terminal: true } } } } },
     });
     if (!record) return null;

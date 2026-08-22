@@ -9,15 +9,15 @@ import {
 
 describe("Customer query policy", () => {
   it("limits SELF scope to records owned by the actor", () => {
-    expect(buildCustomerScopeWhere({actorId:"user-1",assignments:[{role:"KAM",scope:"SELF",organizationUnitId:null}]})).toEqual({OR:[{ownerId:"user-1"}]});
+    expect(buildCustomerScopeWhere({actorId:"user-1",assignments:[{role:"KAM",scope:"SELF",organizationUnitId:null}]})).toEqual({OR:[{ownerId:"user-1",organizationUnitId:null}]});
   });
 
   it("combines owned and assigned organization-unit scope", () => {
-    expect(buildCustomerScopeWhere({actorId:"manager-1",assignments:[{role:"TEAM_MANAGER",scope:"ORG_UNIT",organizationUnitId:"org-1"}]})).toEqual({OR:[{ownerId:"manager-1"},{organizationUnitId:{in:["org-1"]}}]});
+    expect(buildCustomerScopeWhere({actorId:"manager-1",assignments:[{role:"TEAM_MANAGER",scope:"ORG_UNIT",organizationUnitId:"org-1"}]})).toEqual({OR:[{ownerId:"manager-1",organizationUnitId:null},{organizationUnitId:{in:["org-1"]}}]});
   });
 
-  it("allows an explicit enterprise assignment to view all", () => {
-    expect(buildCustomerScopeWhere({actorId:"executive-1",assignments:[{role:"EXECUTIVE",scope:"ENTERPRISE",organizationUnitId:null}]})).toEqual({});
+  it("does not let enterprise capability bypass organization visibility", () => {
+    expect(buildCustomerScopeWhere({actorId:"executive-1",assignments:[{role:"EXECUTIVE",scope:"ENTERPRISE",organizationUnitId:null}]})).toEqual({OR:[{ownerId:"executive-1",organizationUnitId:null}]});
   });
 
   it("uses bounded indexed-style filters instead of unbounded contains", () => {

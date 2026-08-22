@@ -11,7 +11,7 @@ export default async function QuoteDetail({ params }: { params: Promise<{ id: st
   const session = await requireSession();
   const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
   const quote = await prisma.quote.findFirst({
-    where: { id: (await params).id, OR: [{ opportunity: buildOpportunityScopeWhere(context) }, { makerId: session.id }] },
+    where: { id: (await params).id, opportunity: buildOpportunityScopeWhere(context) },
     include: { customer: true, opportunity: true, versions: { orderBy: { versionNumber: "desc" }, include: { items: true, approvalRequests: { include: { steps: true } } } } },
   });
   if (!quote) notFound();

@@ -1,4 +1,4 @@
-import type { Role } from "@prisma/client";
+import type { Prisma, Role } from "@prisma/client";
 
 import { prisma } from "../prisma";
 import {
@@ -11,7 +11,63 @@ import {
 export type AuthorizationContext = {
   actorId: string;
   assignments: readonly EffectiveRoleAssignment[];
+  organizationUnitIds?: readonly string[];
 };
+
+export type OrganizationHierarchyNode = { id: string; parentId: string | null };
+
+export function expandOrganizationScopeIds(
+  directIds: readonly string[],
+  activeUnits: readonly OrganizationHierarchyNode[],
+): string[] {
+  const activeIds = new Set(activeUnits.map((unit) => unit.id));
+  const children = new Map<string, string[]>();
+  for (const unit of activeUnits) {
+    if (!unit.parentId) continue;
+    const values = children.get(unit.parentId) ?? [];
+    values.push(unit.id);
+    children.set(unit.parentId, values);
+  }
+  const allowed = new Set(directIds.filter((id) => activeIds.has(id)));
+  const queue = [...allowed];
+  for (let index = 0; index < queue.length; index += 1) {
+    for (const childId of children.get(queue[index]) ?? []) {
+      if (allowed.has(childId)) continue;
+      allowed.add(childId);
+      queue.push(childId);
+    }
+  }
+  return [...allowed];
+}
+
+export function authorizedOrganizationUnitIds(context: AuthorizationContext): string[] {
+  return [...new Set(context.organizationUnitIds ?? context.assignments.flatMap((assignment) =>
+    assignment.organizationUnitId ? [assignment.organizationUnitId] : [],
+  ))];
+}
+
+export function buildAuthorizedUserWhere(
+  context: AuthorizationContext,
+  now = new Date(),
+): Prisma.UserWhereInput {
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
+  return {
+    active: true,
+    OR: [
+      { id: context.actorId },
+      ...(organizationUnitIds.length ? [{
+        enterpriseRoleAssignments: {
+          some: {
+            active: true,
+            effectiveFrom: { lte: now },
+            OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+            organizationUnitId: { in: organizationUnitIds },
+          },
+        },
+      }] : []),
+    ],
+  };
+}
 
 export async function loadAuthorizationContext(input: {
   actorId: string;
@@ -44,12 +100,22 @@ export async function loadAuthorizationContext(input: {
         ]
       : [],
   );
+  const effectiveAssignments = assignments.length > 0
+    ? assignments
+    : [legacyRoleAssignment(input.legacyRole)];
+  const directOrganizationUnitIds = [...new Set(effectiveAssignments.flatMap((assignment) =>
+    assignment.organizationUnitId ? [assignment.organizationUnitId] : [],
+  ))];
+  const activeUnits = directOrganizationUnitIds.length
+    ? await prisma.organizationUnit.findMany({
+        where: { active: true },
+        select: { id: true, parentId: true },
+      })
+    : [];
   return {
     actorId: input.actorId,
-    assignments:
-      assignments.length > 0
-        ? assignments
-        : [legacyRoleAssignment(input.legacyRole)],
+    assignments: effectiveAssignments,
+    organizationUnitIds: expandOrganizationScopeIds(directOrganizationUnitIds, activeUnits),
   };
 }
 

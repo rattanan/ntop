@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { OpportunityForm } from "@/components/forms";
 import { isAdmin, requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { buildCustomerScopeWhere } from "@/lib/customer/customer-query-service";
 import { getOpportunity } from "@/lib/opportunity/opportunity-query-service";
@@ -31,7 +31,7 @@ export default async function EditOpportunityPage({ params }: { params: Promise<
     }),
     isAdmin(session.role)
       ? prisma.user.findMany({
-          where: { active: true }, select: { id: true, name: true, email: true },
+          where: buildAuthorizedUserWhere(context), select: { id: true, name: true, email: true },
           orderBy: { name: "asc" }, take: 500,
         })
       : Promise.resolve([]),

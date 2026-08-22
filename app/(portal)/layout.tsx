@@ -8,7 +8,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const user = await requireSession();
   const authorization = await loadAuthorizationContext({ actorId: user.id, legacyRole: user.role });
   const [notifications, grantedPermissions] = await Promise.all([
-    loadHeaderNotifications(user.id),
+    loadHeaderNotifications(authorization),
     loadGrantedPermissions(authorization),
   ]);
   const roles = [...new Set(authorization.assignments.map((assignment) => assignment.role))];

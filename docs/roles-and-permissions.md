@@ -17,6 +17,8 @@ Authorization = Role capability ∩ Organization scope ∩ Record ownership/assi
 
 Scopes: `SELF`, `TEAM`, `ORG_UNIT`, `ENTERPRISE`, `ASSIGNED_TASK`, `AUDIT_READ`. ทุก query ใช้ server-side policy predicate และ detail lookup คืน 404 เมื่อไม่มีสิทธิ์เห็น record
 
+Organization visibility ของข้อมูลธุรกิจคำนวณจากหน่วยงานใน effective role assignments และรวมหน่วยงานลูกหลานที่ active ทุกระดับเสมอ ชื่อ scope เช่น `ENTERPRISE` กำหนดขอบเขต capability แต่ไม่เป็นทางลัดข้าม organization; ผู้ใช้ที่ต้องดูทั้งองค์กรต้องได้รับ assignment ที่หน่วยงานรากที่เหมาะสม ผู้ใช้ของหน่วยงานลูกไม่เห็น parent หรือ sibling และ owner/maker ของ record ไม่สามารถข้าม organization scope ได้
+
 ## 2. Roles
 
 - **Admin:** account/reference configuration; ไม่มี commercial approval โดยอัตโนมัติ
@@ -84,5 +86,7 @@ Audit event สำหรับ login/admin grant, ownership, export, transition,
 
 - Positive/negative matrix tests ครบทุก role × scope × critical action
 - Cross-org/customer guessing ต้องไม่เปิดเผย existence
+- Parent organization เห็นข้อมูลของตนและ descendant; child organization ไม่เห็น parent หรือ sibling
+- List, detail, export และ mutation ใช้ expanded organization scope ชุดเดียวกัน และ legacy `ADMIN`/`ENTERPRISE` ไม่ bypass ข้อมูลธุรกิจ
 - Maker-checker, delegated/expired authority, admin self-escalation และ export limits ต้องถูก deny
 - Break-glass (เมื่ออนุมัติ OD) ต้อง alert แบบ real time และ review หลังเหตุการณ์

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { LeadColumnVisibilityControls } from "@/components/lead-column-visibility-controls";
 import { ModuleTabs } from "@/components/module-tabs";
 import { requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { buildLeadScopeWhere } from "@/lib/lead/prisma-lead-repository";
@@ -31,11 +31,10 @@ export default async function LeadsPage({searchParams}:{searchParams:Promise<Sea
   const status=query.status&&LEAD_STATUSES.some(([value])=>value===query.status)?query.status as LeadStatus:undefined;
   const temperature=query.temperature&&temperatures.some(([value])=>value===query.temperature)?query.temperature as LeadTemperature:undefined;
   const where:Prisma.LeadWhereInput={AND:[buildLeadScopeWhere(context),query.archived==="1"?{}:{status:{not:"ARCHIVED"}},status?{status}:{},temperature?{temperature}:{},query.owner?{ownerId:query.owner}:{},query.overdue==="1"?{nextFollowUpAt:{lt:new Date()},status:{notIn:["CONVERTED","DISQUALIFIED","INVALID","DUPLICATE","NOT_INTERESTED","NO_BUDGET","ARCHIVED"]}}:{},query.q?{OR:[{company:{contains:query.q}},{contactName:{contains:query.q}},{contactEmail:{contains:query.q}},{contactPhone:{contains:query.q}},{taxId:{contains:query.q}},{leadNumber:{contains:query.q}}]}:{}]};
-  const organizationUnitIds=context.assignments.flatMap(item=>item.organizationUnitId?[item.organizationUnitId]:[]);const enterprise=context.assignments.some(item=>item.scope==="ENTERPRISE");
   const [leads,total,owners]=await Promise.all([
     prisma.lead.findMany({where,include:{owner:true,customer:true},orderBy:[{[sort]:direction},{id:"desc"}],skip:(page-1)*50,take:50}),
     prisma.lead.count({where}),
-    prisma.user.findMany({where:{active:true,...(!enterprise?{OR:[{id:session.id},...(organizationUnitIds.length?[{enterpriseRoleAssignments:{some:{organizationUnitId:{in:organizationUnitIds},active:true}}}]:[])]}:{})},select:{id:true,name:true},orderBy:{name:"asc"},take:200}),
+    prisma.user.findMany({where:buildAuthorizedUserWhere(context),select:{id:true,name:true},orderBy:{name:"asc"},take:200}),
   ]);
   const canCreate=permissionPolicy.allows(session,PERMISSIONS.recordCreate)&&context.assignments.some(item=>(LEAD_CREATE_ROLES as readonly string[]).includes(item.role));
   const canImport=context.assignments.some(item=>(LEAD_IMPORT_ROLES as readonly string[]).includes(item.role));

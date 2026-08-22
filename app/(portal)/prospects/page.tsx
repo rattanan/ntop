@@ -9,7 +9,7 @@ import Link from "next/link";
 import { ModuleTabs } from "@/components/module-tabs";
 import { ProspectImportForm } from "@/components/prospect-import-form";
 import { requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import {
   buildProspectScopeWhere,
@@ -128,7 +128,7 @@ export default async function ProspectsPage({
     }),
     prisma.prospect.count({ where }),
     prisma.user.findMany({
-      where: { active: true },
+      where: buildAuthorizedUserWhere(context),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
       take: 500,

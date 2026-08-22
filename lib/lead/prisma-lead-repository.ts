@@ -1,6 +1,6 @@
 import { LeadStatus, Prisma, type PrismaClient } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, type AuthorizationContext } from "../authorization/authorization-context";
 import { matchesAssignmentRule, nextRoundRobinUser, type AssignmentCriteria } from "./lead-assignment";
 import type { LeadCommand, LeadRecord, LeadRepository } from "./lead-service";
 import { firstContactDueAt, formatLeadNumber, LEAD_QUALIFIED_VIEW_ROLES, LEAD_ROUND_ROBIN_ROLE, temperatureForScore } from "./lead-rules";
@@ -9,9 +9,8 @@ export type LeadTransaction = Prisma.TransactionClient;
 
 export function buildLeadScopeWhere(context: AuthorizationContext): Prisma.LeadWhereInput {
   const qualifiedOnly = context.assignments.length > 0 && context.assignments.every((assignment) => (LEAD_QUALIFIED_VIEW_ROLES as readonly string[]).includes(assignment.role));
-  if (context.assignments.some((assignment) => assignment.scope === "ENTERPRISE")) return qualifiedOnly ? { status: LeadStatus.QUALIFIED } : {};
-  const organizationUnitIds = context.assignments.flatMap((assignment) => (assignment.scope === "TEAM" || assignment.scope === "ORG_UNIT") && assignment.organizationUnitId ? [assignment.organizationUnitId] : []);
-  const scope: Prisma.LeadWhereInput = { OR: [{ ownerId: context.actorId }, ...(organizationUnitIds.length ? [{ organizationUnitId: { in: [...new Set(organizationUnitIds)] } }] : [])] };
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
+  const scope: Prisma.LeadWhereInput = { OR: [{ ownerId: context.actorId, organizationUnitId: null }, ...(organizationUnitIds.length ? [{ organizationUnitId: { in: organizationUnitIds } }] : [])] };
   return qualifiedOnly ? { AND: [scope, { status: LeadStatus.QUALIFIED }] } : scope;
 }
 

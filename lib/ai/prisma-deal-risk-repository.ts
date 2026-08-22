@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { Prisma, PrismaClient, type Role } from "@prisma/client";
 
 import type { AuditWriter } from "../audit/audit-writer";
+import type { AuthorizationContext } from "../authorization/authorization-context";
+import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
 import { evaluateDealRiskRule } from "./deal-risk-evaluator";
 import type {
   DealRiskRuleRepository,
@@ -140,7 +142,7 @@ export async function evaluateAndPersistOpportunityRisks({
 }: {
   client: PrismaClient;
   auditWriter: AuditWriter<DealRiskTransaction>;
-  actor: { id: string; role: Role };
+  actor: { id: string; role: Role; authorization: AuthorizationContext };
   opportunityId: string;
   correlationId: string;
   evaluatedAt?: Date;
@@ -149,7 +151,7 @@ export async function evaluateAndPersistOpportunityRisks({
     const opportunity = await transaction.opportunity.findFirst({
       where: {
         id: opportunityId,
-        ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }),
+        ...buildOpportunityScopeWhere(actor.authorization),
       },
       select: {
         id: true,

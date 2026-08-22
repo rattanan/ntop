@@ -6,7 +6,7 @@ import { ActivityDeleteButton } from "@/components/activity-management";
 import { ActivityWorkflowControls } from "@/components/activity-workflow-controls";
 import { buildActivityScopeWhere } from "@/lib/activity/activity-authorization";
 import { requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { ACTIVITY_TYPES } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
@@ -24,9 +24,8 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
   const hasCompletePermission = permissionPolicy.allows(session, PERMISSIONS.activityComplete) || grants.has(PERMISSIONS.activityComplete);
   const isOwner = activity.ownerId === session.id;
   const canComplete = hasCompletePermission && isOwner && !activity.status.terminal;
-  const unitIds = authorization.assignments.flatMap((assignment) => assignment.organizationUnitId ? [assignment.organizationUnitId] : []);
   const [assignees, transitions] = await Promise.all([
-    canAssign ? prisma.user.findMany({ where: { active: true, ...(authorization.assignments.some((assignment) => assignment.scope === "ENTERPRISE") ? {} : { enterpriseRoleAssignments: { some: { active: true, organizationUnitId: { in: unitIds } } } }) }, select: { id: true, name: true }, orderBy: { name: "asc" } }) : [],
+    canAssign ? prisma.user.findMany({ where: buildAuthorizedUserWhere(authorization), select: { id: true, name: true }, orderBy: { name: "asc" } }) : [],
     canComplete ? prisma.activityStatusTransition.findMany({ where: { fromStatusCode: activity.statusCode, active: true, toStatus: { active: true } }, select: { toStatusCode: true, toStatus: { select: { label: true, sortOrder: true } } } }) : [],
   ]);
   const participants = Array.isArray(activity.participants) ? activity.participants.filter((item): item is string => typeof item === "string") : [];

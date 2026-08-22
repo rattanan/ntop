@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ProspectActionForms, ProspectAiInsightActions, ProspectContactManager, ProspectDocumentUpload, type ProspectAiInsightDraft } from "@/components/prospect-action-forms";
 import { ProspectSoftDeleteAction } from "@/components/data-retention-actions";
 import { requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { buildProspectScopeWhere, loadProspectPermissions } from "@/lib/prospect/prospect-authorization";
 import { prisma } from "@/lib/prisma";
@@ -64,7 +64,7 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
         convertedLead: { select: { id: true, leadNumber: true } },
       },
     }),
-    prisma.user.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   if (!prospect) notFound();
   const canUpdate = permissions.has(PERMISSIONS.prospectUpdate);

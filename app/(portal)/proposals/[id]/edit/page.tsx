@@ -16,7 +16,7 @@ export default async function EditProposalPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const [proposal, products] = await Promise.all([
     prisma.proposal.findFirst({
-      where: { id, deletedAt: null, OR: [{ ownerId: session.id }, { opportunity: buildOpportunityScopeWhere(context) }] },
+      where: { id, deletedAt: null, opportunity: buildOpportunityScopeWhere(context) },
       include: {
         status: true,
         customer: { select: { name: true } },

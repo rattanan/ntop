@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, type AuthorizationContext } from "../authorization/authorization-context";
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 200;
@@ -30,28 +30,10 @@ export function encodeCustomerCursor(id: string) {
 export function buildCustomerScopeWhere(
   context: AuthorizationContext,
 ): Prisma.CustomerWhereInput {
-  if (
-    context.assignments.some(
-      (assignment) => assignment.scope === "ENTERPRISE",
-    )
-  ) {
-    return {};
-  }
-  const organizationUnitIds = [
-    ...new Set(
-      context.assignments
-        .filter(
-          (assignment) =>
-            (assignment.scope === "ORG_UNIT" ||
-              assignment.scope === "TEAM") &&
-            assignment.organizationUnitId,
-        )
-        .map((assignment) => assignment.organizationUnitId as string),
-    ),
-  ];
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
   return {
     OR: [
-      { ownerId: context.actorId },
+      { ownerId: context.actorId, organizationUnitId: null },
       ...(organizationUnitIds.length > 0
         ? [{ organizationUnitId: { in: organizationUnitIds } }]
         : []),

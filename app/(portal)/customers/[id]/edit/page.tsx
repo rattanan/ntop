@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { CustomerForm } from "@/components/forms";
 import { CustomerContactForm } from "@/components/customer-contact-form";
 import { isAdmin, requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { getCustomer360 } from "@/lib/customer/prisma-customer-repository";
 import { prisma } from "@/lib/prisma";
@@ -19,7 +19,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
   if (!customer || customer.mergedIntoCustomerId) notFound();
 
   const users = isAdmin(session.role)
-    ? await prisma.user.findMany({ select: { id: true, name: true, email: true }, orderBy: { name: "asc" } })
+    ? await prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true, name: true, email: true }, orderBy: { name: "asc" } })
     : [];
   const customerFormValue = {
     id: customer.id, version: customer.version, name: customer.name, taxId: customer.taxId,

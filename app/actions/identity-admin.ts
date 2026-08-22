@@ -43,6 +43,10 @@ export async function assignAdminRole(_: FormState, form: FormData) {
   return execute((actor, id) => createIdentityAdminRuntime().createRoleAssignment(actor, { userId: text(form, "userId"), roleCode: text(form, "roleCode"), scopeCode: text(form, "scopeCode"), organizationUnitId: text(form, "organizationUnitId") || null, effectiveFrom: date(text(form, "effectiveFrom")), effectiveTo: nullableDate(text(form, "effectiveTo")) }, id));
 }
 
+export async function updateAdminRoleOrganization(_: FormState, form: FormData) {
+  return execute((actor, id) => createIdentityAdminRuntime().updateRoleAssignmentOrganization(actor, { assignmentId: text(form, "assignmentId"), organizationUnitId: text(form, "organizationUnitId") || null }, id));
+}
+
 export async function revokeAdminRole(_: FormState, form: FormData) {
   return execute((actor, id) => createIdentityAdminRuntime().revokeRoleAssignment(actor, text(form, "assignmentId"), id));
 }

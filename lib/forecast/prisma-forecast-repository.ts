@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { buildAuthorizedUserWhere, type AuthorizationContext } from "../authorization/authorization-context";
 import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
 import type { PipelineFact } from "./forecast-calculator";
 import type { ForecastRepository } from "./forecast-service";
@@ -17,13 +17,16 @@ export class PrismaForecastRepository implements ForecastRepository<Transaction>
   }
 
   async findSnapshot(snapshotKey: string, context: AuthorizationContext, transaction: Transaction) {
-    const record = await transaction.forecastSnapshot.findUnique({
-      where: { snapshotKey },
+    const authorizedUsers = await transaction.user.findMany({
+      where: buildAuthorizedUserWhere(context),
+      select: { id: true },
+    });
+    const record = await transaction.forecastSnapshot.findFirst({
+      where: { snapshotKey, createdById: { in: authorizedUsers.map((user) => user.id) } },
       select: { id: true, snapshotKey: true, pipelineAmount: true, weightedAmount: true, createdById: true },
     });
     if (!record) return null;
-    const allowed = record.createdById === context.actorId || context.assignments.some((item) => item.scope === "ENTERPRISE");
-    return allowed ? { id: record.id, snapshotKey: record.snapshotKey, pipelineAmount: record.pipelineAmount.toFixed(4), weightedAmount: record.weightedAmount.toFixed(4) } : null;
+    return { id: record.id, snapshotKey: record.snapshotKey, pipelineAmount: record.pipelineAmount.toFixed(4), weightedAmount: record.weightedAmount.toFixed(4) };
   }
 
   async listFacts(input: { context: AuthorizationContext; periodStart: Date; periodEnd: Date; cutoffAt: Date }, transaction: Transaction): Promise<PipelineFact[]> {

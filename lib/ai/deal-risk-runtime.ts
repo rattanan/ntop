@@ -4,6 +4,7 @@ import { AppendOnlyAuditWriter } from "../audit/audit-writer";
 import { HashChainedAuditStore } from "../audit/hash-chained-audit-store";
 import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-repository";
 import { prisma } from "../prisma";
+import { loadAuthorizationContext } from "../authorization/authorization-context";
 import { DealRiskRuleService } from "./deal-risk-rule-service";
 import {
   evaluateAndPersistOpportunityRisks,
@@ -27,15 +28,16 @@ export function createDealRiskRuleRuntime() {
   });
 }
 
-export function evaluateOpportunityRisks(
+export async function evaluateOpportunityRisks(
   actor: { id: string; role: "ADMIN" | "SALES" | "VIEWER" },
   opportunityId: string,
   correlationId: string,
 ) {
+  const authorization = await loadAuthorizationContext({ actorId: actor.id, legacyRole: actor.role });
   return evaluateAndPersistOpportunityRisks({
     client: prisma,
     auditWriter: auditWriter(),
-    actor,
+    actor: { ...actor, authorization },
     opportunityId,
     correlationId,
   });

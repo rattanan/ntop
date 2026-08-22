@@ -1,22 +1,21 @@
 import type { Prisma } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, type AuthorizationContext } from "../authorization/authorization-context";
+import { buildCustomerScopeWhere } from "../customer/customer-query-service";
+import { buildLeadScopeWhere } from "../lead/prisma-lead-repository";
+import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
+import { buildProspectOrganizationScopeWhere } from "../prospect/prospect-authorization";
 
 export function buildActivityScopeWhere(context: AuthorizationContext): Prisma.ActivityWhereInput {
-  if (context.assignments.some((assignment) => assignment.scope === "ENTERPRISE")) return {};
-  const organizationUnitIds = [...new Set(context.assignments.flatMap((assignment) =>
-    (assignment.scope === "TEAM" || assignment.scope === "ORG_UNIT") && assignment.organizationUnitId
-      ? [assignment.organizationUnitId]
-      : [],
-  ))];
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
   return {
     OR: [
-      { ownerId: context.actorId },
+      { ownerId: context.actorId, customerId: null, opportunityId: null, leadId: null, prospectId: null },
       ...(organizationUnitIds.length ? [
-        { customer: { organizationUnitId: { in: organizationUnitIds } } },
-        { opportunity: { organizationUnitId: { in: organizationUnitIds } } },
-        { lead: { organizationUnitId: { in: organizationUnitIds } } },
-        { prospect: { responsibleBusinessUnitId: { in: organizationUnitIds } } },
+        { customer: buildCustomerScopeWhere(context) },
+        { opportunity: buildOpportunityScopeWhere(context) },
+        { lead: buildLeadScopeWhere(context) },
+        { prospect: buildProspectOrganizationScopeWhere(context) },
       ] : []),
     ],
   };

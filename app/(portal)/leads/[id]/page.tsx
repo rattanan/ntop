@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { LeadActivityForm, LeadAssignForm, LeadConvertForm, LeadLifecycleForm, LeadQualificationForm } from "@/components/lead-workflow-forms";
 import { requireSession } from "@/lib/auth";
-import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { buildCustomerScopeWhere } from "@/lib/customer/customer-query-service";
 import { buildLeadScopeWhere } from "@/lib/lead/prisma-lead-repository";
@@ -21,11 +21,10 @@ export default async function LeadDetail({params}:{params:Promise<{id:string}>})
   const lead=await prisma.lead.findFirst({where:{id,...buildLeadScopeWhere(context)},include:{owner:true,customer:true,statusHistory:{include:{actor:true},orderBy:{transitionedAt:"desc"},take:50},assignmentHistory:{include:{actor:true},orderBy:{assignedAt:"desc"},take:50},activities:{where:{deletedAt:null},include:{owner:true},orderBy:{createdAt:"desc"},take:100},opportunity:true}});
   if(!lead)notFound();
   const customerScope=buildCustomerScopeWhere(context);
-  const organizationUnitIds=context.assignments.flatMap(item=>item.organizationUnitId?[item.organizationUnitId]:[]);const enterprise=context.assignments.some(item=>item.scope==="ENTERPRISE");
   const [customers,duplicateCandidates,owners]=await Promise.all([
     prisma.customer.findMany({where:{AND:[{mergedIntoCustomerId:null},customerScope]},select:{id:true,name:true,taxId:true,province:true},orderBy:{name:"asc"},take:200}),
     prisma.customer.findMany({where:{AND:[{mergedIntoCustomerId:null,name:lead.company},customerScope]},select:{id:true,name:true,taxId:true,province:true},orderBy:{updatedAt:"desc"},take:20}),
-    prisma.user.findMany({where:{active:true,...(!enterprise?{OR:[{id:session.id},...(organizationUnitIds.length?[{enterpriseRoleAssignments:{some:{organizationUnitId:{in:organizationUnitIds},active:true}}}]:[])]}:{})},select:{id:true,name:true,email:true},orderBy:{name:"asc"},take:200}),
+    prisma.user.findMany({where:buildAuthorizedUserWhere(context),select:{id:true,name:true,email:true},orderBy:{name:"asc"},take:200}),
   ]);
   const roleCodes=context.assignments.map(item=>item.role);const canArchive=roleCodes.length>0&&(await prisma.rolePermissionGrant.count({where:{roleCode:{in:roleCodes},permissionCode:PERMISSIONS.leadArchive}}))>0;
   const activeLead=lead.status!=="CONVERTED"&&lead.status!=="ARCHIVED";

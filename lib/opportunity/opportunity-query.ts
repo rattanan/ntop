@@ -1,21 +1,16 @@
 import type { Prisma } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, type AuthorizationContext } from "../authorization/authorization-context";
 
 export function buildOpportunityScopeWhere(
   context: AuthorizationContext,
 ): Prisma.OpportunityWhereInput {
-  if (context.assignments.some((item) => item.scope === "ENTERPRISE")) return {};
-  const organizationUnitIds = context.assignments.flatMap((item) =>
-    (item.scope === "ORG_UNIT" || item.scope === "TEAM") && item.organizationUnitId
-      ? [item.organizationUnitId]
-      : [],
-  );
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
   return {
     OR: [
-      { ownerId: context.actorId },
+      { ownerId: context.actorId, organizationUnitId: null },
       ...(organizationUnitIds.length
-        ? [{ organizationUnitId: { in: [...new Set(organizationUnitIds)] } }]
+        ? [{ organizationUnitId: { in: organizationUnitIds } }]
         : []),
     ],
   };

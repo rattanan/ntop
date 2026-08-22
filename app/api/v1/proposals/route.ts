@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     assertPermission(session, PERMISSIONS.proposalView);
     const actor = await proposalActor(session);
     const proposals = await prisma.proposal.findMany({
-      where: { deletedAt: null, OR: [{ ownerId: session.id }, { opportunity: buildOpportunityScopeWhere(actor.authorization) }] },
+      where: { deletedAt: null, opportunity: buildOpportunityScopeWhere(actor.authorization) },
       include: { customer: { select: { id: true, name: true } }, opportunity: { select: { id: true, name: true } }, owner: { select: { id: true, name: true } }, status: { select: { label: true, terminal: true } } },
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       take: 200,

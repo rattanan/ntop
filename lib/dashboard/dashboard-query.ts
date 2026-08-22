@@ -7,7 +7,7 @@ import {
   type Prisma as PrismaTypes,
 } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, buildAuthorizedUserWhere, type AuthorizationContext } from "../authorization/authorization-context";
 import { buildActivityScopeWhere } from "../activity/activity-authorization";
 import { buildCustomerScopeWhere } from "../customer/customer-query-service";
 import { buildSalesTargetScopeWhere } from "../forecast/forecast-authorization";
@@ -151,14 +151,9 @@ function chartPoints(
 }
 
 async function resolveScope(actor: DashboardActor, filters: DashboardFilters): Promise<ResolvedScope> {
-  const enterprise = actor.authorization.assignments.some((assignment) => assignment.scope === "ENTERPRISE");
-  const assignedOrganizationIds = [...new Set(actor.authorization.assignments.flatMap((assignment) =>
-    assignment.organizationUnitId && (assignment.scope === "TEAM" || assignment.scope === "ORG_UNIT")
-      ? [assignment.organizationUnitId]
-      : [],
-  ))];
+  const assignedOrganizationIds = authorizedOrganizationUnitIds(actor.authorization);
   const organizationUnits = await prisma.organizationUnit.findMany({
-    where: { active: true, ...(enterprise ? {} : { id: { in: assignedOrganizationIds } }) },
+    where: { active: true, id: { in: assignedOrganizationIds } },
     select: { id: true, name: true, parentId: true },
     orderBy: { name: "asc" },
   });
@@ -171,25 +166,13 @@ async function resolveScope(actor: DashboardActor, filters: DashboardFilters): P
     if (team?.parentId !== filters.departmentId && team?.id !== filters.departmentId) throw new DashboardAccessError();
   }
   const selectedOrganizationId = filters.teamId ?? filters.departmentId;
-  const ownerOptions = enterprise
-    ? await prisma.user.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } })
-    : await prisma.user.findMany({
-        where: {
-          active: true,
-          OR: [
-            { id: actor.id },
-            ...(assignedOrganizationIds.length
-              ? [{ enterpriseRoleAssignments: { some: { active: true, organizationUnitId: { in: assignedOrganizationIds } } } }]
-              : []),
-          ],
-        },
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
-      });
+  const ownerOptions = await prisma.user.findMany({
+    where: buildAuthorizedUserWhere(actor.authorization),
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
   if (filters.ownerId && !ownerOptions.some((owner) => owner.id === filters.ownerId)) throw new DashboardAccessError();
-  const scopeLabel = enterprise
-    ? "Enterprise"
-    : selectedOrganizationId
+  const scopeLabel = selectedOrganizationId
       ? organizationUnits.find((unit) => unit.id === selectedOrganizationId)?.name ?? "Scoped organization"
       : assignedOrganizationIds.length
         ? organizationUnits.map((unit) => unit.name).join(", ")
@@ -293,9 +276,7 @@ export async function loadDashboardData(
   const contractWhere: PrismaTypes.ContractWhereInput = {
     AND: [
       { deletedAt: null },
-      actor.authorization.assignments.some((assignment) => assignment.scope === "ENTERPRISE")
-        ? {}
-        : { OR: [{ ownerId: actor.id }, ...(scope.organizationUnitOptions.length ? [{ organizationUnitId: { in: scope.organizationUnitOptions.map((unit) => unit.id) } }] : [])] },
+      { OR: [{ ownerId: actor.id, organizationUnitId: null }, ...(scope.organizationUnitOptions.length ? [{ organizationUnitId: { in: scope.organizationUnitOptions.map((unit) => unit.id) } }] : [])] },
       ownerFilter,
       organizationFilter,
       createdAt ? { createdAt } : {},
@@ -313,9 +294,7 @@ export async function loadDashboardData(
   };
   const incidentWhere: PrismaTypes.CustomerIncidentWhereInput = {
     AND: [
-      actor.authorization.assignments.some((assignment) => assignment.scope === "ENTERPRISE")
-        ? {}
-        : { OR: [{ ownerId: actor.id }, { customer: buildCustomerScopeWhere(actor.authorization) }] },
+      { customer: buildCustomerScopeWhere(actor.authorization) },
       ownerFilter,
       organizationFilter,
       filters.segment ? { customer: { segment: filters.segment } } : {},

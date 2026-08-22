@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { Role } from "@prisma/client";
-import { assignAdminRole, createAdminUser, revokeAdminRole, rotateAdminUserApiKey, updateAdminUser } from "@/app/actions/identity-admin";
+import { assignAdminRole, createAdminUser, revokeAdminRole, rotateAdminUserApiKey, updateAdminRoleOrganization, updateAdminUser } from "@/app/actions/identity-admin";
 import type { FormState } from "@/app/action-types";
 import { FormNotice } from "@/components/notice";
 import { AUTHORIZATION_SCOPES, ENTERPRISE_ROLES } from "@/lib/authorization/enterprise-role-policy";
@@ -29,7 +29,7 @@ export function CreateUserForm() {
 
 export function UpdateUserForm({ user, self }: { user: { id: string; name: string; role: Role; active: boolean }; self: boolean }) {
   const [state, action, pending] = useActionState(updateAdminUser, initial);
-  return <form action={action}><input type="hidden" name="userId" value={user.id}/><label className="field-label required-label" htmlFor={`admin-user-name-${user.id}`}>ชื่อ</label><input className="control" id={`admin-user-name-${user.id}`} name="name" defaultValue={user.name} required minLength={2}/><select className="control" name="role" defaultValue={user.role} disabled={self}>{legacyRoles.map(role=><option key={role}>{role}</option>)}</select>{self&&<input type="hidden" name="role" value={user.role}/>}<label className="help"><input type="checkbox" name="active" defaultChecked={user.active} disabled={self}/> เปิดใช้งาน</label>{self&&<input type="hidden" name="active" value="on"/>}<Result state={state}/><button className="secondary" disabled={pending}>{pending ? "กำลังบันทึก…" : "บันทึก"}</button></form>;
+  return <form action={action} className="identity-user-edit-form"><input type="hidden" name="userId" value={user.id}/><label className="field-label required-label" htmlFor={`admin-user-name-${user.id}`}>ชื่อ</label><input className="control" id={`admin-user-name-${user.id}`} name="name" defaultValue={user.name} required minLength={2}/><label className="field-label" htmlFor={`admin-user-role-${user.id}`}>Legacy role</label><select className="control" id={`admin-user-role-${user.id}`} name="role" defaultValue={user.role} disabled={self}>{legacyRoles.map(role=><option key={role}>{role}</option>)}</select>{self&&<input type="hidden" name="role" value={user.role}/>}<label className="help identity-user-active"><input type="checkbox" name="active" defaultChecked={user.active} disabled={self}/> เปิดใช้งาน</label>{self&&<input type="hidden" name="active" value="on"/>}<Result state={state}/><button className="secondary" disabled={pending}>{pending ? "กำลังบันทึก…" : "บันทึกผู้ใช้"}</button></form>;
 }
 
 export function UserApiKeyForm({ user }: { user: { id: string; apiKeyPrefix: string | null; apiKeyCreatedAt: Date | null } }) {
@@ -46,4 +46,10 @@ export function AssignRoleForm({ users, orgs }: { users: { id: string; name: str
 export function RevokeRoleForm({ assignmentId, disabled }: { assignmentId: string; disabled: boolean }) {
   const [state, action, pending] = useActionState(revokeAdminRole, initial);
   return <form action={action}><input type="hidden" name="assignmentId" value={assignmentId}/><button className="secondary" disabled={disabled||pending}>{pending ? "กำลังถอน…" : "ถอนสิทธิ์"}</button><Result state={state}/></form>;
+}
+
+export function UpdateRoleAssignmentOrganizationForm({ assignment, orgs, disabled }: { assignment: { id: string; organizationUnitId: string | null; scopeCode: string }; orgs: Org[]; disabled: boolean }) {
+  const [state, action, pending] = useActionState(updateAdminRoleOrganization, initial);
+  const requiresOrganization = assignment.scopeCode === "TEAM" || assignment.scopeCode === "ORG_UNIT";
+  return <form action={action} className="identity-assignment-edit"><input type="hidden" name="assignmentId" value={assignment.id}/><label className={requiresOrganization ? "field-label required-label" : "field-label"} htmlFor={`assignment-organization-${assignment.id}`}>แก้ไขหน่วยงาน</label><select className="control" id={`assignment-organization-${assignment.id}`} name="organizationUnitId" defaultValue={assignment.organizationUnitId ?? ""} required={requiresOrganization} disabled={disabled}><option value="">{requiresOrganization ? "เลือกหน่วยงาน" : "ไม่ระบุหน่วยงาน"}</option>{orgs.map(org=><option value={org.id} key={org.id}>{org.code} — {org.name}</option>)}</select><button className="secondary" disabled={disabled||pending}>{pending ? "กำลังบันทึก…" : "บันทึกหน่วยงาน"}</button><Result state={state}/></form>;
 }

@@ -30,6 +30,10 @@ const assignmentSchema = z.strictObject({
   effectiveFrom: z.date(),
   effectiveTo: z.date().nullable(),
 });
+const updateAssignmentOrganizationSchema = z.strictObject({
+  assignmentId: z.string().min(1),
+  organizationUnitId: z.string().min(1).nullable(),
+});
 
 export class IdentityAdminService {
   constructor(private readonly repository: Repository, private readonly audit: AuditWriter<Tx>, private readonly policy: PermissionPolicy = permissionPolicy) {}
@@ -83,6 +87,64 @@ export class IdentityAdminService {
     return this.repository.transaction(async (tx) => {
       const row = await tx.userRoleAssignment.create({ data });
       await this.audit.append({ actorId: actor.id, action: "authorization.role-assignment.create", targetType: "UserRoleAssignment", targetId: row.id, outcome: "SUCCESS", correlationId, data: { userId: data.userId, roleCode: data.roleCode, scopeCode: data.scopeCode, organizationUnitId: data.organizationUnitId } }, { transaction: tx });
+      return row;
+    });
+  }
+
+  async updateRoleAssignmentOrganization(actor: Actor, input: unknown, correlationId: string) {
+    this.authorize(actor);
+    const data = updateAssignmentOrganizationSchema.parse(input);
+    return this.repository.transaction(async (tx) => {
+      const current = await tx.userRoleAssignment.findUnique({
+        where: { id: data.assignmentId },
+        select: {
+          id: true,
+          userId: true,
+          scopeCode: true,
+          organizationUnitId: true,
+          active: true,
+        },
+      });
+      if (!current?.active) {
+        throw new IdentityAdministrationError("ไม่พบ role assignment ที่เปิดใช้งาน");
+      }
+      if (current.userId === actor.id) {
+        throw new IdentityAdministrationError("ไม่สามารถแก้ไข role assignment ของตนเองได้");
+      }
+      if (["TEAM", "ORG_UNIT"].includes(current.scopeCode) && !data.organizationUnitId) {
+        throw new IdentityAdministrationError("Scope นี้ต้องระบุหน่วยงาน");
+      }
+      if (data.organizationUnitId) {
+        const organization = await tx.organizationUnit.findUnique({
+          where: { id: data.organizationUnitId },
+          select: { id: true, active: true },
+        });
+        if (!organization?.active) {
+          throw new IdentityAdministrationError("ไม่พบหน่วยงานที่เปิดใช้งาน");
+        }
+      }
+
+      const row = await tx.userRoleAssignment.update({
+        where: { id: current.id },
+        data: { organizationUnitId: data.organizationUnitId },
+      });
+      await this.audit.append(
+        {
+          actorId: actor.id,
+          action: "authorization.role-assignment.organization.update",
+          targetType: "UserRoleAssignment",
+          targetId: row.id,
+          outcome: "SUCCESS",
+          correlationId,
+          data: {
+            userId: current.userId,
+            scopeCode: current.scopeCode,
+            previousOrganizationUnitId: current.organizationUnitId,
+            organizationUnitId: data.organizationUnitId,
+          },
+        },
+        { transaction: tx },
+      );
       return row;
     });
   }

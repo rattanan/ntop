@@ -14,7 +14,7 @@ const dateTime=new Intl.DateTimeFormat("th-TH",{dateStyle:"medium",timeStyle:"sh
 export default async function ProposalDetailPage({params}:{params:Promise<{id:string}>}){
   const session=await requireSession();const context=await loadAuthorizationContext({actorId:session.id,legacyRole:session.role});const id=(await params).id;
   const [proposal,audit]=await Promise.all([
-    prisma.proposal.findFirst({where:{id,deletedAt:null,OR:[{ownerId:session.id},{opportunity:buildOpportunityScopeWhere(context)}]},include:{status:true,customer:{select:{id:true,name:true,segment:true}},opportunity:{select:{id:true,name:true,stage:true}},owner:{select:{name:true}},quotes:{select:{id:true,quoteNo:true,status:true}},versions:{orderBy:{versionNumber:"desc"},include:{createdBy:{select:{name:true}},sections:{orderBy:{sortOrder:"asc"}}}}}}),
+    prisma.proposal.findFirst({where:{id,deletedAt:null,opportunity:buildOpportunityScopeWhere(context)},include:{status:true,customer:{select:{id:true,name:true,segment:true}},opportunity:{select:{id:true,name:true,stage:true}},owner:{select:{name:true}},quotes:{select:{id:true,quoteNo:true,status:true}},versions:{orderBy:{versionNumber:"desc"},include:{createdBy:{select:{name:true}},sections:{orderBy:{sortOrder:"asc"}}}}}}),
     prisma.auditEvent.findMany({where:{targetType:"Proposal",targetId:id},orderBy:{recordedAt:"desc"},take:100}),
   ]);
   if(!proposal||!proposal.versions[0])notFound();

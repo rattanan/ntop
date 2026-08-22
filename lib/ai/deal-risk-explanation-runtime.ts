@@ -3,6 +3,8 @@ import { Prisma, type Role } from "@prisma/client";
 import { AppendOnlyAuditWriter } from "../audit/audit-writer";
 import { HashChainedAuditStore } from "../audit/hash-chained-audit-store";
 import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-repository";
+import { loadAuthorizationContext } from "../authorization/authorization-context";
+import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
 import { prisma } from "../prisma";
 import {
   DEAL_RISK_EXPLANATION_CAPABILITY,
@@ -131,11 +133,11 @@ export async function generateDealRiskExplanation({
   if (!enabled() || !idempotencyKey) {
     throw new DealRiskExplanationUnavailableError();
   }
+  const authorization = await loadAuthorizationContext({ actorId: actor.id, legacyRole: actor.role });
   const signal = await prisma.dealRiskSignal.findFirst({
     where: {
       id: signalId,
-      opportunity:
-        actor.role === "ADMIN" ? {} : { ownerId: actor.id },
+      opportunity: buildOpportunityScopeWhere(authorization),
     },
     include: {
       opportunity: { select: { id: true, customerId: true } },

@@ -6,6 +6,7 @@ import {
   createOrganizationUnitSchema,
   updateOrganizationHierarchySchema,
 } from "../../lib/administration/organization-admin-service";
+import { ORGANIZATION_CODE_PATTERN_SOURCE } from "../../lib/administration/organization-code";
 
 function validationError(result: { success: boolean; error?: unknown }) {
   expect(result.success).toBe(false);
@@ -41,6 +42,19 @@ describe("organizationAdminValidationMessage", () => {
       expect(result.success).toBe(false);
     },
   );
+
+  it("uses an HTML-compatible pattern with the same Thai code behavior", () => {
+    const browserPattern = new RegExp(
+      `^(?:${ORGANIZATION_CODE_PATTERN_SOURCE})$`,
+      "v",
+    );
+
+    expect(browserPattern.test("ออธ")).toBe(true);
+    expect(browserPattern.test("ออธ.3")).toBe(true);
+    expect(browserPattern.test("SALES-CENTRAL")).toBe(true);
+    expect(browserPattern.test(".ออธ")).toBe(false);
+    expect(browserPattern.test("ออธ 3")).toBe(false);
+  });
 
   it("explains the organization code rule without exposing the raw Zod error", () => {
     const result = createOrganizationUnitSchema.safeParse({

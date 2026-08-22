@@ -13,7 +13,7 @@ export default async function ProposalsPage() {
   const session = await requireSession(); assertPermission(session, PERMISSIONS.proposalView);
   const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
   const [proposals, statuses] = await Promise.all([
-    prisma.proposal.findMany({ where: { deletedAt: null, OR: [{ ownerId: session.id }, { opportunity: buildOpportunityScopeWhere(context) }] }, include: { customer: { select: { name: true } }, opportunity: { select: { name: true } }, owner: { select: { name: true } }, status: true, quotes: { include: { versions: { take: 1, orderBy: { versionNumber: "desc" }, select: { total: true } } } } }, orderBy: { updatedAt: "desc" }, take: 200 }),
+    prisma.proposal.findMany({ where: { deletedAt: null, opportunity: buildOpportunityScopeWhere(context) }, include: { customer: { select: { name: true } }, opportunity: { select: { name: true } }, owner: { select: { name: true } }, status: true, quotes: { include: { versions: { take: 1, orderBy: { versionNumber: "desc" }, select: { total: true } } } } }, orderBy: { updatedAt: "desc" }, take: 200 }),
     prisma.proposalStatusDefinition.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
   ]);
   const count = new Map(statuses.map((status)=>[status.code,proposals.filter((proposal)=>proposal.statusCode===status.code).length]));

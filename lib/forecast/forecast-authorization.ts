@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, type AuthorizationContext } from "../authorization/authorization-context";
 import type { Permission } from "../authorization/permission-policy";
 import { prisma } from "../prisma";
 
@@ -25,12 +25,7 @@ export function requireForecastPermission(permissions: ReadonlySet<string>, perm
 }
 
 export function buildSalesTargetScopeWhere(context: AuthorizationContext): Prisma.SalesTargetWhereInput {
-  if (context.assignments.some((assignment) => assignment.scope === "ENTERPRISE")) return {};
-  const organizationUnitIds = [...new Set(context.assignments.flatMap((assignment) =>
-    assignment.organizationUnitId && (assignment.scope === "TEAM" || assignment.scope === "ORG_UNIT")
-      ? [assignment.organizationUnitId]
-      : [],
-  ))];
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
   return {
     OR: [
       { userId: context.actorId },
@@ -44,7 +39,6 @@ export function buildSalesTargetScopeWhere(context: AuthorizationContext): Prism
 }
 
 export function canManageSalesTargetScope(context: AuthorizationContext, input: { userId: string | null; teamId: string | null; departmentId: string | null; businessUnitId: string | null }) {
-  if (context.assignments.some((assignment) => assignment.scope === "ENTERPRISE")) return true;
-  const organizationUnitIds = new Set(context.assignments.flatMap((assignment) => assignment.organizationUnitId ? [assignment.organizationUnitId] : []));
+  const organizationUnitIds = new Set(authorizedOrganizationUnitIds(context));
   return input.userId === context.actorId || [input.teamId, input.departmentId, input.businessUnitId].some((id) => id !== null && organizationUnitIds.has(id));
 }

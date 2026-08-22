@@ -6,6 +6,7 @@ import { loadAuthorizationContext } from "@/lib/authorization/authorization-cont
 import { money, ZERO } from "@/lib/commercial/decimal-money";
 import { calculateForecast, calculateTargetMetrics } from "@/lib/forecast/forecast-calculator";
 import { loadForecastConfig } from "@/lib/forecast/forecast-config";
+import { buildSalesTargetScopeWhere } from "@/lib/forecast/forecast-authorization";
 import { resolveFiscalPeriod, type FiscalPeriodType as PeriodType } from "@/lib/forecast/fiscal-period";
 import { PrismaForecastRepository } from "@/lib/forecast/prisma-forecast-repository";
 import { buildOpportunityScopeWhere } from "@/lib/opportunity/opportunity-query";
@@ -29,12 +30,7 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
   const filteredFacts = facts.filter((fact) => (!ownerId || fact.ownerId === ownerId) && (!category || fact.category === category) && (!stage || fact.stage === stage));
   const calculation = calculateForecast(filteredFacts);
 
-  const assignment = context.assignments.find((item) => item.scope !== "SELF") ?? context.assignments[0];
-  const targetScope: Prisma.SalesTargetWhereInput = assignment?.scope === "ENTERPRISE"
-    ? { userId: session.id }
-    : assignment?.organizationUnitId
-      ? { OR: [{ teamId: assignment.organizationUnitId }, { departmentId: assignment.organizationUnitId }, { businessUnitId: assignment.organizationUnitId }] }
-      : { userId: session.id };
+  const targetScope: Prisma.SalesTargetWhereInput = buildSalesTargetScopeWhere(context);
   const targetPeriod: Prisma.SalesTargetWhereInput = periodType === "MONTH"
     ? { periodType: FiscalPeriodType.MONTH, fiscalMonth: period.fiscalMonth }
     : periodType === "QUARTER"

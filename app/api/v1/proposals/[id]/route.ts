@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     assertPermission(session, PERMISSIONS.proposalView);
     const actor = await proposalActor(session);
     const proposal = await prisma.proposal.findFirst({
-      where: { id: (await params).id, deletedAt: null, OR: [{ ownerId: session.id }, { opportunity: buildOpportunityScopeWhere(actor.authorization) }] },
+      where: { id: (await params).id, deletedAt: null, opportunity: buildOpportunityScopeWhere(actor.authorization) },
       include: { customer: true, opportunity: true, owner: { select: { id: true, name: true } }, status: true, quotes: { select: { id: true, quoteNo: true, status: true } }, versions: { orderBy: { versionNumber: "desc" }, include: { createdBy: { select: { id: true, name: true } }, sections: { orderBy: { sortOrder: "asc" } } } } },
     });
     if (!proposal) return NextResponse.json({ error: { code: "RESOURCE_NOT_FOUND", correlationId } }, { status: 404 });

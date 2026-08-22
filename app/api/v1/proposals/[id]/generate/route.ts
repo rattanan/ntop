@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const actor = await proposalActor(session);
     const proposalId = (await params).id;
     const proposal = await prisma.proposal.findFirst({
-      where: { id: proposalId, deletedAt: null, OR: [{ ownerId: session.id }, { opportunity: buildOpportunityScopeWhere(actor.authorization) }] },
+      where: { id: proposalId, deletedAt: null, opportunity: buildOpportunityScopeWhere(actor.authorization) },
       include: {
         status: { select: { terminal: true } },
         customer: { select: { id: true, name: true, segment: true, province: true } },

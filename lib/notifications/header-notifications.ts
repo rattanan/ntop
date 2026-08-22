@@ -1,3 +1,7 @@
+import type { AuthorizationContext } from "../authorization/authorization-context";
+import { buildActivityScopeWhere } from "../activity/activity-authorization";
+import { buildLeadScopeWhere } from "../lead/prisma-lead-repository";
+import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
 import { prisma } from "../prisma";
 
 export type HeaderNotification = {
@@ -9,24 +13,25 @@ export type HeaderNotification = {
   tone: "INFO" | "WARNING" | "ACTION";
 };
 
-export async function loadHeaderNotifications(actorId: string): Promise<HeaderNotification[]> {
+export async function loadHeaderNotifications(context: AuthorizationContext): Promise<HeaderNotification[]> {
+  const actorId = context.actorId;
   const now = new Date();
   const horizon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1_000);
   const [activities, approvals, leads, surveys] = await Promise.all([
     prisma.activity.findMany({
-      where: { ownerId: actorId, deletedAt: null, dueAt: { lte: horizon } },
+      where: { AND: [buildActivityScopeWhere(context), { ownerId: actorId, deletedAt: null, dueAt: { lte: horizon } }] },
       select: { id: true, subject: true, dueAt: true, opportunityId: true },
       orderBy: { dueAt: "asc" },
       take: 8,
     }),
     prisma.approvalRequest.findMany({
-      where: { makerId: actorId, status: { in: ["PENDING", "PENDING_ESCALATION", "RETURNED", "REJECTED"] } },
+      where: { makerId: actorId, status: { in: ["PENDING", "PENDING_ESCALATION", "RETURNED", "REJECTED"] }, quoteVersion: { quote: { opportunity: buildOpportunityScopeWhere(context) } } },
       select: { id: true, status: true, submittedAt: true, quoteVersion: { select: { quote: { select: { id: true, quoteNo: true } } } } },
       orderBy: { submittedAt: "desc" },
       take: 8,
     }),
-    prisma.lead.findMany({ where: { ownerId: actorId, OR: [{ nextFollowUpAt: { lte: horizon } }, { firstContactDueAt: { lte: horizon }, lastContactedAt: null }], status: { notIn: ["CONVERTED", "DISQUALIFIED", "ARCHIVED"] } }, select: { id: true, company: true, nextFollowUpAt: true, firstContactDueAt: true, lastContactedAt: true }, orderBy: { updatedAt: "desc" }, take: 8 }),
-    prisma.siteSurveyRequest.findMany({ where: { AND: [{ OR: [{ assignedSurveyEngineerId: actorId }, { assignedCoordinatorId: actorId }] }, { statusCode: { notIn: ["RESULT_APPROVED", "CANCELLED"] } }, { OR: [{ scheduledSurveyDate: { lte: horizon } }, { statusCode: "RESULT_SUBMITTED" }] }] }, select: { id: true, surveyRequestNumber: true, statusCode: true, scheduledSurveyDate: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 8 }),
+    prisma.lead.findMany({ where: { AND: [buildLeadScopeWhere(context), { ownerId: actorId, OR: [{ nextFollowUpAt: { lte: horizon } }, { firstContactDueAt: { lte: horizon }, lastContactedAt: null }], status: { notIn: ["CONVERTED", "DISQUALIFIED", "ARCHIVED"] } }] }, select: { id: true, company: true, nextFollowUpAt: true, firstContactDueAt: true, lastContactedAt: true }, orderBy: { updatedAt: "desc" }, take: 8 }),
+    prisma.siteSurveyRequest.findMany({ where: { AND: [{ opportunity: buildOpportunityScopeWhere(context) }, { OR: [{ assignedSurveyEngineerId: actorId }, { assignedCoordinatorId: actorId }] }, { statusCode: { notIn: ["RESULT_APPROVED", "CANCELLED"] } }, { OR: [{ scheduledSurveyDate: { lte: horizon } }, { statusCode: "RESULT_SUBMITTED" }] }] }, select: { id: true, surveyRequestNumber: true, statusCode: true, scheduledSurveyDate: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 8 }),
   ]);
   return [
     ...activities.map((activity): HeaderNotification => ({

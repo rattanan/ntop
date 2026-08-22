@@ -1,6 +1,6 @@
 import { type ActivityType, type PrismaClient } from "@prisma/client";
 
-import type { AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, buildAuthorizedUserWhere, type AuthorizationContext } from "../authorization/authorization-context";
 import { buildCustomerScopeWhere } from "../customer/customer-query-service";
 import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
 import { buildActivityScopeWhere } from "./activity-authorization";
@@ -42,10 +42,9 @@ export class PrismaActivityRepository implements ActivityRepository {
   }
   async assigneeIsEligible(actorId: string, ownerId: string, context: AuthorizationContext, transaction: ActivityTransaction) {
     if (ownerId === actorId) return true;
-    if (context.assignments.some((assignment) => assignment.scope === "ENTERPRISE")) return Boolean(await transaction.user.findFirst({ where: { id: ownerId, active: true } }));
-    const organizationUnitIds = [...new Set(context.assignments.flatMap((assignment) => assignment.organizationUnitId && (assignment.scope === "TEAM" || assignment.scope === "ORG_UNIT") ? [assignment.organizationUnitId] : []))];
+    const organizationUnitIds = authorizedOrganizationUnitIds(context);
     if (!organizationUnitIds.length) return false;
-    return Boolean(await transaction.user.findFirst({ where: { id: ownerId, active: true, enterpriseRoleAssignments: { some: { active: true, organizationUnitId: { in: organizationUnitIds } } } } }));
+    return Boolean(await transaction.user.findFirst({ where: { id: ownerId, ...buildAuthorizedUserWhere(context) } }));
   }
   async assignVersioned(id: string, expectedVersion: number, ownerId: string, transaction: ActivityTransaction) {
     const updated = await transaction.activity.updateMany({ where: { id, version: expectedVersion, deletedAt: null }, data: { ownerId, version: { increment: 1 } } });
