@@ -7,6 +7,7 @@ const preview = readFileSync("app/api/v1/prospects/import/preview/route.ts", "ut
 const enrich = readFileSync("lib/prospect/prospect-enrichment-service.ts", "utf8");
 const enrichRoute = readFileSync("app/api/v1/prospects/[id]/enrich/route.ts", "utf8");
 const apiErrors = readFileSync("app/api/v1/prospects/prospect-api.ts", "utf8");
+const researchRoute = readFileSync("app/api/v1/prospects/research/route.ts", "utf8");
 
 describe("Prospect API contract", () => {
   it("uses session, permission codes, scoped queries and idempotency", () => {
@@ -35,5 +36,14 @@ describe("Prospect API contract", () => {
     expect(enrich).toContain('enrichmentStatus: "FAILED"');
     expect(enrich).toContain('outcome: "FAILURE"');
     expect(enrichRoute).toContain("requiresConfirmation:true");
+  });
+
+  it("protects company web research and audits it without creating a Prospect", () => {
+    expect(researchRoute).toContain("PERMISSIONS.prospectCreate");
+    expect(researchRoute).toContain("requireProspectPermission");
+    expect(researchRoute).toContain('action: "prospect.company-research.search"');
+    expect(researchRoute).toContain('outcome: "SUCCESS"');
+    expect(researchRoute).toContain('outcome: "FAILURE"');
+    expect(researchRoute).not.toMatch(/prospect\.(create|update|upsert)/);
   });
 });

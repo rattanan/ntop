@@ -64,6 +64,66 @@ describe("OpenAiCompatibleClient", () => {
     );
   });
 
+  it("uses the Responses API with required web search and returns cited sources", async () => {
+    const transport = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        id: "response-1",
+        model: "configured-model",
+        status: "completed",
+        output: [
+          {
+            type: "web_search_call",
+            action: {
+              sources: [
+                { title: "Official registry", url: "https://registry.example/company" },
+              ],
+            },
+          },
+          {
+            type: "message",
+            content: [{ type: "output_text", text: '{"ok":true}', annotations: [] }],
+          },
+        ],
+        usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
+      }),
+    );
+    const client = new OpenAiCompatibleClient(configuration, transport);
+
+    const result = await client.createWebSearchResponse({
+      instructions: "Use public facts only.",
+      query: "Example Company",
+      outputName: "company",
+      outputSchema: { type: "object" },
+    });
+
+    expect(transport.mock.calls[0][0]).toBe("http://provider.internal/v1/responses");
+    const body = JSON.parse(String(transport.mock.calls[0][1]?.body));
+    expect(body).toMatchObject({
+      model: "configured-model",
+      tools: [{ type: "web_search" }],
+      tool_choice: "required",
+      include: ["web_search_call.action.sources"],
+      store: false,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "company",
+          strict: true,
+          schema: { type: "object" },
+        },
+      },
+    });
+    expect(result).toEqual({
+      content: '{"ok":true}',
+      sources: [
+        { title: "Official registry", url: "https://registry.example/company" },
+      ],
+      providerRequestId: "response-1",
+      providerModel: "configured-model",
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+    });
+  });
+
   it.each([
     [401, "AUTHENTICATION", "AI provider authentication failed."],
     [403, "AUTHENTICATION", "AI provider authentication failed."],
