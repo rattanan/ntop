@@ -16,6 +16,7 @@
 - On `/prospects/new`, an inline Search action requires a valid company name, server-side `prospect.create` authorization, and a configured provider/model that supports Responses API web search.
 - Company research uses authoritative public sources, a strict allowlist schema, no personal-contact collection, and never infers commercial or security facts. It fills empty visible fields only, preserves user-entered values, shows confidence/warnings/source links, and creates no Prospect until the user submits the form.
 - Every company-research success or provider failure writes an audit event with provider provenance and source URLs; provider outage leaves the manual create flow available.
+- The inline company Search button is temporarily disabled by default. Set `PROSPECT_AI_SEARCH_ENABLED=true` only after a compatible web-search provider has passed capability verification; the manual create flow remains unchanged while disabled.
 
 ## API
 

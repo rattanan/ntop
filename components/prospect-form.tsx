@@ -71,8 +71,10 @@ function sourceReference(sources: Array<{ url: string }>) {
 
 export function ProspectForm({
   prospect,
+  companyResearchEnabled = false,
 }: {
   prospect?: Partial<ProspectCommand> & { id: string; version: number };
+  companyResearchEnabled?: boolean;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -246,8 +248,13 @@ export function ProspectForm({
                     type="button"
                     className="secondary prospect-search-button"
                     onClick={researchCompany}
-                    disabled={isResearching || isSubmitting}
-                    aria-label="Search company information with AI"
+                    disabled={!companyResearchEnabled || isResearching || isSubmitting}
+                    aria-label={
+                      companyResearchEnabled
+                        ? "Search company information with AI"
+                        : "AI Search ปิดใช้งานชั่วคราว"
+                    }
+                    title={!companyResearchEnabled ? "AI Search ปิดใช้งานชั่วคราว" : undefined}
                   >
                     {isResearching ? (
                       <LoaderCircle className="spin" aria-hidden="true" />
@@ -260,6 +267,11 @@ export function ProspectForm({
               </span>
               {errors.companyName && (
                 <small className="error">{errors.companyName.message}</small>
+              )}
+              {!prospect && !companyResearchEnabled && (
+                <small id="company-research-feedback" className="help">
+                  AI Search ปิดใช้งานชั่วคราว
+                </small>
               )}
             </label>
             {field("companyNameEnglish", "ชื่อภาษาอังกฤษ")}
