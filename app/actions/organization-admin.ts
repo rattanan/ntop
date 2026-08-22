@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import type { FormState } from "../action-types";
+import { organizationAdminValidationMessage } from "@/lib/administration/organization-admin-form-error";
 import { createOrganizationAdminRuntime } from "@/lib/administration/organization-admin-runtime";
 import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { requirePermission } from "@/lib/authorization/require-permission";
@@ -28,6 +29,10 @@ async function execute(
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { message: "ข้อมูลนี้มีอยู่แล้ว" };
+    }
+    const validationMessage = organizationAdminValidationMessage(error);
+    if (validationMessage) {
+      return { message: validationMessage };
     }
     return {
       message: error instanceof Error ? error.message : "ไม่สามารถบันทึกข้อมูลได้",
