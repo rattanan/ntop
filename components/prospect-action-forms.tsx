@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, FileUp, LoaderCircle, Pencil, Plus, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Notice, type NoticeVariant } from "@/components/notice";
 
 async function command(path: string, body: object) {
@@ -141,6 +141,58 @@ export function ProspectContactManager({ id, version, contacts, canUpdate }: { i
   </div>;
 }
 
+export function ProspectActivityManager({ id, canUpdate }: { id: string; canUpdate: boolean }) {
+  const router = useRouter();
+  const toggleButton = useRef<HTMLButtonElement>(null);
+  const [creating, setCreating] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  if (!canUpdate) return null;
+
+  const close = () => {
+    setCreating(false);
+    setMessage(null);
+    queueMicrotask(() => toggleButton.current?.focus());
+  };
+
+  return <div className="prospect-activity-manager">
+    <div className="prospect-activity-toolbar"><button ref={toggleButton} className="secondary" type="button" aria-expanded={creating} aria-controls="prospect-activity-form" onClick={() => { setCreating(value => !value); setMessage(null); }}>{creating ? <><X aria-hidden="true" />ยกเลิก</> : <><Plus aria-hidden="true" />เพิ่ม Activity</>}</button></div>
+    {creating && <form id="prospect-activity-form" className="prospect-activity-form" onSubmit={async (event) => {
+      event.preventDefault();
+      setPending(true); setMessage(null);
+      const formElement = event.currentTarget;
+      const form = new FormData(formElement);
+      try {
+        await command(`/api/v1/prospects/${id}/activities`, {
+          activityType: form.get("activityType"),
+          subject: form.get("subject"),
+          description: optional(form, "description"),
+          activityDate: new Date().toISOString(),
+          nextFollowUpAt: form.get("nextFollowUpAt") ? new Date(String(form.get("nextFollowUpAt"))).toISOString() : undefined,
+        });
+        formElement.reset();
+        setMessage({ type: "success", text: "เพิ่ม Activity แล้ว" });
+        setCreating(false);
+        router.refresh();
+        queueMicrotask(() => toggleButton.current?.focus());
+      } catch (error) {
+        setMessage({ type: "error", text: error instanceof Error ? error.message : "เพิ่ม Activity ไม่สำเร็จ" });
+      } finally {
+        setPending(false);
+      }
+    }}>
+      <div className="prospect-activity-fields">
+        <label><span>ประเภท Activity <span className="required">*</span></span><select className="control" name="activityType" defaultValue="PHONE_CALL" required><option value="PHONE_CALL">โทรศัพท์</option><option value="EMAIL">อีเมล</option><option value="LINE">LINE</option><option value="MEETING">ประชุม</option><option value="CUSTOMER_VISIT">เข้าพบลูกค้า</option><option value="FOLLOW_UP">ติดตามผล</option><option value="NOTE">บันทึก</option></select></label>
+        <label><span>ติดตามครั้งถัดไป</span><input className="control" type="datetime-local" name="nextFollowUpAt" /></label>
+        <label className="full"><span>หัวข้อ <span className="required">*</span></span><input className="control" name="subject" minLength={2} maxLength={255} required autoFocus /></label>
+        <label className="full"><span>รายละเอียด</span><textarea className="control" name="description" rows={3} maxLength={10_000} /></label>
+      </div>
+      <div className="actions"><button className="secondary" type="button" disabled={pending} onClick={close}>ยกเลิก</button><button className="primary" disabled={pending}>{pending ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึก Activity"}</button></div>
+    </form>}
+    {message && <p className={`form-feedback ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
+  </div>;
+}
+
 export function ProspectDocumentUpload({ id }: { id: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -172,11 +224,10 @@ export function ProspectDocumentUpload({ id }: { id: string }) {
 
 type ProspectTransferSummary = { company: string; contact: string; score: number; requirement: string | null; products: string | null; estimatedValue: string | null };
 
-export function ProspectActionForms({ id, version, status, owners, canAssign, canConvert, canUpdate, transferSummary }: { id: string; version: number; status: string; owners: Array<{ id: string; name: string }>; canAssign: boolean; canConvert: boolean; canUpdate: boolean; transferSummary: ProspectTransferSummary }) {
+export function ProspectActionForms({ id, version, status, owners, canAssign, canConvert, transferSummary }: { id: string; version: number; status: string; owners: Array<{ id: string; name: string }>; canAssign: boolean; canConvert: boolean; transferSummary: ProspectTransferSummary }) {
   const router = useRouter(); const [message, setMessage] = useState<{ text: string; variant: NoticeVariant } | null>(null);
   const [converting, setConverting] = useState(false);
   return <div className="grid-2">
-    {canUpdate && <form className="card" onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { await command(`/api/v1/prospects/${id}/activities`, { activityType: form.get("activityType"), subject: form.get("subject"), description: form.get("description"), activityDate: new Date().toISOString(), nextFollowUpAt: form.get("nextFollowUpAt") ? new Date(String(form.get("nextFollowUpAt"))).toISOString() : undefined }); setMessage({ text: "เพิ่ม Activity แล้ว", variant: "success" }); router.refresh(); } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ผิดพลาด", variant: "error" }); } }}><div className="card-body"><h3>เพิ่ม Activity</h3><select className="control" name="activityType"><option>PHONE_CALL</option><option>EMAIL</option><option>LINE</option><option>MEETING</option><option>CUSTOMER_VISIT</option><option>FOLLOW_UP</option><option>NOTE</option></select><label className="field-label required-label" htmlFor="prospect-activity-subject">หัวข้อ</label><input className="control" id="prospect-activity-subject" name="subject" placeholder="หัวข้อ" required /><textarea className="control" name="description" placeholder="รายละเอียด" /><input className="control" type="datetime-local" name="nextFollowUpAt" /><button className="primary">บันทึก Activity</button></div></form>}
     {canAssign && <form className="card" onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { await command(`/api/v1/prospects/${id}/assign`, { expectedVersion: version, ownerId: form.get("ownerId"), reason: form.get("reason") }); setMessage({ text: "มอบหมาย Owner แล้ว", variant: "success" }); router.refresh(); } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ผิดพลาด", variant: "error" }); } }}><div className="card-body"><h3>Assign Owner</h3><select className="control" name="ownerId">{owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.name}</option>)}</select><label className="field-label required-label" htmlFor="prospect-assign-reason">เหตุผล</label><textarea className="control" id="prospect-assign-reason" name="reason" placeholder="เหตุผล" minLength={5} required /><button className="primary">Assign</button></div></form>}
     {canConvert && status === "QUALIFIED" && <form id="prospect-conversion" className="card conversion-panel conversion-panel-wide" onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); if (!confirm("ยืนยันสร้าง Lead จากข้อมูล Prospect นี้?")) return; setConverting(true); try { const result = await command(`/api/v1/prospects/${id}/convert`, { expectedVersion: version, qualificationNote: form.get("qualificationNote") }); router.push(`/leads/${result.leadId}`); } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ผิดพลาด", variant: "error" }); setConverting(false); } }}><div className="card-header conversion-panel-header"><div><strong>สร้าง Lead จาก Prospect</strong><small>ตรวจสอบข้อมูลที่จะนำไปใช้ต่อก่อนยืนยัน</small></div><span className="badge success">พร้อมสร้าง</span></div><div className="card-body"><div className="conversion-flow" aria-label="ลำดับการแปลงข้อมูล"><span>Prospect</span><ArrowRight aria-hidden="true"/><strong>Lead</strong></div><div className="conversion-summary-grid">
       <div><span><Check aria-hidden="true"/>บริษัท</span><strong>{transferSummary.company}</strong></div><div><span><Check aria-hidden="true"/>ผู้ติดต่อหลัก</span><strong>{transferSummary.contact}</strong></div><div><span><Check aria-hidden="true"/>Lead score</span><strong>{transferSummary.score}/100</strong></div><div><span><Check aria-hidden="true"/>มูลค่าประมาณการ</span><strong>{transferSummary.estimatedValue ? `${transferSummary.estimatedValue} บาท` : "ยังไม่ระบุ"}</strong></div><div className="conversion-summary-wide"><span><Check aria-hidden="true"/>ความต้องการ</span><strong>{transferSummary.requirement ?? "ยังไม่ระบุ"}</strong></div><div className="conversion-summary-wide"><span><Check aria-hidden="true"/>สินค้า/บริการ</span><strong>{transferSummary.products ?? "ยังไม่ระบุ"}</strong></div>

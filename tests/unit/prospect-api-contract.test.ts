@@ -85,6 +85,18 @@ describe("Prospect API contract", () => {
     expect(prospectActions).toContain('"DELETE"');
   });
 
+  it("keeps Activity creation inside the timeline panel behind an accessible toggle", () => {
+    expect(prospectDetail).toContain("<ProspectActivityManager");
+    expect(prospectDetail).toContain('className="prospect-timeline-list"');
+    expect(prospectActions).toContain("export function ProspectActivityManager");
+    expect(prospectActions).toContain('aria-expanded={creating}');
+    expect(prospectActions).toContain('aria-controls="prospect-activity-form"');
+    expect(prospectActions).toContain('id="prospect-activity-form"');
+    expect(prospectActions).toContain("เพิ่ม Activity");
+    expect(prospectActions).toContain("setCreating(false)");
+    expect(prospectActions).not.toContain('<h3>เพิ่ม Activity</h3>');
+  });
+
   it("backfills Prospect mutation grants for existing role assignments", () => {
     expect(permissionMigration).toContain("INSERT IGNORE INTO `RolePermissionGrant`");
     expect(permissionMigration).toContain("'ADMIN', 'prospect.update'");

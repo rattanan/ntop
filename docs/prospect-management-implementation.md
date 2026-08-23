@@ -18,6 +18,7 @@
 - AI enrichment is grounded in the authorized Prospect details plus at most 20 Contacts, 50 recent Activities and 10 recent uploaded documents. It extracts bounded text from PDF, DOCX, XLSX, PPTX, CSV and TXT; unsupported/unreadable files contribute metadata without failing the whole request. Phone, email, mobile and LINE values are represented only as availability flags.
 - AI provider output accepts a JSON object with or without a Markdown code fence, normalizes bounded list/score values, and maps invalid output to a retryable AI-unavailable response instead of a generic server error.
 - The Prospect detail page exposes `Request AI Insight` to authorized users, previews the READY draft, and requires an explicit `ยืนยันใช้ AI Insight` action before applying AI fields.
+- The Activities & Timeline panel exposes `เพิ่ม Activity` only to authorized users. Its form is collapsed by default, opens inside the panel with accessible expanded-state semantics, closes after a successful save, and uses the existing scoped/audited Activity command.
 - The company-research API uses authoritative public sources, a strict allowlist schema, no personal-contact collection, and never infers commercial or security facts.
 - Every company-research success or provider failure writes an audit event with provider provenance and source URLs; provider outage leaves the manual create flow available.
 - `/prospects/new` exposes the company name as a normal form field without an AI Search button; the manual create flow remains unchanged.
