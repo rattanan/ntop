@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 const usersPage = read("app/(portal)/admin/users/page.tsx");
+const userEditPage = read("app/(portal)/admin/users/[id]/edit/page.tsx");
 const auditPage = read("app/(portal)/admin/audit/page.tsx");
 const userConsole = read("components/admin-user-console.tsx");
 const identityActions = read("app/actions/identity-admin.ts");
@@ -23,13 +24,26 @@ describe("identity administration navigation", () => {
     expect(auditPage).toContain("take: 200");
   });
 
-  it("keeps table controls within fixed columns and exposes assignment organization editing", () => {
+  it("keeps the user list compact and moves mutations to a dedicated edit route", () => {
     expect(usersPage).toContain("identity-user-table-wrap");
-    expect(usersPage).toContain("UpdateRoleAssignmentOrganizationForm");
+    expect(usersPage).toContain('href={`/admin/users/${user.id}/edit`}');
+    expect(usersPage).not.toContain("UpdateUserForm");
+    expect(usersPage).not.toContain("UserApiKeyForm");
+    expect(usersPage).not.toContain("UpdateRoleAssignmentOrganizationForm");
+    expect(usersPage).not.toContain("RevokeRoleForm");
+    expect(userEditPage).toContain("PERMISSIONS.userAdminManage");
+    expect(userEditPage).toContain("notFound()");
+    expect(userEditPage).toContain("UpdateUserForm");
+    expect(userEditPage).toContain("UserApiKeyForm");
+    expect(userEditPage).toContain("UpdateRoleAssignmentOrganizationForm");
+    expect(userEditPage).toContain("RevokeRoleForm");
+    expect(userEditPage).toContain("AssignRoleForm");
     expect(userConsole).toContain("updateAdminRoleOrganization");
     expect(userConsole).toContain("บันทึกหน่วยงาน");
     expect(identityActions).toContain("updateRoleAssignmentOrganization");
-    expect(styles).toContain(".identity-user-table { min-width:1180px;table-layout:fixed; }");
-    expect(styles).toContain(".identity-user-table td:has(.secondary)");
+    expect(identityActions).toContain('revalidatePath("/admin/users", "layout")');
+    expect(styles).toContain(".identity-user-table { min-width:820px;table-layout:fixed; }");
+    expect(styles).toContain(".identity-edit-layout");
+    expect(styles).toContain("@media (max-width:700px)");
   });
 });

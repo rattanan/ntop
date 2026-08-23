@@ -15,7 +15,7 @@ async function execute(work: (actor: Awaited<ReturnType<typeof requirePermission
   try {
     const actor = await requirePermission(PERMISSIONS.userAdminManage);
     const result = await work(actor, crypto.randomUUID());
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/users", "layout");
     revalidatePath("/admin/workflow");
     const credential = result && typeof result === "object" && "apiKey" in result
       ? result as { apiKey?: string; apiKeyPrefix?: string }
