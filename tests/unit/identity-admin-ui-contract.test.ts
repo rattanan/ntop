@@ -26,6 +26,10 @@ describe("identity administration navigation", () => {
 
   it("keeps the user list compact and moves mutations to a dedicated edit route", () => {
     expect(usersPage).toContain("identity-user-table-wrap");
+    expect(usersPage).toContain("<th>หน่วยงาน</th>");
+    expect(usersPage).toContain('organizationUnit: { select: { id: true, code: true, name: true } }');
+    expect(usersPage).toContain('data-label="หน่วยงาน"');
+    expect(usersPage).toContain("identity-organization-summary");
     expect(usersPage).toContain('href={`/admin/users/${user.id}/edit`}');
     expect(usersPage).not.toContain("UpdateUserForm");
     expect(usersPage).not.toContain("UserApiKeyForm");
@@ -42,7 +46,7 @@ describe("identity administration navigation", () => {
     expect(userConsole).toContain("บันทึกหน่วยงาน");
     expect(identityActions).toContain("updateRoleAssignmentOrganization");
     expect(identityActions).toContain('revalidatePath("/admin/users", "layout")');
-    expect(styles).toContain(".identity-user-table { min-width:820px;table-layout:fixed; }");
+    expect(styles).toContain(".identity-user-table { min-width:980px;table-layout:fixed; }");
     expect(styles).toContain(".identity-edit-layout");
     expect(styles).toContain("@media (max-width:700px)");
   });

@@ -29,7 +29,12 @@ export default async function IdentityAdministrationPage() {
       enterpriseRoleAssignments: {
         take: 20,
         orderBy: { createdAt: "desc" },
-        select: { id: true, roleCode: true, active: true },
+        select: {
+          id: true,
+          roleCode: true,
+          active: true,
+          organizationUnit: { select: { id: true, code: true, name: true } },
+        },
       },
     },
   });
@@ -67,10 +72,16 @@ export default async function IdentityAdministrationPage() {
       </div>
       <div className="table-wrap identity-user-table-wrap">
         <table className="table identity-user-table">
-          <thead><tr><th>บัญชี</th><th>สิทธิ์การใช้งาน</th><th>InsightKM</th><th>แก้ไขล่าสุด</th><th><span className="sr-only">การทำงาน</span></th></tr></thead>
+          <thead><tr><th>บัญชี</th><th>สิทธิ์การใช้งาน</th><th>หน่วยงาน</th><th>InsightKM</th><th>แก้ไขล่าสุด</th><th><span className="sr-only">การทำงาน</span></th></tr></thead>
           <tbody>{users.length ? users.map((user) => {
             const activeUserAssignments = user.enterpriseRoleAssignments.filter((assignment) => assignment.active);
             const roleCodes = [...new Set(activeUserAssignments.map((assignment) => assignment.roleCode))];
+            const organizations = [...new Map(activeUserAssignments.map((assignment) => {
+              const organization = assignment.organizationUnit;
+              return [organization?.id ?? "enterprise", organization
+                ? { code: organization.code, name: organization.name }
+                : { code: "ทุกหน่วยงาน", name: "ไม่จำกัดหน่วยงาน" }];
+            })).values()];
             return <tr key={user.id}>
               <td data-label="บัญชี">
                 <div className="identity-account-cell">
@@ -89,6 +100,13 @@ export default async function IdentityAdministrationPage() {
                     : "ยังไม่มี Enterprise role ที่เปิดใช้"}
                 </small>
               </td>
+              <td data-label="หน่วยงาน">
+                {organizations.length ? <div className="identity-organization-summary">
+                  <strong>{organizations[0].code}</strong>
+                  <small>{organizations[0].name}</small>
+                  {organizations.length > 1 && <span>+{organizations.length - 1} หน่วยงาน</span>}
+                </div> : <span className="identity-no-organization">ยังไม่ระบุ</span>}
+              </td>
               <td data-label="InsightKM">
                 <span className={`identity-key-status ${user.apiKeyPrefix ? "connected" : ""}`}>
                   <span aria-hidden="true" />{user.apiKeyPrefix ? "เชื่อมต่อแล้ว" : "ยังไม่เชื่อมต่อ"}
@@ -102,7 +120,7 @@ export default async function IdentityAdministrationPage() {
                 </Link>
               </td>
             </tr>;
-          }) : <tr><td className="empty" colSpan={5}>ยังไม่มีผู้ใช้งาน</td></tr>}</tbody>
+          }) : <tr><td className="empty" colSpan={6}>ยังไม่มีผู้ใช้งาน</td></tr>}</tbody>
         </table>
       </div>
     </section>

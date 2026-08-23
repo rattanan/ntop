@@ -18,7 +18,8 @@ Admin Console ครอบคลุมการสร้างและเปิ
 
 ## Compact user list and dedicated editing
 
-- `/admin/users` แสดงข้อมูลบัญชี, สถานะ, สิทธิ์, InsightKM connection และเวลาแก้ไขล่าสุดแบบ read-only โดยไม่มี mutation control ภายในแถว
+- `/admin/users` แสดงข้อมูลบัญชี, สถานะ, สิทธิ์, หน่วยงานจาก Enterprise assignments ที่เปิดใช้งาน, InsightKM connection และเวลาแก้ไขล่าสุดแบบ read-only โดยไม่มี mutation control ภายในแถว
+- คอลัมน์หน่วยงานรวมค่าที่ซ้ำกัน, แสดง `ทุกหน่วยงาน` เมื่อ assignment ไม่ผูก organization unit และแสดง `ยังไม่ระบุ` เมื่อไม่มี active assignment
 - ปุ่มแก้ไขของแต่ละบัญชีนำไปยัง `/admin/users/{id}/edit` ซึ่งเป็นหน้าเดียวสำหรับแก้บัญชี, หมุน API Key และจัดการ Enterprise role assignments
 - ทั้งหน้ารายการและหน้าแก้ไขตรวจ `user.admin.manage` ฝั่ง server; user ID ที่ไม่มีอยู่ตอบด้วย not-found โดยไม่เปิดเผยข้อมูลเพิ่มเติม
 - หน้าแก้ไขยังคงป้องกันการเปลี่ยน role, ปิดบัญชี หรือมอบ/ถอน role ของตนเอง และใช้ identity administration service, transaction และ audit event เดิม

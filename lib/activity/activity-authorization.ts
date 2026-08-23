@@ -10,7 +10,7 @@ export function buildActivityScopeWhere(context: AuthorizationContext): Prisma.A
   const organizationUnitIds = authorizedOrganizationUnitIds(context);
   return {
     OR: [
-      { ownerId: context.actorId, customerId: null, opportunityId: null, leadId: null, prospectId: null },
+      { ownerId: context.actorId },
       ...(organizationUnitIds.length ? [
         { customer: buildCustomerScopeWhere(context) },
         { opportunity: buildOpportunityScopeWhere(context) },

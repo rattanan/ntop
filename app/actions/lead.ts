@@ -107,24 +107,25 @@ export async function addLeadActivity(id: string, _: FormState, formData: FormDa
   const idempotencyKey = text(formData, "idempotencyKey") || crypto.randomUUID();
   const correlationId = crypto.randomUUID();
   try {
-    await prisma.$transaction(async transaction => {
+    const result = await prisma.$transaction(async transaction => {
       const receipt = await transaction.leadCommandReceipt.findUnique({ where: { actorId_idempotencyKey_command: { actorId: currentActor.id, idempotencyKey, command: "lead.activity" } } });
-      if (receipt) return;
+      if (receipt) return { activityId: null };
       const lead = await transaction.lead.findFirst({ where: { id, ...buildLeadScopeWhere(currentActor.authorization), status: { notIn: [LeadStatus.CONVERTED, LeadStatus.ARCHIVED] } } });
       if (!lead) throw new LeadAccessError();
       const activityAt = parseBangkokDateTime(parsed.data.activityAt);
       if (!activityAt) throw new LeadValidationError({ activityAt: ["ระบุวันเวลากิจกรรม"] });
       const nextFollowUpAt = parseBangkokDateTime(parsed.data.nextFollowUpAt ?? "");
-      await transaction.activity.create({ data: { leadId: lead.id, subject: parsed.data.subject, type: parsed.data.type as ActivityType, dueAt: activityAt, notes: parsed.data.notes || null, ownerId: currentActor.id } });
+      const activity = await transaction.activity.create({ data: { leadId: lead.id, subject: parsed.data.subject, type: parsed.data.type as ActivityType, dueAt: activityAt, notes: parsed.data.notes || null, ownerId: currentActor.id }, select: { id: true } });
       const contactActivity = new Set<ActivityType>([ActivityType.CALL, ActivityType.EMAIL, ActivityType.MEETING, ActivityType.SITE_VISIT, ActivityType.ONLINE_MEETING]).has(parsed.data.type as ActivityType);
       const nextStatus = contactActivity && lead.status === LeadStatus.ASSIGNED ? LeadStatus.CONTACTED : lead.status;
       const updated = await transaction.lead.update({ where: { id: lead.id }, data: { ...(contactActivity ? { lastContactedAt: activityAt } : {}), nextFollowUpAt, status: nextStatus, version: { increment: 1 } } });
       if (nextStatus !== lead.status) await transaction.leadStatusHistory.create({ data: { leadId: lead.id, fromStatus: lead.status, toStatus: nextStatus, actorId: currentActor.id, correlationId, reason: "บันทึกการติดต่อครั้งแรก" } });
       await createLeadAuditWriter().append({ actorId: currentActor.id, action: "lead.activity.create", targetType: "Lead", targetId: lead.id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, data: { activityType: parsed.data.type } }, { transaction });
       await transaction.leadCommandReceipt.create({ data: { actorId: currentActor.id, idempotencyKey, command: "lead.activity", leadId: lead.id, customerId: lead.customerId, resultVersion: updated.version } });
+      return { activityId: activity.id };
     });
     revalidatePath(`/leads/${id}`); revalidatePath("/leads"); revalidatePath("/activities");
-    redirect(`/leads/${id}`);
+    redirect(result.activityId ? `/activities/${result.activityId}` : `/leads/${id}`);
   } catch (error) { return failure(error); }
 }
 
@@ -179,6 +180,6 @@ export async function convertLead(id: string, expectedVersion: number, _: FormSt
     revalidatePath(`/leads/${id}`);
     revalidatePath("/customers");
     revalidatePath("/opportunities");
-    redirect(`/opportunities/${converted.opportunityId}`);
+    redirect(`/customers/${converted.customerId}?tab=sales`);
   } catch (error) { return failure(error); }
 }
