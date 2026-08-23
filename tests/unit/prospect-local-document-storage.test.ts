@@ -20,6 +20,7 @@ describe("LocalProspectDocumentStorage", () => {
     await storage.put(document, new Uint8Array([1, 2, 3]));
     const target = join(root, objectKey);
     expect([...await readFile(target)]).toEqual([1, 2, 3]);
+    await expect(storage.read(objectKey)).resolves.toEqual(new Uint8Array([1, 2, 3]));
     expect((await stat(root)).mode & 0o777).toBe(0o700);
     expect((await stat(target)).mode & 0o777).toBe(0o600);
     await expect(storage.assertClean(document)).resolves.toBeUndefined();
@@ -32,6 +33,7 @@ describe("LocalProspectDocumentStorage", () => {
     const storage = new LocalProspectDocumentStorage(root);
     const document = { objectKey: "../escape.pdf", contentHash: "hash", fileName: "escape.pdf", mimeType: "application/pdf", sizeBytes: 1 };
     await expect(storage.put(document, new Uint8Array([1]))).rejects.toBeInstanceOf(DocumentStorageOperationError);
+    await expect(storage.read(document.objectKey)).rejects.toBeInstanceOf(DocumentStorageOperationError);
     await expect(storage.remove(document.objectKey)).rejects.toBeInstanceOf(DocumentStorageOperationError);
   });
 });

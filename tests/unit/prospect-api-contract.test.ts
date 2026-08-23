@@ -13,6 +13,8 @@ const contactRoute = readFileSync("app/api/v1/prospects/[id]/contacts/[contactId
 const permissionMigration = readFileSync("prisma/migrations/20260822090000_backfill_prospect_management_permissions/migration.sql", "utf8");
 const prospectDetail = readFileSync("app/(portal)/prospects/[id]/page.tsx", "utf8");
 const prospectActions = readFileSync("components/prospect-action-forms.tsx", "utf8");
+const prospectRepository = readFileSync("lib/prospect/prospect-repository.ts", "utf8");
+const enrichmentContext = readFileSync("lib/prospect/prospect-enrichment-context.ts", "utf8");
 
 describe("Prospect API contract", () => {
   it("uses session, permission codes, scoped queries and idempotency", () => {
@@ -45,6 +47,13 @@ describe("Prospect API contract", () => {
     expect(prospectActions).toContain("Request AI Insight");
     expect(prospectActions).toContain("/enrich/confirm");
     expect(prospectActions).toContain("Human review required");
+    expect(prospectRepository).toContain("findEnrichmentContext");
+    expect(prospectRepository).toContain("buildProspectScopeWhere(context, permissions)");
+    expect(prospectRepository).toContain("take: 20");
+    expect(prospectRepository).toContain("take: 50");
+    expect(prospectRepository).toContain("take: 10");
+    expect(enrichmentContext).toContain("contactChannelAvailability");
+    expect(enrichmentContext).toContain("MAX_ENRICHMENT_CONTEXT_CHARACTERS");
   });
 
   it("protects company web research and audits it without creating a Prospect", () => {

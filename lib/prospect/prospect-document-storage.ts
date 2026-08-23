@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomUUID } from "node:crypto";
-import { chmod, mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
 
 export type StoredDocument = {
@@ -12,6 +12,7 @@ export type StoredDocument = {
 
 export interface ProspectDocumentStorage {
   put(document: StoredDocument, bytes: Uint8Array): Promise<void>;
+  read(objectKey: string): Promise<Uint8Array>;
   remove(objectKey: string): Promise<void>;
   assertClean(document: StoredDocument): Promise<void>;
 }
@@ -65,6 +66,15 @@ export class LocalProspectDocumentStorage implements ProspectDocumentStorage {
   async remove(objectKey: string) {
     const target = localObjectPath(this.root, objectKey);
     await rm(target, { force: true }).catch(() => undefined);
+  }
+
+  async read(objectKey: string) {
+    const target = localObjectPath(this.root, objectKey);
+    try {
+      return new Uint8Array(await readFile(target));
+    } catch {
+      throw new DocumentStorageOperationError("ไม่สามารถอ่านเอกสารที่จัดเก็บไว้ได้");
+    }
   }
 
   async assertClean(document: StoredDocument) {
@@ -129,7 +139,7 @@ function encodedPath(value: string) {
   return value.split("/").map(encodeURIComponent).join("/");
 }
 
-function signedRequest(config: StorageConfiguration, method: "PUT" | "DELETE", objectKey: string, payloadHash: string) {
+function signedRequest(config: StorageConfiguration, method: "PUT" | "GET" | "DELETE", objectKey: string, payloadHash: string) {
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const date = amzDate.slice(0, 8);
@@ -174,6 +184,16 @@ export class S3ProspectDocumentStorage implements ProspectDocumentStorage {
     const emptyHash = sha256("");
     const request = signedRequest(config, "DELETE", objectKey, emptyHash);
     await fetch(request.url, { method: "DELETE", headers: request.headers }).catch(() => undefined);
+  }
+
+  async read(objectKey: string) {
+    const config = loadConfiguration();
+    const request = signedRequest(config, "GET", objectKey, sha256(""));
+    const response = await fetch(request.url, { method: "GET", headers: request.headers });
+    if (!response.ok) {
+      throw new DocumentStorageOperationError("ไม่สามารถอ่านเอกสารที่จัดเก็บไว้ได้");
+    }
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   async assertClean(document: StoredDocument) {

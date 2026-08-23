@@ -15,6 +15,8 @@
 - Money uses `Decimal(19,4)`, operational dates are UTC instants, and deletion is soft-delete only.
 - CSV/XLSX import follows preview and promote steps with persistent batches/rows. Export uses authorization scope and current supported filters.
 - AI enrichment uses the configured provider, stores a READY draft with provenance, and changes primary AI fields only after confirmation.
+- AI enrichment is grounded in the authorized Prospect details plus at most 20 Contacts, 50 recent Activities and 10 recent uploaded documents. It extracts bounded text from PDF, DOCX, XLSX, PPTX, CSV and TXT; unsupported/unreadable files contribute metadata without failing the whole request. Phone, email, mobile and LINE values are represented only as availability flags.
+- AI provider output accepts a JSON object with or without a Markdown code fence, normalizes bounded list/score values, and maps invalid output to a retryable AI-unavailable response instead of a generic server error.
 - The Prospect detail page exposes `Request AI Insight` to authorized users, previews the READY draft, and requires an explicit `ยืนยันใช้ AI Insight` action before applying AI fields.
 - The company-research API uses authoritative public sources, a strict allowlist schema, no personal-contact collection, and never infers commercial or security facts.
 - Every company-research success or provider failure writes an audit event with provider provenance and source URLs; provider outage leaves the manual create flow available.
@@ -47,6 +49,7 @@ The forward-only migration is `20260714220000_add_prospect_management/migration.
 5. Convert a QUALIFIED Prospect and verify the Lead link, shared activity/contact references, histories and audit.
 6. Repeat conversion with another key and verify it is rejected without a second Lead.
 7. Upload CSV/XLSX at `/prospects/import`, preview errors and confirm accepted rows.
+8. Upload a text-bearing Prospect document, add a Contact and Activity, request AI Insight, verify the draft provenance lists all source records, then confirm before checking the saved AI fields.
 
 ## Private document upload configuration
 
@@ -75,7 +78,7 @@ The scanner endpoint receives object location, SHA-256, MIME type and size, and 
 
 ## Known limitations and technical debt
 
-- Document download/preview remains disabled until an expiring signed-access policy is approved. Local mode has no malware scan and must remain an explicit operator choice.
+- Document download/preview remains disabled until an expiring signed-access policy is approved. The server-side Prospect AI capability has read-only access for bounded extraction after the same Prospect authorization check. Local mode has no malware scan and must remain an explicit operator choice.
 - The dashboard implements real KPI/status/hot drill-down; the remaining industry/province/region/source/owner/trend chart visualizations are exposed by the dashboard API but need richer chart components.
 - Bulk API supports up to 100 items; the list-page checkbox interaction remains a UI follow-up.
 - The Playwright smoke test covers unauthenticated API protection. Authenticated three-role browser fixtures require a test-only session/bootstrap mechanism that does not yet exist.

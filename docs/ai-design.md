@@ -31,6 +31,9 @@
 6. Human-triggered Proposal Draft generation from authorized Opportunity,
    Customer, Meeting Note, Product and Template context, delivered by the
    additive Proposal Phase 1 increment
+7. Human-triggered Prospect AI Insight from the authorized Prospect record,
+   bounded Contact roles, Activities and read-only uploaded-document text;
+   applying the draft still requires explicit confirmation
 
 ### Release 1 exclusions
 
@@ -38,7 +41,7 @@
 - Recording, audio/video upload, transcription and transcript-file upload
 - AI Opportunity generation or stage mutation
 - TOR authoring and uploaded-document authoring/analysis
-- Uploaded-document analysis
+- General uploaded-document analysis outside the scoped Prospect AI Insight capability
 - Pricing Recommendation
 - Numeric AI probability/revenue forecast
 - Provisioning, Customer Success and Renewal prediction
@@ -110,6 +113,15 @@ Every output records:
 
 Raw prompts/full model responses are not stored by default Confirmed content follows business-record retention Rejected/abandoned drafts retain redacted metadata/reason for at most 30 days AI Feedback (`Helpful`, `Incorrect`, `Unsafe`) is not training consent Evaluation datasets require Data Governance approval and de-identification
 
+Prospect AI Insight may read at most 20 active Contacts, 50 recent Activities
+and 10 recent documents belonging to the same authorized Prospect. Contact
+channel values are reduced to availability flags before provider transport;
+phone numbers, email addresses and LINE IDs are excluded. Extracted document
+text and activity notes are treated as untrusted evidence, never as
+instructions, and the total provider context is bounded. Supported text
+extraction is PDF, DOCX, XLSX, PPTX, CSV and TXT; unsupported binary formats
+contribute metadata only.
+
 ## 6. Grounding and confidence
 
 Phase 1 has no public-web research Internal/user-provided facts must keep source references When evidence conflicts, display values, sources and dates and do not update Customer master automatically Source authority is approved NT master/contract → approved internal document → authoritative external source → general web
@@ -141,6 +153,10 @@ All mutations require server authorization, optimistic concurrency/idempotency w
 - Secrets/unauthorized fields are rejected before provider call
 - Provenance/audit/feedback/30-day abandoned-metadata purge tests pass
 - Feature flag disables each AI capability independently
+- Prospect Insight cannot read records outside the caller's Prospect scope,
+  records input-source IDs in provenance/audit, tolerates an unreadable or
+  unsupported document without failing the entire request, and writes no
+  Prospect AI fields before confirmation
 
 ## 9. Risks
 

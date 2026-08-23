@@ -56,7 +56,7 @@ For the legacy development runtime, apply `prisma/legacy-mariadb-5.5-ai-provider
 - Simulate provider timeout or a 5xx response. Expected result: AI is unavailable; no core sales workflow fails.
 - Submit text containing `api key: ...`, `Bearer ...`, or a private-key marker. Expected result: input is rejected before provider transport is invoked.
 - Submit unknown output fields or a timezone-less suggested due date. Expected result: strict schema validation rejects the output.
-- Verify no browser search, URL fetch, audio/video upload, transcription, proposal/TOR analysis, pricing recommendation, Opportunity creation, Quote creation, approval, order, or stage transition is exposed through AI Release 1.
+- Verify no browser search, URL fetch, audio/video upload, transcription, general proposal/TOR analysis outside scoped Prospect Insight, pricing recommendation, Opportunity creation, Quote creation, approval, order, or stage transition is exposed through AI Release 1.
 
 ## 6. Meeting Draft UAT (when its review UI is enabled)
 

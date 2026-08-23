@@ -16,7 +16,7 @@ function setup() {
     findDocumentByObjectKeyHash: vi.fn(async (hash: string) => documents.get(hash) ?? null),
   };
   const audit = { append: vi.fn(async () => ({ id: "audit-1" })) };
-  const storage = { put: vi.fn(async () => undefined), assertClean: vi.fn(async () => undefined), remove: vi.fn(async () => undefined) };
+  const storage = { put: vi.fn(async () => undefined), read: vi.fn(async () => new Uint8Array()), assertClean: vi.fn(async () => undefined), remove: vi.fn(async () => undefined) };
   const service = new ProspectDocumentService(repository as never, audit as never, storage);
   const actor = { id: "user-1", authorization: {}, permissions: new Set(["prospect.update"]) } as never;
   return { service, repository, audit, storage, actor };
