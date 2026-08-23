@@ -24,10 +24,13 @@ describe("Prospect AI insight and document upload contract", () => {
     expect(route).toContain("prospectIdempotencyKey");
   });
 
-  it("uses private S3-compatible storage and requires clean malware result", () => {
+  it("supports explicit private local storage and keeps S3 scanning backward compatible", () => {
+    expect(storage).toContain("LocalProspectDocumentStorage");
+    expect(storage).toContain("DOCUMENT_LOCAL_STORAGE_PATH");
+    expect(storage).toContain("mode: 0o600");
+    expect(storage).toContain("target.startsWith");
     expect(storage).toContain("AWS4-HMAC-SHA256");
     expect(storage).toContain('result.status !== "CLEAN"');
-    expect(storage).not.toContain("writeFile");
     expect(css).toContain("@media (prefers-reduced-motion:reduce)");
   });
 });

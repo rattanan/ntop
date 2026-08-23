@@ -50,7 +50,18 @@ The forward-only migration is `20260714220000_add_prospect_management/migration.
 
 ## Private document upload configuration
 
-Binary upload uses the S3-compatible private storage adapter and records `SalesDocument` metadata only after the configured scanner returns `CLEAN`. Configure these secrets outside source control:
+Binary upload records `SalesDocument` metadata only after the selected private storage adapter succeeds. Storage configuration stays outside source control.
+
+### Local private storage
+
+The approved development-server mode stores files outside `public/`, creates the storage root with mode `0700`, writes files atomically with mode `0600`, rejects path traversal, and intentionally skips malware scanning:
+
+- `DOCUMENT_STORAGE_DRIVER=local`
+- `DOCUMENT_LOCAL_STORAGE_PATH=/opt/apps/ntop-private/documents`
+
+### S3-compatible storage
+
+The existing S3-compatible adapter remains backward compatible. Set `DOCUMENT_STORAGE_DRIVER=s3`; this mode requires the scanner to return `CLEAN` before metadata is recorded:
 
 - `DOCUMENT_STORAGE_ENDPOINT`
 - `DOCUMENT_STORAGE_BUCKET`
@@ -64,7 +75,7 @@ The scanner endpoint receives object location, SHA-256, MIME type and size, and 
 
 ## Known limitations and technical debt
 
-- Binary upload is available only when the approved private object storage and malware scanner configuration above are deployed. Document download/preview remains disabled until an expiring signed-access policy is approved.
+- Document download/preview remains disabled until an expiring signed-access policy is approved. Local mode has no malware scan and must remain an explicit operator choice.
 - The dashboard implements real KPI/status/hot drill-down; the remaining industry/province/region/source/owner/trend chart visualizations are exposed by the dashboard API but need richer chart components.
 - Bulk API supports up to 100 items; the list-page checkbox interaction remains a UI follow-up.
 - The Playwright smoke test covers unauthenticated API protection. Authenticated three-role browser fixtures require a test-only session/bootstrap mechanism that does not yet exist.
