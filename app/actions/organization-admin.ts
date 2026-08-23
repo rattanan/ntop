@@ -67,6 +67,33 @@ export async function updateOrganizationHierarchy(_: FormState, form: FormData) 
   );
 }
 
+export async function updateOrganizationUnit(_: FormState, form: FormData) {
+  return execute((actor, correlationId) =>
+    createOrganizationAdminRuntime().updateOrganizationUnit(
+      actor,
+      {
+        organizationUnitId: text(form, "organizationUnitId"),
+        code: text(form, "code"),
+        name: text(form, "name"),
+      },
+      correlationId,
+    ),
+  );
+}
+
+export async function removeOrganizationUnit(_: FormState, form: FormData) {
+  return execute((actor, correlationId) =>
+    createOrganizationAdminRuntime().removeOrganizationUnit(
+      actor,
+      {
+        organizationUnitId: text(form, "organizationUnitId"),
+        reason: text(form, "reason"),
+      },
+      correlationId,
+    ),
+  );
+}
+
 export async function assignOrganizationApprover(_: FormState, form: FormData) {
   return execute((actor, correlationId) =>
     createOrganizationAdminRuntime().assignManagerApprover(
@@ -80,6 +107,16 @@ export async function assignOrganizationApprover(_: FormState, form: FormData) {
         effectiveFrom: date(text(form, "effectiveFrom")),
         effectiveTo: nullableDate(text(form, "effectiveTo")),
       },
+      correlationId,
+    ),
+  );
+}
+
+export async function removeOrganizationApprover(_: FormState, form: FormData) {
+  return execute((actor, correlationId) =>
+    createOrganizationAdminRuntime().removeManagerApprover(
+      actor,
+      { assignmentId: text(form, "assignmentId") },
       correlationId,
     ),
   );

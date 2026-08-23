@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -15,6 +15,7 @@ import {
   getCustomer360,
   hasConfiguredCustomerPermission,
 } from "@/lib/customer/prisma-customer-repository";
+import { LEAD_CREATE_ROLES } from "@/lib/lead/lead-rules";
 import { prisma } from "@/lib/prisma";
 
 const stage: Record<string, string> = {
@@ -52,6 +53,14 @@ export default async function CustomerDetail({
   const customer = await getCustomer360(prisma, context, id);
   if (!customer) notFound();
   const editable = permissionPolicy.allows(session, PERMISSIONS.recordUpdate) && !customer.mergedIntoCustomerId;
+  const canCreateRelated =
+    permissionPolicy.allows(session, PERMISSIONS.recordCreate) &&
+    !customer.mergedIntoCustomerId;
+  const canCreateLead =
+    canCreateRelated &&
+    context.assignments.some((assignment) =>
+      (LEAD_CREATE_ROLES as readonly string[]).includes(assignment.role),
+    );
   const canMerge =
     permissionPolicy.allows(session, PERMISSIONS.customerMerge) ||
     (await hasConfiguredCustomerPermission(
@@ -117,6 +126,21 @@ export default async function CustomerDetail({
 
     {activeTab === "governance" && <div className="customer-tab-panel"><div className="governance-summary"><section className="card compact-card"><div className="card-header"><div><strong>Customer hierarchy</strong><small>Parent และ Child ที่มีผลอยู่</small></div></div><div className="card-body hierarchy-list">{customer.childRelationships.map(item=><div className="hierarchy-row" key={item.id}><span className="hierarchy-type">Parent</span><Link className="link" href={`/customers/${item.parentCustomer.id}`}>{item.parentCustomer.name}</Link><small>{item.relationshipType}</small></div>)}{customer.parentRelationships.map(item=><div className="hierarchy-row" key={item.id}><span className="hierarchy-type child">Child</span><Link className="link" href={`/customers/${item.childCustomer.id}`}>{item.childCustomer.name}</Link><small>{item.relationshipType}</small></div>)}{!customer.childRelationships.length&&!customer.parentRelationships.length&&<div className="compact-empty">ยังไม่มี Customer hierarchy</div>}</div></section><section className="card compact-card"><div className="card-header"><div><strong>Duplicate candidates</strong><small>รายการที่ยังไม่ได้ resolve</small></div><span className="badge">{duplicateCandidates.length}</span></div><div className="card-body">{duplicateCandidates.map(candidate=><div className="duplicate-row" key={candidate.id}><div><Link className="link" href={`/customers/${candidate.id}`}>{candidate.name}</Link><small>{candidate.taxId}</small></div><span>{Math.round(candidate.score*100)}% match</span></div>)}{!duplicateCandidates.length&&<div className="compact-empty">ไม่พบ duplicate candidate ที่รอตรวจสอบ</div>}</div></section></div>{editable&&<CustomerGovernanceActions customerId={customer.id} customers={customerOptions} canMerge={canMerge}/>}</div>}
 
-    {activeTab === "sales" && <div className="customer-tab-panel"><div className="detail-columns compact-columns"><section className="card compact-card"><div className="card-header">Opportunity</div><div className="card-body">{opportunities.length?opportunities.map(item=><div className="timeline" key={item.id}><Link className="link" href={`/opportunities/${item.id}`}>{item.name}</Link><p>{stage[item.stage]??item.stage} · {new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:0}).format(Number(item.estimatedValue))}</p></div>):<div className="compact-empty">ยังไม่มีโอกาสขาย</div>}</div></section><section className="card compact-card"><div className="card-header">Lead ที่เกี่ยวข้อง</div><div className="card-body">{leads.length?leads.map(item=><div className="timeline" key={item.id}><Link className="link" href={`/leads/${item.id}`}>{item.company}</Link><p>{item.contactName} · Score {item.score}</p><small>{item.recommendedProducts||"ยังไม่มีสินค้าแนะนำ"}</small></div>):<div className="compact-empty">ยังไม่มี Lead ที่ผูกกับบัญชีนี้</div>}</div></section></div><section className="card compact-card sales-activity"><div className="card-header">กิจกรรมล่าสุด</div><div className="card-body">{activities.length?activities.map(item=><div className="timeline" key={item.id}><strong>{item.subject}</strong><p>{item.aiSummary||item.notes||"ไม่มีรายละเอียด"}</p><small>{item.owner.name} · {item.createdAt.toLocaleDateString("th-TH")}</small></div>):<div className="compact-empty">ยังไม่มีกิจกรรม</div>}</div></section></div>}
+    {activeTab === "sales" && <div className="customer-tab-panel">
+      <div className="detail-columns compact-columns">
+        <section className="card compact-card">
+          <div className="card-header"><strong>Opportunity</strong>{canCreateRelated&&<Link className="secondary customer-panel-create" href="/opportunities/new" aria-label="สร้าง Opportunity"><Plus aria-hidden="true"/>สร้าง</Link>}</div>
+          <div className="card-body">{opportunities.length?opportunities.map(item=><div className="timeline" key={item.id}><Link className="link" href={`/opportunities/${item.id}`}>{item.name}</Link><p>{stage[item.stage]??item.stage} · {new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:0}).format(Number(item.estimatedValue))}</p></div>):<div className="compact-empty">ยังไม่มีโอกาสขาย</div>}</div>
+        </section>
+        <section className="card compact-card">
+          <div className="card-header"><strong>Lead ที่เกี่ยวข้อง</strong>{canCreateLead&&<Link className="secondary customer-panel-create" href="/leads/new" aria-label="สร้าง Lead"><Plus aria-hidden="true"/>สร้าง</Link>}</div>
+          <div className="card-body">{leads.length?leads.map(item=><div className="timeline" key={item.id}><Link className="link" href={`/leads/${item.id}`}>{item.company}</Link><p>{item.contactName} · Score {item.score}</p><small>{item.recommendedProducts||"ยังไม่มีสินค้าแนะนำ"}</small></div>):<div className="compact-empty">ยังไม่มี Lead ที่ผูกกับบัญชีนี้</div>}</div>
+        </section>
+      </div>
+      <section className="card compact-card sales-activity">
+        <div className="card-header"><strong>กิจกรรมล่าสุด</strong>{canCreateRelated&&<Link className="secondary customer-panel-create" href="/activities/new" aria-label="สร้างกิจกรรม"><Plus aria-hidden="true"/>สร้าง</Link>}</div>
+        <div className="card-body">{activities.length?activities.map(item=><div className="timeline" key={item.id}><strong>{item.subject}</strong><p>{item.aiSummary||item.notes||"ไม่มีรายละเอียด"}</p><small>{item.owner.name} · {item.createdAt.toLocaleDateString("th-TH")}</small></div>):<div className="compact-empty">ยังไม่มีกิจกรรม</div>}</div>
+      </section>
+    </div>}
   </>;
 }

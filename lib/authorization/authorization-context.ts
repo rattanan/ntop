@@ -69,6 +69,73 @@ export function buildAuthorizedUserWhere(
   };
 }
 
+export type AssignableOwnerOption = {
+  userId: string;
+  name: string;
+  email: string;
+  organizationUnitId: string;
+  organizationUnitName: string;
+  organizationUnitCode: string;
+};
+
+export function hasEnterpriseOrganizationScope(context: AuthorizationContext) {
+  return authorizedOrganizationUnitIds(context).length === 0
+    && context.assignments.some((assignment) => assignment.scope === "ENTERPRISE");
+}
+
+export function buildAssignableOwnerAssignmentWhere(
+  context: AuthorizationContext,
+  now = new Date(),
+): Prisma.UserRoleAssignmentWhereInput {
+  const organizationUnitIds = authorizedOrganizationUnitIds(context);
+  const enterprise = hasEnterpriseOrganizationScope(context);
+  return {
+    active: true,
+    effectiveFrom: { lte: now },
+    OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+    user: { active: true },
+    organizationUnit: { active: true },
+    organizationUnitId: enterprise ? { not: null } : { in: organizationUnitIds },
+  };
+}
+
+export async function loadAssignableOwnerOptions(
+  context: AuthorizationContext,
+  now = new Date(),
+): Promise<AssignableOwnerOption[]> {
+  if (!hasEnterpriseOrganizationScope(context) && authorizedOrganizationUnitIds(context).length === 0) return [];
+  const assignments = await prisma.userRoleAssignment.findMany({
+    where: buildAssignableOwnerAssignmentWhere(context, now),
+    select: {
+      userId: true,
+      organizationUnitId: true,
+      user: { select: { name: true, email: true } },
+      organizationUnit: { select: { name: true, code: true } },
+    },
+    orderBy: [
+      { organizationUnit: { name: "asc" } },
+      { user: { name: "asc" } },
+      { userId: "asc" },
+    ],
+    take: 2000,
+  });
+  const options = new Map<string, AssignableOwnerOption>();
+  for (const assignment of assignments) {
+    if (!assignment.organizationUnitId || !assignment.organizationUnit) continue;
+    const key = `${assignment.userId}:${assignment.organizationUnitId}`;
+    if (options.has(key)) continue;
+    options.set(key, {
+      userId: assignment.userId,
+      name: assignment.user.name,
+      email: assignment.user.email,
+      organizationUnitId: assignment.organizationUnitId,
+      organizationUnitName: assignment.organizationUnit.name,
+      organizationUnitCode: assignment.organizationUnit.code,
+    });
+  }
+  return [...options.values()];
+}
+
 export async function loadAuthorizationContext(input: {
   actorId: string;
   legacyRole: Role;

@@ -12,7 +12,7 @@ import { LEAD_CREATE_ROLES, LEAD_EXPORT_ROLES, LEAD_IMPORT_ROLES } from "@/lib/l
 import { prisma } from "@/lib/prisma";
 import { LeadImportForm } from "@/components/lead-import-form";
 
-const source:Record<string,string>={IMPORT:"นำเข้า",WEBSITE:"เว็บไซต์",EVENT:"กิจกรรม",PARTNER:"พันธมิตร",REFERRAL:"ผู้แนะนำ",EXISTING_CUSTOMER:"ลูกค้าเดิม",MARKETING_CAMPAIGN:"แคมเปญ",API:"API",GOVERNMENT_TENDER:"ประกวดราคา"};
+const source:Record<string,string>={IMPORT:"นำเข้า",WEBSITE:"เว็บไซต์",EVENT:"กิจกรรม",PARTNER:"พันธมิตร",REFERRAL:"ผู้แนะนำ",EXISTING_CUSTOMER:"Customer เดิม",MARKETING_CAMPAIGN:"แคมเปญ",API:"API",GOVERNMENT_TENDER:"ประกวดราคา"};
 const statusLabel=Object.fromEntries(LEAD_STATUSES);
 const temperatures: Array<[LeadTemperature,string]>=[["HOT","Hot"],["WARM","Warm"],["COLD","Cold"]];
 const sortable={updatedAt:"อัปเดตล่าสุด",score:"คะแนน",company:"ชื่อบริษัท",nextFollowUpAt:"กำหนดติดตาม"} as const;

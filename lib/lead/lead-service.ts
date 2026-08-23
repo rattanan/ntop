@@ -13,7 +13,7 @@ import {
   customerCommandSchema,
   type CustomerRepository,
 } from "../customer/customer-service";
-import { canTransition, LEAD_ASSIGNER_ROLES, LEAD_CORE_UPDATE_ROLES, LEAD_CREATE_ROLES, type WorkflowStatus } from "./lead-rules";
+import { LEAD_ASSIGNER_ROLES, LEAD_CORE_UPDATE_ROLES, LEAD_CREATE_ROLES } from "./lead-rules";
 
 const optionalText = (maximum: number) => z.string().trim().max(maximum).optional();
 
@@ -71,8 +71,8 @@ export interface LeadRepository<TTransaction> {
   updateVersioned(id: string, expectedVersion: number, input: LeadCommand, transaction: TTransaction): Promise<LeadRecord | null>;
   markConverted(id: string, expectedVersion: number, customerId: string, transaction: TTransaction): Promise<LeadRecord | null>;
   completeConversion(input: { lead: LeadRecord; expectedVersion: number; customerId: string; opportunityName: string; opportunityFlow: string; estimatedValue: string; expectedCloseAt: Date; probability: number; productInterest?: string }, transaction: TTransaction): Promise<{ lead: LeadRecord; contactId: string; opportunityId: string } | null>;
-  isAssignableOwner(ownerId: string, organizationUnitId: string | null, transaction: TTransaction): Promise<boolean>;
-  assignVersioned(input: { leadId: string; expectedVersion: number; currentStatus: LeadStatus; temperature: LeadTemperature; fromOwnerId: string; toOwnerId: string; actorId: string; reason: string; assignedAt: Date }, transaction: TTransaction): Promise<LeadRecord | null>;
+  resolveAssignableOwner(ownerId: string, organizationUnitId: string | undefined, context: AuthorizationContext, transaction: TTransaction): Promise<{ ownerId: string; organizationUnitId: string } | null>;
+  assignVersioned(input: { leadId: string; expectedVersion: number; currentStatus: LeadStatus; temperature: LeadTemperature; fromOwnerId: string; fromOrganizationUnitId: string | null; toOwnerId: string; toOrganizationUnitId: string; actorId: string; reason: string; assignedAt: Date }, transaction: TTransaction): Promise<LeadRecord | null>;
   recordStatusTransition(input: { leadId: string; fromStatus: LeadStatus; toStatus: LeadStatus; reason?: string; actorId: string; correlationId: string }, transaction: TTransaction): Promise<void>;
   hasGrantedPermission(roleCodes: readonly string[], permission: string, transaction: TTransaction): Promise<boolean>;
 }
@@ -160,13 +160,10 @@ export class LeadService<TTransaction> {
         return existing;
       }
       const current = await this.repository.findAccessible(id, actor.authorization, transaction);
-      if (!current || current.status === LeadStatus.CONVERTED) throw new LeadAccessError();
+      if (!current || current.status === LeadStatus.CONVERTED || current.status === LeadStatus.ARCHIVED) throw new LeadAccessError();
       if (parsed.status === LeadStatus.ARCHIVED) {
         const roleCodes = actor.authorization.assignments.map(item => item.role);
         if (!await this.repository.hasGrantedPermission(roleCodes, PERMISSIONS.leadArchive, transaction)) throw new LeadAccessError();
-      }
-      if (!canTransition(current.status as WorkflowStatus, parsed.status as WorkflowStatus)) {
-        throw new LeadValidationError({ status: [`ไม่สามารถเปลี่ยนสถานะจาก ${current.status} เป็น ${parsed.status}`] });
       }
       if (parsed.customerId) {
         const customer = await this.customers.findAccessible(parsed.customerId, actor.authorization, transaction);
@@ -181,7 +178,7 @@ export class LeadService<TTransaction> {
     });
   }
 
-  async assign(actor: Actor, id: string, expectedVersion: number, ownerId: string, reason: string, correlationId: string, idempotencyKey: string) {
+  async assign(actor: Actor, id: string, expectedVersion: number, ownerId: string, reason: string, correlationId: string, idempotencyKey: string, organizationUnitId?: string) {
     assertPermission(actor, PERMISSIONS.recordUpdate, this.policy);
     this.requireEnterpriseRole(actor, LEAD_CORE_UPDATE_ROLES);
     if (!actor.authorization.assignments.some((assignment) => (LEAD_ASSIGNER_ROLES as readonly string[]).includes(assignment.role))) throw new LeadAccessError();
@@ -195,12 +192,12 @@ export class LeadService<TTransaction> {
       }
       const current = await this.repository.findAccessible(id, actor.authorization, transaction);
       if (!current || current.status === LeadStatus.CONVERTED || current.status === LeadStatus.ARCHIVED) throw new LeadAccessError();
-      if (!current.organizationUnitId && !actor.authorization.assignments.some(assignment => assignment.scope === "ENTERPRISE")) throw new LeadAccessError();
-      if (!await this.repository.isAssignableOwner(ownerId, current.organizationUnitId ?? null, transaction)) throw new LeadAccessError();
-      const updated = await this.repository.assignVersioned({ leadId: id, expectedVersion, currentStatus: current.status, temperature: current.temperature ?? "COLD", fromOwnerId: current.ownerId, toOwnerId: ownerId, actorId: actor.id, reason: reason.trim(), assignedAt: new Date() }, transaction);
+      const target = await this.repository.resolveAssignableOwner(ownerId, organizationUnitId, actor.authorization, transaction);
+      if (!target) throw new LeadAccessError();
+      const updated = await this.repository.assignVersioned({ leadId: id, expectedVersion, currentStatus: current.status, temperature: current.temperature ?? "COLD", fromOwnerId: current.ownerId, fromOrganizationUnitId: current.organizationUnitId ?? null, toOwnerId: target.ownerId, toOrganizationUnitId: target.organizationUnitId, actorId: actor.id, reason: reason.trim(), assignedAt: new Date() }, transaction);
       if (!updated) throw new LeadVersionConflictError();
       if (current.status !== updated.status) await this.repository.recordStatusTransition({ leadId: id, fromStatus: current.status, toStatus: updated.status, actorId: actor.id, correlationId, reason }, transaction);
-      await this.auditWriter.append({ actorId: actor.id, action: "lead.assign", targetType: "Lead", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, reason, data: { fromOwnerId: current.ownerId, toOwnerId: ownerId } }, { transaction });
+      await this.auditWriter.append({ actorId: actor.id, action: "lead.assign", targetType: "Lead", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, reason, data: { fromOwnerId: current.ownerId, toOwnerId: target.ownerId, fromOrganizationUnitId: current.organizationUnitId ?? null, toOrganizationUnitId: target.organizationUnitId } }, { transaction });
       await this.repository.saveReceipt({ actorId: actor.id, idempotencyKey, command: "lead.assign", leadId: id, customerId: updated.customerId, resultVersion: updated.version }, transaction);
       return updated;
     });
@@ -222,7 +219,7 @@ export class LeadService<TTransaction> {
       if (lead.status === LeadStatus.CONVERTED && lead.customerId) {
         throw new LeadIdempotencyConflictError();
       }
-      if (lead.status !== LeadStatus.QUALIFIED) throw new LeadConversionError();
+      if (lead.status === LeadStatus.CONVERTED || lead.status === LeadStatus.ARCHIVED) throw new LeadConversionError();
 
       let customerId: string;
       let duplicateCount = 0;

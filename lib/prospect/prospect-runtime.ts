@@ -5,8 +5,10 @@ import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-reposi
 import { prisma } from "../prisma";
 import { PrismaProspectRepository } from "./prospect-repository";
 import { ProspectService } from "./prospect-service";
+import { ProspectActivityService } from "./prospect-activity-service";
 import { ProspectDocumentService } from "./prospect-document-service";
 import { createProspectDocumentStorage } from "./prospect-document-storage";
 export function createProspectAuditWriter(){return new AppendOnlyAuditWriter<Prisma.TransactionClient>({store:new HashChainedAuditStore({repository:new PrismaAuditLedgerRepository(),maxAttempts:3})});}
 export function createProspectRuntime(){return new ProspectService(new PrismaProspectRepository(prisma),createProspectAuditWriter());}
+export function createProspectActivityRuntime(){return new ProspectActivityService(new PrismaProspectRepository(prisma),createProspectAuditWriter());}
 export function createProspectDocumentRuntime(){return new ProspectDocumentService(new PrismaProspectRepository(prisma),createProspectAuditWriter(),createProspectDocumentStorage());}

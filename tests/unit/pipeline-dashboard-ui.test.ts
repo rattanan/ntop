@@ -33,6 +33,7 @@ describe("Pipeline dashboard UI", () => {
   it("keeps KPI and health cards equal-height across responsive grid rows", () => {
     const css = read("app/globals.css");
     expect(css).toMatch(/\.pipeline-kpis\s*\{[^}]*grid-auto-rows:1fr;[^}]*align-items:stretch;/);
+    expect(css).toContain(".pipeline-kpis>.card+.card,.pipeline-main-grid>.card+.card,.pipeline-health>.card+.card { margin-top:0; }");
     expect(css).toMatch(/\.pipeline-kpi\s*\{[^}]*height:100%;/);
     expect(css).toMatch(/\.pipeline-health\s*\{[^}]*grid-auto-rows:1fr;[^}]*align-items:stretch;/);
     expect(css).toMatch(/\.pipeline-health article\s*\{[^}]*height:100%;/);

@@ -30,6 +30,17 @@ export const updateOrganizationHierarchySchema = z.strictObject({
   parentId: z.string().trim().min(1).nullable(),
 });
 
+export const updateOrganizationUnitSchema = z.strictObject({
+  organizationUnitId: z.string().trim().min(1),
+  code: organizationCode,
+  name: z.string().trim().min(2).max(255),
+});
+
+export const removeOrganizationUnitSchema = z.strictObject({
+  organizationUnitId: z.string().trim().min(1),
+  reason: z.string().trim().min(5).max(1000),
+});
+
 export const assignOrganizationApproverSchema = z.strictObject({
   userId: z.string().trim().min(1),
   organizationUnitId: z.string().trim().min(1),
@@ -38,6 +49,10 @@ export const assignOrganizationApproverSchema = z.strictObject({
   customerSegment: z.string().trim().min(1).max(100).nullable(),
   effectiveFrom: z.date(),
   effectiveTo: z.date().nullable(),
+});
+
+export const removeOrganizationApproverSchema = z.strictObject({
+  assignmentId: z.string().trim().min(1),
 });
 
 type Actor = { id: string; role: Role };
@@ -163,6 +178,113 @@ export class OrganizationAdminService {
     });
   }
 
+  async updateOrganizationUnit(actor: Actor, input: unknown, correlationId: string) {
+    this.authorize(actor);
+    const data = updateOrganizationUnitSchema.parse(input);
+
+    return this.repository.transaction(async (tx) => {
+      const current = await tx.organizationUnit.findUnique({
+        where: { id: data.organizationUnitId },
+        select: { id: true, code: true, name: true, active: true },
+      });
+      if (!current?.active) {
+        throw new OrganizationAdministrationError("ไม่พบหน่วยงานที่เปิดใช้งาน");
+      }
+      const duplicate = await tx.organizationUnit.findUnique({
+        where: { code: data.code },
+        select: { id: true },
+      });
+      if (duplicate && duplicate.id !== current.id) {
+        throw new OrganizationAdministrationError("รหัสหน่วยงานนี้มีอยู่แล้ว");
+      }
+
+      const row = await tx.organizationUnit.update({
+        where: { id: current.id },
+        data: { code: data.code, name: data.name },
+      });
+      await this.audit.append(
+        {
+          actorId: actor.id,
+          action: "organization.unit.update",
+          targetType: "OrganizationUnit",
+          targetId: row.id,
+          outcome: "SUCCESS",
+          correlationId,
+          data: {
+            previousCode: current.code,
+            code: row.code,
+            previousName: current.name,
+            name: row.name,
+          },
+        },
+        { transaction: tx },
+      );
+      return row;
+    });
+  }
+
+  async removeOrganizationUnit(actor: Actor, input: unknown, correlationId: string) {
+    this.authorize(actor);
+    const data = removeOrganizationUnitSchema.parse(input);
+
+    return this.repository.transaction(async (tx) => {
+      const current = await tx.organizationUnit.findUnique({
+        where: { id: data.organizationUnitId },
+        select: { id: true, code: true, name: true, parentId: true, active: true },
+      });
+      if (!current?.active) {
+        throw new OrganizationAdministrationError("ไม่พบหน่วยงานที่เปิดใช้งาน");
+      }
+
+      const [activeChildren, activeAssignments, activeLeadRules] = await Promise.all([
+        tx.organizationUnit.count({ where: { parentId: current.id, active: true } }),
+        tx.userRoleAssignment.count({
+          where: { organizationUnitId: current.id, active: true },
+        }),
+        tx.leadAssignmentRule.count({
+          where: { organizationUnitId: current.id, active: true },
+        }),
+      ]);
+      if (activeChildren) {
+        throw new OrganizationAdministrationError("กรุณาย้ายหรือลบหน่วยงานลูกก่อน");
+      }
+      if (activeAssignments) {
+        throw new OrganizationAdministrationError("กรุณาถอน role assignment ที่ยังใช้งานก่อน");
+      }
+      if (activeLeadRules) {
+        throw new OrganizationAdministrationError("กรุณาปิด Lead assignment rule ของหน่วยงานก่อน");
+      }
+
+      const row = await tx.organizationUnit.update({
+        where: { id: current.id },
+        data: { active: false },
+      });
+      const authorities = await tx.approvalAuthorityGrant.updateMany({
+        where: { organizationUnitId: current.id, active: true },
+        data: { active: false },
+      });
+      await this.audit.append(
+        {
+          actorId: actor.id,
+          action: "organization.unit.remove",
+          targetType: "OrganizationUnit",
+          targetId: row.id,
+          outcome: "SUCCESS",
+          correlationId,
+          reason: data.reason,
+          data: {
+            code: current.code,
+            name: current.name,
+            parentId: current.parentId,
+            authorityGrantsDeactivated: authorities.count,
+          },
+        },
+        { transaction: tx },
+      );
+      return row;
+    });
+  }
+
   async assignManagerApprover(actor: Actor, input: unknown, correlationId: string) {
     this.authorize(actor);
     const data = assignOrganizationApproverSchema.parse(input);
@@ -266,6 +388,83 @@ export class OrganizationAdminService {
       );
 
       return { assignment, authorityGrantId: authority.id };
+    });
+  }
+
+  async removeManagerApprover(actor: Actor, input: unknown, correlationId: string) {
+    this.authorize(actor);
+    const data = removeOrganizationApproverSchema.parse(input);
+    const revokedAt = new Date();
+
+    return this.repository.transaction(async (tx) => {
+      const assignment = await tx.userRoleAssignment.findUnique({
+        where: { id: data.assignmentId },
+        select: {
+          id: true,
+          userId: true,
+          roleCode: true,
+          scopeCode: true,
+          organizationUnitId: true,
+          effectiveFrom: true,
+          effectiveTo: true,
+          active: true,
+        },
+      });
+      const isEffective = assignment
+        && assignment.effectiveFrom <= revokedAt
+        && (!assignment.effectiveTo || assignment.effectiveTo >= revokedAt);
+      if (
+        !assignment?.active
+        || assignment.scopeCode !== "ORG_UNIT"
+        || !assignment.organizationUnitId
+        || !isEffective
+      ) {
+        throw new OrganizationAdministrationError("ไม่พบผู้อนุมัติ Quotation ที่มีผล");
+      }
+      if (assignment.userId === actor.id) {
+        throw new OrganizationAdministrationError("ผู้ดูแลระบบคนอื่นต้องเป็นผู้ถอนสิทธิ์ให้คุณ");
+      }
+
+      const authority = await tx.approvalAuthorityGrant.findFirst({
+        where: {
+          roleCode: assignment.roleCode,
+          permissionCode: PERMISSIONS.approvalDecide,
+          organizationUnitId: assignment.organizationUnitId,
+          active: true,
+          effectiveFrom: { lte: revokedAt },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: revokedAt } }],
+        },
+        select: { id: true },
+      });
+      if (!authority) {
+        throw new OrganizationAdministrationError("ไม่พบผู้อนุมัติ Quotation ที่มีผล");
+      }
+
+      const row = await tx.userRoleAssignment.update({
+        where: { id: assignment.id },
+        data: { active: false, effectiveTo: revokedAt },
+      });
+      await this.audit.append(
+        {
+          actorId: actor.id,
+          action: "organization.manager-approver.revoke",
+          targetType: "UserRoleAssignment",
+          targetId: assignment.id,
+          outcome: "SUCCESS",
+          correlationId,
+          data: {
+            userId: assignment.userId,
+            roleCode: assignment.roleCode,
+            organizationUnitId: assignment.organizationUnitId,
+            authorityGrantId: authority.id,
+            previousEffectiveTo: assignment.effectiveTo?.toISOString() ?? null,
+            revokedAt: revokedAt.toISOString(),
+          },
+        },
+        { transaction: tx },
+      );
+
+      return row;
     });
   }
 }

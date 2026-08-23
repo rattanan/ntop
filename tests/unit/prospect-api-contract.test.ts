@@ -10,6 +10,8 @@ const apiErrors = readFileSync("app/api/v1/prospects/prospect-api.ts", "utf8");
 const researchRoute = readFileSync("app/api/v1/prospects/research/route.ts", "utf8");
 const contactsRoute = readFileSync("app/api/v1/prospects/[id]/contacts/route.ts", "utf8");
 const contactRoute = readFileSync("app/api/v1/prospects/[id]/contacts/[contactId]/route.ts", "utf8");
+const activityRoute = readFileSync("app/api/v1/prospects/[id]/activities/[activityId]/route.ts", "utf8");
+const documentRoute = readFileSync("app/api/v1/prospects/[id]/documents/[documentId]/route.ts", "utf8");
 const permissionMigration = readFileSync("prisma/migrations/20260822090000_backfill_prospect_management_permissions/migration.sql", "utf8");
 const prospectDetail = readFileSync("app/(portal)/prospects/[id]/page.tsx", "utf8");
 const prospectActions = readFileSync("components/prospect-action-forms.tsx", "utf8");
@@ -95,6 +97,21 @@ describe("Prospect API contract", () => {
     expect(prospectActions).toContain("เพิ่ม Activity");
     expect(prospectActions).toContain("setCreating(false)");
     expect(prospectActions).not.toContain('<h3>เพิ่ม Activity</h3>');
+  });
+
+  it("exposes scoped Activity edit/delete and Document download/delete actions", () => {
+    expect(activityRoute).toContain("export async function PATCH");
+    expect(activityRoute).toContain("export async function DELETE");
+    expect(activityRoute).toContain("prospectActor");
+    expect(activityRoute).toContain("prospectIdempotencyKey");
+    expect(documentRoute).toContain("export async function GET");
+    expect(documentRoute).toContain("export async function DELETE");
+    expect(documentRoute).toContain("private, no-store");
+    expect(prospectActions).toContain("แก้ไข Activity");
+    expect(prospectActions).toContain("ลบ Activity");
+    expect(prospectActions).toContain("ดาวน์โหลดเอกสาร");
+    expect(prospectActions).toContain("ลบเอกสาร");
+    expect(prospectActions).not.toContain('className="icon-action danger"');
   });
 
   it("backfills Prospect mutation grants for existing role assignments", () => {

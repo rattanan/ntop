@@ -141,7 +141,7 @@ export function ProspectForm({
             {field("companyNameEnglish", "ชื่อภาษาอังกฤษ")}
             {field("taxId", "เลขผู้เสียภาษี 13 หลัก")}
             {field("branchNumber", "เลขสาขา")}
-            {field("customerType", "ประเภทลูกค้า")}
+            {field("customerType", "ประเภท Customer")}
             {field("organizationType", "ประเภทองค์กร")}
             {field("subIndustry", "อุตสาหกรรมย่อย")}
             {field("companySize", "ขนาดบริษัท")}

@@ -109,4 +109,68 @@ export class ProspectDocumentService {
       throw error;
     }
   }
+
+  async download(actor: ProspectActor, prospectId: string, documentId: string, correlationId: string) {
+    requireProspectPermission(actor.permissions, PERMISSIONS.prospectView);
+    const document = await this.repository.transaction(async (transaction) => {
+      const prospect = await this.repository.findAccessible(prospectId, actor.authorization, actor.permissions, transaction);
+      if (!prospect) throw new ProspectAccessError();
+      const scopedDocument = await transaction.salesDocument.findFirst({
+        where: { id: documentId, prospectId, deletedAt: null },
+        select: { id: true, objectKey: true, fileName: true, mimeType: true, sizeBytes: true, contentHash: true },
+      });
+      if (!scopedDocument) throw new ProspectAccessError();
+      return scopedDocument;
+    });
+
+    const bytes = await this.storage.read(document.objectKey);
+    await this.repository.transaction(async (transaction) => {
+      await this.audit.append({
+        actorId: actor.id,
+        action: "prospect.document.download",
+        targetType: "SalesDocument",
+        targetId: document.id,
+        outcome: "SUCCESS",
+        correlationId,
+        data: { prospectId, contentHash: document.contentHash, sizeBytes: document.sizeBytes },
+      }, { transaction });
+    });
+    return { bytes, fileName: document.fileName, mimeType: document.mimeType };
+  }
+
+  async remove(actor: ProspectActor, prospectId: string, documentId: string, correlationId: string, idempotencyKey: string) {
+    requireProspectPermission(actor.permissions, PERMISSIONS.prospectUpdate);
+    const command = `prospect.document.delete.${documentId}`;
+    const result = await this.repository.transaction(async (transaction) => {
+      const prospect = await this.repository.findAccessible(prospectId, actor.authorization, actor.permissions, transaction);
+      if (!prospect) throw new ProspectAccessError();
+      const receipt = await this.repository.findReceipt(actor.id, idempotencyKey, command, transaction);
+      if (receipt) return { id: documentId, deleted: true };
+
+      const document = await transaction.salesDocument.findFirst({
+        where: { id: documentId, prospectId, deletedAt: null },
+        select: { id: true, contentHash: true, sizeBytes: true },
+      });
+      if (!document) throw new ProspectAccessError();
+      const deletedAt = new Date();
+      const deleted = await transaction.salesDocument.updateMany({
+        where: { id: documentId, prospectId, deletedAt: null },
+        data: { deletedAt, deletedById: actor.id },
+      });
+      if (deleted.count !== 1) throw new ProspectAccessError();
+
+      await this.audit.append({
+        actorId: actor.id,
+        action: "prospect.document.delete",
+        targetType: "SalesDocument",
+        targetId: documentId,
+        outcome: "SUCCESS",
+        correlationId,
+        data: { prospectId, contentHash: document.contentHash, sizeBytes: document.sizeBytes },
+      }, { transaction });
+      await this.repository.saveReceipt({ actorId: actor.id, key: idempotencyKey, command, prospectId, version: prospect.version }, transaction);
+      return { id: documentId, deleted: true };
+    });
+    return result;
+  }
 }

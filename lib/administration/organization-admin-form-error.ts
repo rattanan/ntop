@@ -12,6 +12,8 @@ const fieldMessages: Record<string, string> = {
   customerSegment: "Customer segment ต้องมีความยาวไม่เกิน 100 ตัวอักษร",
   effectiveFrom: "วันเริ่มมีผลไม่ถูกต้อง",
   effectiveTo: "วันสิ้นสุดไม่ถูกต้อง",
+  assignmentId: "ไม่พบผู้อนุมัติ Quotation ที่เลือก",
+  reason: "กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร",
 };
 
 export function organizationAdminValidationMessage(error: unknown): string | null {

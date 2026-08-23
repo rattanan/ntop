@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { LeadActivityForm, LeadAssignForm, LeadConvertForm, LeadLifecycleForm, LeadQualificationForm } from "@/components/lead-workflow-forms";
 import { requireSession } from "@/lib/auth";
-import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { loadAssignableOwnerOptions, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { buildCustomerScopeWhere } from "@/lib/customer/customer-query-service";
 import { buildLeadScopeWhere } from "@/lib/lead/prisma-lead-repository";
@@ -12,7 +12,7 @@ import { LEAD_ACTIVITY_ROLES, LEAD_ASSIGNER_ROLES, LEAD_CORE_UPDATE_ROLES, LEAD_
 import { prisma } from "@/lib/prisma";
 
 const source:Record<string,string>={IMPORT:"Import",WEBSITE:"Website",EVENT:"Event",PARTNER:"Partner",REFERRAL:"Referral",EXISTING_CUSTOMER:"Existing Customer"};
-const status:Record<string,string>={NEW:"ใหม่",ASSIGNED:"มอบหมายแล้ว",CONTACTED:"ติดต่อแล้ว",QUALIFIED:"ผ่านการคัดกรอง",NURTURING:"กำลังติดตาม",CONVERTED:"แปลงเป็นลูกค้า",DISQUALIFIED:"ไม่ผ่าน",INVALID:"ข้อมูลไม่ถูกต้อง",DUPLICATE:"ข้อมูลซ้ำ",NOT_INTERESTED:"ไม่สนใจ",NO_BUDGET:"ไม่มีงบประมาณ",ARCHIVED:"เก็บถาวร"};
+const status:Record<string,string>={NEW:"ใหม่",ASSIGNED:"มอบหมายแล้ว",CONTACTED:"ติดต่อแล้ว",QUALIFIED:"ผ่านการคัดกรอง",NURTURING:"กำลังติดตาม",CONVERTED:"แปลงเป็น Customer",DISQUALIFIED:"ไม่ผ่าน",INVALID:"ข้อมูลไม่ถูกต้อง",DUPLICATE:"ข้อมูลซ้ำ",NOT_INTERESTED:"ไม่สนใจ",NO_BUDGET:"ไม่มีงบประมาณ",ARCHIVED:"เก็บถาวร"};
 
 export default async function LeadDetail({params}:{params:Promise<{id:string}>}){
   const {id}=await params;
@@ -20,19 +20,19 @@ export default async function LeadDetail({params}:{params:Promise<{id:string}>})
   const context=await loadAuthorizationContext({actorId:session.id,legacyRole:session.role});
   const lead=await prisma.lead.findFirst({where:{id,...buildLeadScopeWhere(context)},include:{owner:true,customer:true,statusHistory:{include:{actor:true},orderBy:{transitionedAt:"desc"},take:50},assignmentHistory:{include:{actor:true},orderBy:{assignedAt:"desc"},take:50},activities:{where:{deletedAt:null},include:{owner:true},orderBy:{createdAt:"desc"},take:100},opportunity:true}});
   if(!lead)notFound();
+  const canAssign=context.assignments.some(item=>(LEAD_ASSIGNER_ROLES as readonly string[]).includes(item.role));
   const customerScope=buildCustomerScopeWhere(context);
   const [customers,duplicateCandidates,owners]=await Promise.all([
     prisma.customer.findMany({where:{AND:[{mergedIntoCustomerId:null},customerScope]},select:{id:true,name:true,taxId:true,province:true},orderBy:{name:"asc"},take:200}),
     prisma.customer.findMany({where:{AND:[{mergedIntoCustomerId:null,name:lead.company},customerScope]},select:{id:true,name:true,taxId:true,province:true},orderBy:{updatedAt:"desc"},take:20}),
-    prisma.user.findMany({where:buildAuthorizedUserWhere(context),select:{id:true,name:true,email:true},orderBy:{name:"asc"},take:200}),
+    canAssign ? loadAssignableOwnerOptions(context) : Promise.resolve([]),
   ]);
   const roleCodes=context.assignments.map(item=>item.role);const canArchive=roleCodes.length>0&&(await prisma.rolePermissionGrant.count({where:{roleCode:{in:roleCodes},permissionCode:PERMISSIONS.leadArchive}}))>0;
   const activeLead=lead.status!=="CONVERTED"&&lead.status!=="ARCHIVED";
   const canCoreUpdate=activeLead&&permissionPolicy.allows(session,PERMISSIONS.recordUpdate)&&context.assignments.some(item=>(LEAD_CORE_UPDATE_ROLES as readonly string[]).includes(item.role));
   const canAddActivity=activeLead&&context.assignments.some(item=>(LEAD_ACTIVITY_ROLES as readonly string[]).includes(item.role));
-  const canAssign=context.assignments.some(item=>(LEAD_ASSIGNER_ROLES as readonly string[]).includes(item.role));
   const formValue={id:lead.id,version:lead.version,company:lead.company,taxId:lead.taxId,contactName:lead.contactName,contactEmail:lead.contactEmail,contactPhone:lead.contactPhone,source:lead.source,status:lead.status,score:lead.score,recommendedProducts:lead.recommendedProducts,requirementSummary:lead.requirementSummary,estimatedBudget:lead.estimatedBudget?.toString()??null,notes:lead.notes,disqualificationReason:lead.disqualificationReason,customerId:lead.customerId};
-  return <><div className="page-head"><div><p className="eyebrow">Lead 360 · v{lead.version}</p><h1>{lead.company}</h1><p>{lead.contactName} · {source[lead.source]}</p></div><div className="actions record-head-actions">{lead.status==="QUALIFIED"&&canCoreUpdate&&<Link className="primary" href="#lead-conversion">สร้าง Customer + Opportunity<ArrowRight aria-hidden="true"/></Link>}{lead.customer&&<Link className="secondary" href={`/customers/${lead.customer.id}`}>เปิด Customer</Link>}{lead.opportunity&&<Link className="primary" href={`/opportunities/${lead.opportunity.id}`}>เปิด Opportunity<ArrowRight aria-hidden="true"/></Link>}{canCoreUpdate&&<Link className="secondary" href={`/leads/${id}/edit`}><Pencil aria-hidden="true"/>แก้ไข</Link>}<Link className="secondary" href="/leads">กลับรายการ Lead</Link></div></div>
+  return <><div className="page-head"><div><p className="eyebrow">Lead 360 · v{lead.version}</p><h1>{lead.company}</h1><p>{lead.contactName} · {source[lead.source]}</p></div><div className="actions record-head-actions">{canCoreUpdate&&<Link className="primary" href="#lead-conversion">สร้าง Customer + Opportunity<ArrowRight aria-hidden="true"/></Link>}{lead.customer&&<Link className="secondary" href={`/customers/${lead.customer.id}`}>เปิด Customer</Link>}{lead.opportunity&&<Link className="primary" href={`/opportunities/${lead.opportunity.id}`}>เปิด Opportunity<ArrowRight aria-hidden="true"/></Link>}{canCoreUpdate&&<Link className="secondary" href={`/leads/${id}/edit`}><Pencil aria-hidden="true"/>แก้ไข</Link>}<Link className="secondary" href="/leads">กลับรายการ Lead</Link></div></div>
     <section className="card"><div className="card-header"><div><strong>ภาพรวม Lead</strong><small>อัปเดตล่าสุด {lead.updatedAt.toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}</small></div><span className="badge">{status[lead.status]}</span></div><div className="card-body detail-grid">
       <div><p className="detail-label">ผู้ติดต่อ</p><p className="detail-value">{lead.contactName}</p><small>{lead.contactEmail||lead.contactPhone||"—"}</small></div>
       <div><p className="detail-label">Lead Score</p><p className="detail-value">{lead.score}/100</p></div>

@@ -35,7 +35,7 @@ export function CustomerGovernanceActions({
           <label className="field">
             <span>Child customer</span>
             <select className="control" name="childCustomerId" required defaultValue="">
-              <option value="" disabled>เลือกลูกค้า</option>
+              <option value="" disabled>เลือก Customer</option>
               {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
             </select>
           </label>
@@ -57,7 +57,7 @@ export function CustomerGovernanceActions({
             <label className="field">
               <span>Source customer (เก็บเป็น alias)</span>
               <select className="control" name="sourceCustomerId" required defaultValue="">
-                <option value="" disabled>เลือกลูกค้าที่จะ merge</option>
+                <option value="" disabled>เลือก Customer ที่จะ merge</option>
                 {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
               </select>
             </label>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   authorizedOrganizationUnitIds,
+  buildAssignableOwnerAssignmentWhere,
   buildAuthorizedUserWhere,
   expandOrganizationScopeIds,
   type AuthorizationContext,
@@ -70,5 +71,23 @@ describe("organization hierarchy authorization", () => {
         },
       ],
     });
+  });
+
+  it("limits owner assignments to the manager organization and descendants", () => {
+    const now = new Date("2026-08-22T00:00:00.000Z");
+    const authorization = context("manager-user", ["aor-3", "aor-3-1"]);
+    expect(buildAssignableOwnerAssignmentWhere(authorization, now)).toMatchObject({
+      active: true,
+      effectiveFrom: { lte: now },
+      user: { active: true },
+      organizationUnit: { active: true },
+      organizationUnitId: { in: ["aor-3", "aor-3-1"] },
+    });
+  });
+
+  it("allows an explicit enterprise assignment without a unit to select any active unit", () => {
+    const now = new Date("2026-08-22T00:00:00.000Z");
+    const authorization = context("enterprise-admin", []);
+    expect(buildAssignableOwnerAssignmentWhere(authorization, now).organizationUnitId).toEqual({ not: null });
   });
 });

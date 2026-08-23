@@ -13,4 +13,11 @@ describe("Customer contact UI contract",()=>{
   it("routes contact mutations through customer application service",()=>{expect(actions).toContain("createCustomerRuntime().createContact");expect(actions).toContain("createCustomerRuntime().updateContact");});
   it("passes a plain projected value from the dedicated edit page without Prisma relations",()=>{expect(detail).not.toContain("<CustomerForm");expect(edit).toContain("const customerFormValue = {");expect(edit).toContain("<CustomerForm value={customerFormValue}");expect(edit).not.toContain("<CustomerForm value={customer}");});
   it("separates Customer 360 into compact tabs with hierarchy and duplicate governance",()=>{for(const tab of["overview","contacts","governance","sales"]){expect(detail).toContain(`tabHref(\"${tab}\")`);}expect(detail).toContain('activeTab === "governance"');expect(detail).toContain("Duplicate candidates");expect(detail).toContain("<CustomerGovernanceActions");});
+  it("offers permission-aware create actions in every sales and activity panel",()=>{
+    expect(detail).toContain("PERMISSIONS.recordCreate");
+    expect(detail).toContain("LEAD_CREATE_ROLES");
+    for(const [label,href] of [["สร้าง Opportunity","/opportunities/new"],["สร้าง Lead","/leads/new"],["สร้างกิจกรรม","/activities/new"]]){
+      expect(detail).toContain(`href=\"${href}\" aria-label=\"${label}\"`);
+    }
+  });
 });

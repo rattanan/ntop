@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, FileUp, LoaderCircle, Pencil, Plus, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowRight, Check, Download, FileText, FileUp, LoaderCircle, Pencil, Plus, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Notice, type NoticeVariant } from "@/components/notice";
@@ -134,20 +134,40 @@ export function ProspectContactManager({ id, version, contacts, canUpdate }: { i
       <button className="primary" disabled={pending !== null}>{pending === "create" ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึก Contact"}</button>
     </form>}
     <div className="prospect-contact-list">{contacts.map(contact => <article className="prospect-contact-row" key={contact.id}>
-      <div className="prospect-contact-summary"><div><strong>{contact.isPrimary ? "★ " : ""}{contact.name}</strong><p>{[contact.position, contact.department].filter(Boolean).join(" · ") || "ไม่ระบุตำแหน่ง"}</p><small>{[contact.email, contact.mobile, contact.phone, contact.lineId].filter(Boolean).join(" · ")}</small></div>{canUpdate && <div className="actions"><button className="icon-action" type="button" aria-label={`แก้ไข Contact ${contact.name}`} title="แก้ไข Contact" onClick={() => { setEditingId(value => value === contact.id ? null : contact.id); setCreating(false); setMessage(null); }}><Pencil aria-hidden="true" /></button><button className="icon-action danger" type="button" aria-label={`ลบ Contact ${contact.name}`} title="ลบ Contact" disabled={pending !== null} onClick={() => { if (!window.confirm(`ยืนยันลบ Contact ${contact.name}?`)) return; void run(`delete-${contact.id}`, () => contactCommand(`/api/v1/prospects/${id}/contacts/${contact.id}`, "DELETE", { expectedVersion: version }), "ลบ Contact แล้ว"); }}><Trash2 aria-hidden="true" /></button></div>}</div>
+      <div className="prospect-contact-summary"><div><strong>{contact.isPrimary ? "★ " : ""}{contact.name}</strong><p>{[contact.position, contact.department].filter(Boolean).join(" · ") || "ไม่ระบุตำแหน่ง"}</p><small>{[contact.email, contact.mobile, contact.phone, contact.lineId].filter(Boolean).join(" · ")}</small></div>{canUpdate && <div className="actions"><button className="icon-action" type="button" aria-label={`แก้ไข Contact ${contact.name}`} title="แก้ไข Contact" onClick={() => { setEditingId(value => value === contact.id ? null : contact.id); setCreating(false); setMessage(null); }}><Pencil aria-hidden="true" /></button><button className="icon-action" type="button" aria-label={`ลบ Contact ${contact.name}`} title="ลบ Contact" disabled={pending !== null} onClick={() => { if (!window.confirm(`ยืนยันลบ Contact ${contact.name}?`)) return; void run(`delete-${contact.id}`, () => contactCommand(`/api/v1/prospects/${id}/contacts/${contact.id}`, "DELETE", { expectedVersion: version }), "ลบ Contact แล้ว"); }}><Trash2 aria-hidden="true" /></button></div>}</div>
       {editingId === contact.id && <form className="prospect-contact-form inline" onSubmit={event => { event.preventDefault(); const payload = contactPayload(new FormData(event.currentTarget)); void run(`edit-${contact.id}`, () => contactCommand(`/api/v1/prospects/${id}/contacts/${contact.id}`, "PATCH", { expectedVersion: version, ...payload }), "แก้ไข Contact แล้ว"); }}><ContactFields contact={contact} /><p className="help">ต้องระบุช่องทางติดต่ออย่างน้อยหนึ่งรายการ</p><div className="actions"><button className="secondary" type="button" onClick={() => setEditingId(null)}>ยกเลิก</button><button className="primary" disabled={pending !== null}>{pending === `edit-${contact.id}` ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึกการแก้ไข"}</button></div></form>}
     </article>)}{!contacts.length && <div className="empty">ยังไม่มี Contact</div>}</div>
     {message && <p className={`form-feedback ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
   </div>;
 }
 
-export function ProspectActivityManager({ id, canUpdate }: { id: string; canUpdate: boolean }) {
+export type ProspectActivityItem = {
+  id: string;
+  version: number;
+  type: string;
+  subject: string;
+  description: string;
+  nextFollowUpAt: string;
+  ownerName: string;
+  createdAt: string;
+};
+
+function ActivityFields({ activity }: { activity?: ProspectActivityItem }) {
+  return <div className="prospect-activity-fields">
+    <label><span>ประเภท Activity <span className="required">*</span></span><select className="control" name="activityType" defaultValue={activity?.type ?? "PHONE_CALL"} required><option value="CALL">โทรศัพท์</option><option value="PHONE_CALL">โทรศัพท์ (Prospect)</option><option value="EMAIL">อีเมล</option><option value="LINE">LINE</option><option value="MEETING">ประชุม</option><option value="SITE_VISIT">เยี่ยมพื้นที่</option><option value="CUSTOMER_VISIT">เข้าพบ Customer</option><option value="ONLINE_MEETING">ประชุมออนไลน์</option><option value="VIDEO_CONFERENCE">วิดีโอคอล</option><option value="DEMO">สาธิต</option><option value="PRESENTATION">นำเสนอ</option><option value="NOTE">บันทึก</option><option value="FOLLOW_UP">ติดตามผล</option><option value="TASK">งาน</option><option value="DOCUMENT_REQUEST">ขอเอกสาร</option><option value="OTHER">อื่น ๆ</option></select></label>
+    <label><span>ติดตามครั้งถัดไป</span><input className="control" type="datetime-local" name="nextFollowUpAt" defaultValue={activity?.nextFollowUpAt} /></label>
+    <label className="full"><span>หัวข้อ <span className="required">*</span></span><input className="control" name="subject" defaultValue={activity?.subject} minLength={2} maxLength={255} required autoFocus /></label>
+    <label className="full"><span>รายละเอียด</span><textarea className="control" name="description" defaultValue={activity?.description} rows={3} maxLength={10_000} /></label>
+  </div>;
+}
+
+export function ProspectActivityManager({ id, activities, canUpdate }: { id: string; activities: ProspectActivityItem[]; canUpdate: boolean }) {
   const router = useRouter();
   const toggleButton = useRef<HTMLButtonElement>(null);
   const [creating, setCreating] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  if (!canUpdate) return null;
 
   const close = () => {
     setCreating(false);
@@ -156,10 +176,10 @@ export function ProspectActivityManager({ id, canUpdate }: { id: string; canUpda
   };
 
   return <div className="prospect-activity-manager">
-    <div className="prospect-activity-toolbar"><button ref={toggleButton} className="secondary" type="button" aria-expanded={creating} aria-controls="prospect-activity-form" onClick={() => { setCreating(value => !value); setMessage(null); }}>{creating ? <><X aria-hidden="true" />ยกเลิก</> : <><Plus aria-hidden="true" />เพิ่ม Activity</>}</button></div>
+    {canUpdate && <div className="prospect-activity-toolbar"><button ref={toggleButton} className="secondary" type="button" aria-expanded={creating} aria-controls="prospect-activity-form" onClick={() => { setCreating(value => !value); setEditingId(null); setMessage(null); }}>{creating ? <><X aria-hidden="true" />ยกเลิก</> : <><Plus aria-hidden="true" />เพิ่ม Activity</>}</button></div>}
     {creating && <form id="prospect-activity-form" className="prospect-activity-form" onSubmit={async (event) => {
       event.preventDefault();
-      setPending(true); setMessage(null);
+      setPending("create"); setMessage(null);
       const formElement = event.currentTarget;
       const form = new FormData(formElement);
       try {
@@ -178,19 +198,47 @@ export function ProspectActivityManager({ id, canUpdate }: { id: string; canUpda
       } catch (error) {
         setMessage({ type: "error", text: error instanceof Error ? error.message : "เพิ่ม Activity ไม่สำเร็จ" });
       } finally {
-        setPending(false);
+        setPending(null);
       }
     }}>
-      <div className="prospect-activity-fields">
-        <label><span>ประเภท Activity <span className="required">*</span></span><select className="control" name="activityType" defaultValue="PHONE_CALL" required><option value="PHONE_CALL">โทรศัพท์</option><option value="EMAIL">อีเมล</option><option value="LINE">LINE</option><option value="MEETING">ประชุม</option><option value="CUSTOMER_VISIT">เข้าพบลูกค้า</option><option value="FOLLOW_UP">ติดตามผล</option><option value="NOTE">บันทึก</option></select></label>
-        <label><span>ติดตามครั้งถัดไป</span><input className="control" type="datetime-local" name="nextFollowUpAt" /></label>
-        <label className="full"><span>หัวข้อ <span className="required">*</span></span><input className="control" name="subject" minLength={2} maxLength={255} required autoFocus /></label>
-        <label className="full"><span>รายละเอียด</span><textarea className="control" name="description" rows={3} maxLength={10_000} /></label>
-      </div>
-      <div className="actions"><button className="secondary" type="button" disabled={pending} onClick={close}>ยกเลิก</button><button className="primary" disabled={pending}>{pending ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึก Activity"}</button></div>
+      <ActivityFields />
+      <div className="actions"><button className="secondary" type="button" disabled={pending !== null} onClick={close}>ยกเลิก</button><button className="primary" disabled={pending !== null}>{pending === "create" ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึก Activity"}</button></div>
     </form>}
+    <div className="prospect-activity-list">{activities.map(activity => <article className="prospect-activity-row" key={activity.id}>
+      <div className="prospect-activity-summary"><div><strong>{activity.type} · {activity.subject}</strong><p>{activity.description}</p><small>{activity.ownerName} · {new Date(activity.createdAt).toLocaleString("th-TH")}</small></div>{canUpdate && <div className="actions"><button className="icon-action" type="button" aria-label={`แก้ไข Activity ${activity.subject}`} title="แก้ไข Activity" aria-expanded={editingId === activity.id} onClick={() => { setEditingId(value => value === activity.id ? null : activity.id); setCreating(false); setMessage(null); }}><Pencil aria-hidden="true" /></button><button className="icon-action" type="button" aria-label={`ลบ Activity ${activity.subject}`} title="ลบ Activity" disabled={pending !== null} onClick={() => {
+        if (!window.confirm(`ยืนยันลบ Activity ${activity.subject}?`)) return;
+        const reason = window.prompt("กรุณาระบุเหตุผลในการลบ Activity");
+        if (reason === null) return;
+        if (reason.trim().length < 5) { setMessage({ type: "error", text: "เหตุผลในการลบต้องมีอย่างน้อย 5 ตัวอักษร" }); return; }
+        setPending(`delete-${activity.id}`); setMessage(null);
+        void contactCommand(`/api/v1/prospects/${id}/activities/${activity.id}`, "DELETE", { expectedVersion: activity.version, reason }).then(() => { setMessage({ type: "success", text: "ลบ Activity แล้ว" }); setEditingId(null); router.refresh(); }).catch(error => setMessage({ type: "error", text: error instanceof Error ? error.message : "ลบ Activity ไม่สำเร็จ" })).finally(() => setPending(null));
+      }}><Trash2 aria-hidden="true" /></button></div>}</div>
+      {editingId === activity.id && <form className="prospect-activity-form inline" onSubmit={async event => {
+        event.preventDefault(); const form = new FormData(event.currentTarget); setPending(`edit-${activity.id}`); setMessage(null);
+        try { await contactCommand(`/api/v1/prospects/${id}/activities/${activity.id}`, "PATCH", { expectedVersion: activity.version, activityType: form.get("activityType"), subject: form.get("subject"), description: optional(form, "description"), nextFollowUpAt: form.get("nextFollowUpAt") ? new Date(String(form.get("nextFollowUpAt"))).toISOString() : null }); setMessage({ type: "success", text: "แก้ไข Activity แล้ว" }); setEditingId(null); router.refresh(); }
+        catch (error) { setMessage({ type: "error", text: error instanceof Error ? error.message : "แก้ไข Activity ไม่สำเร็จ" }); }
+        finally { setPending(null); }
+      }}><ActivityFields activity={activity} /><div className="actions"><button className="secondary" type="button" disabled={pending !== null} onClick={() => setEditingId(null)}>ยกเลิก</button><button className="primary" disabled={pending !== null}>{pending === `edit-${activity.id}` ? <><LoaderCircle className="spin" aria-hidden="true" />กำลังบันทึก…</> : "บันทึกการแก้ไข"}</button></div></form>}
+    </article>)}</div>
     {message && <p className={`form-feedback ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}
   </div>;
+}
+
+export type ProspectDocumentItem = { id: string; fileName: string; category: string; mimeType: string; formattedSize: string };
+
+export function ProspectDocumentList({ id, documents, canUpdate }: { id: string; documents: ProspectDocumentItem[]; canUpdate: boolean }) {
+  const router = useRouter();
+  const [pending, setPending] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  return <div className="document-list">{documents.map(document => <article className="document-row" key={document.id}>
+    <span className="document-icon"><FileText aria-hidden="true" /></span><div><strong>{document.fileName}</strong><p>{document.category} · {document.mimeType} · {document.formattedSize}</p></div><div className="document-row-actions"><a className="icon-action" href={`/api/v1/prospects/${id}/documents/${document.id}`} aria-label={`ดาวน์โหลดเอกสาร ${document.fileName}`} title="ดาวน์โหลดเอกสาร"><Download aria-hidden="true" /></a>{canUpdate && <button className="icon-action" type="button" aria-label={`ลบเอกสาร ${document.fileName}`} title="ลบเอกสาร" disabled={pending !== null} onClick={async () => {
+      if (!window.confirm(`ยืนยันลบเอกสาร ${document.fileName}?`)) return;
+      setPending(document.id); setMessage(null);
+      try { await contactCommand(`/api/v1/prospects/${id}/documents/${document.id}`, "DELETE", {}); setMessage({ type: "success", text: "ลบเอกสารแล้ว" }); router.refresh(); }
+      catch (error) { setMessage({ type: "error", text: error instanceof Error ? error.message : "ลบเอกสารไม่สำเร็จ" }); }
+      finally { setPending(null); }
+    }}>{pending === document.id ? <LoaderCircle className="spin" aria-hidden="true" /> : <Trash2 aria-hidden="true" />}</button>}</div>
+  </article>)}{!documents.length && <div className="compact-empty">ยังไม่มีเอกสาร</div>}{message && <p className={`form-feedback ${message.type}`} role={message.type === "error" ? "alert" : "status"}>{message.text}</p>}</div>;
 }
 
 export function ProspectDocumentUpload({ id }: { id: string }) {
@@ -223,12 +271,19 @@ export function ProspectDocumentUpload({ id }: { id: string }) {
 }
 
 type ProspectTransferSummary = { company: string; contact: string; score: number; requirement: string | null; products: string | null; estimatedValue: string | null };
+type OwnerAssignmentOption = { userId: string; name: string; organizationUnitId: string; organizationUnitName: string; organizationUnitCode: string };
 
-export function ProspectActionForms({ id, version, status, owners, canAssign, canConvert, transferSummary }: { id: string; version: number; status: string; owners: Array<{ id: string; name: string }>; canAssign: boolean; canConvert: boolean; transferSummary: ProspectTransferSummary }) {
+function ownerAssignment(form: FormData) {
+  const value = JSON.parse(String(form.get("ownerAssignment") ?? "{}")) as { ownerId?: unknown; organizationUnitId?: unknown };
+  if (typeof value.ownerId !== "string" || typeof value.organizationUnitId !== "string") throw new Error("กรุณาเลือกผู้รับผิดชอบและหน่วยงาน");
+  return { ownerId: value.ownerId, organizationUnitId: value.organizationUnitId };
+}
+
+export function ProspectActionForms({ id, version, status, owners, canAssign, canConvert, transferSummary }: { id: string; version: number; status: string; owners: OwnerAssignmentOption[]; canAssign: boolean; canConvert: boolean; transferSummary: ProspectTransferSummary }) {
   const router = useRouter(); const [message, setMessage] = useState<{ text: string; variant: NoticeVariant } | null>(null);
   const [converting, setConverting] = useState(false);
   return <div className="grid-2">
-    {canAssign && <form className="card" onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { await command(`/api/v1/prospects/${id}/assign`, { expectedVersion: version, ownerId: form.get("ownerId"), reason: form.get("reason") }); setMessage({ text: "มอบหมาย Owner แล้ว", variant: "success" }); router.refresh(); } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ผิดพลาด", variant: "error" }); } }}><div className="card-body"><h3>Assign Owner</h3><select className="control" name="ownerId">{owners.map((owner) => <option key={owner.id} value={owner.id}>{owner.name}</option>)}</select><label className="field-label required-label" htmlFor="prospect-assign-reason">เหตุผล</label><textarea className="control" id="prospect-assign-reason" name="reason" placeholder="เหตุผล" minLength={5} required /><button className="primary">Assign</button></div></form>}
+    {canAssign && <form className="card" onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const target = ownerAssignment(form); await command(`/api/v1/prospects/${id}/assign`, { expectedVersion: version, ...target, reason: form.get("reason") }); setMessage({ text: "มอบหมาย Owner และย้ายสิทธิ์หน่วยงานแล้ว", variant: "success" }); router.refresh(); } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ผิดพลาด", variant: "error" }); } }}><div className="card-body"><h3>Assign Owner</h3><label className="field-label required-label" htmlFor="prospect-owner-assignment">ผู้รับผิดชอบและหน่วยงานใหม่</label><select className="control" id="prospect-owner-assignment" name="ownerAssignment" defaultValue="" required><option value="" disabled>เลือกผู้รับผิดชอบ</option>{owners.map((owner) => <option key={`${owner.userId}:${owner.organizationUnitId}`} value={JSON.stringify({ ownerId: owner.userId, organizationUnitId: owner.organizationUnitId })}>{owner.name} — {owner.organizationUnitName} ({owner.organizationUnitCode})</option>)}</select>{!owners.length && <p className="help">ไม่พบผู้ใช้ที่มี active assignment ในขอบเขตหน่วยงานที่คุณดูแล</p>}<label className="field-label required-label" htmlFor="prospect-assign-reason">เหตุผล</label><textarea className="control" id="prospect-assign-reason" name="reason" placeholder="เหตุผล" minLength={5} required /><button className="primary" disabled={!owners.length}>Assign</button></div></form>}
     {canConvert && status === "QUALIFIED" && <form id="prospect-conversion" className="card conversion-panel conversion-panel-wide" onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); if (!confirm("ยืนยันสร้าง Lead จากข้อมูล Prospect นี้?")) return; setConverting(true); try { const result = await command(`/api/v1/prospects/${id}/convert`, { expectedVersion: version, qualificationNote: form.get("qualificationNote") }); router.push(`/leads/${result.leadId}`); } catch (error) { setMessage({ text: error instanceof Error ? error.message : "ผิดพลาด", variant: "error" }); setConverting(false); } }}><div className="card-header conversion-panel-header"><div><strong>สร้าง Lead จาก Prospect</strong><small>ตรวจสอบข้อมูลที่จะนำไปใช้ต่อก่อนยืนยัน</small></div><span className="badge success">พร้อมสร้าง</span></div><div className="card-body"><div className="conversion-flow" aria-label="ลำดับการแปลงข้อมูล"><span>Prospect</span><ArrowRight aria-hidden="true"/><strong>Lead</strong></div><div className="conversion-summary-grid">
       <div><span><Check aria-hidden="true"/>บริษัท</span><strong>{transferSummary.company}</strong></div><div><span><Check aria-hidden="true"/>ผู้ติดต่อหลัก</span><strong>{transferSummary.contact}</strong></div><div><span><Check aria-hidden="true"/>Lead score</span><strong>{transferSummary.score}/100</strong></div><div><span><Check aria-hidden="true"/>มูลค่าประมาณการ</span><strong>{transferSummary.estimatedValue ? `${transferSummary.estimatedValue} บาท` : "ยังไม่ระบุ"}</strong></div><div className="conversion-summary-wide"><span><Check aria-hidden="true"/>ความต้องการ</span><strong>{transferSummary.requirement ?? "ยังไม่ระบุ"}</strong></div><div className="conversion-summary-wide"><span><Check aria-hidden="true"/>สินค้า/บริการ</span><strong>{transferSummary.products ?? "ยังไม่ระบุ"}</strong></div>
     </div><p className="conversion-retention-note">Prospect เดิมและประวัติยังคงอยู่ พร้อมลิงก์ย้อนกลับจาก Lead</p><label className="field-label required-label" htmlFor="prospect-qualification-note">บันทึกเหตุผลการสร้าง Lead</label><textarea className="control" id="prospect-qualification-note" name="qualificationNote" placeholder="เช่น ยืนยันความต้องการและงบประมาณกับผู้ติดต่อแล้ว" minLength={5} required /><div className="actions"><button className="primary" disabled={converting}>{converting ? <><LoaderCircle className="spin" aria-hidden="true"/>กำลังสร้าง Lead…</> : <>ยืนยันและเปิด Lead<ArrowRight aria-hidden="true"/></>}</button></div></div></form>}

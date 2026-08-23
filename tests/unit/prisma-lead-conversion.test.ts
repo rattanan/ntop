@@ -5,15 +5,16 @@ import { PrismaLeadRepository } from "../../lib/lead/prisma-lead-repository";
 import type { LeadRecord } from "../../lib/lead/lead-service";
 
 describe("PrismaLeadRepository conversion mapping", () => {
-  it("copies the qualified requirement summary to the created Opportunity", async () => {
+  it("copies the requirement summary and converts from the current active status", async () => {
     const opportunityData: Array<Record<string, unknown>> = [];
+    const updateWhere: Array<Record<string, unknown>> = [];
     const lead: LeadRecord = {
       id: "lead-1",
       company: "Acme",
       contactName: "Ada",
       contactEmail: "ada@acme.test",
       source: LeadSource.WEBSITE,
-      status: LeadStatus.QUALIFIED,
+      status: LeadStatus.ASSIGNED,
       score: 80,
       recommendedProducts: "Managed network",
       requirementSummary: "Connect three branches with managed SD-WAN",
@@ -39,7 +40,7 @@ describe("PrismaLeadRepository conversion mapping", () => {
         },
       },
       lead: {
-        updateMany: async () => ({ count: 1 }),
+        updateMany: async ({ where }: { where: Record<string, unknown> }) => { updateWhere.push(where); return { count: 1 }; },
         findUniqueOrThrow: async () => ({ ...lead, status: LeadStatus.CONVERTED, customerId: "customer-1", contactId: "contact-1", version: 4 }),
       },
     };
@@ -53,5 +54,6 @@ describe("PrismaLeadRepository conversion mapping", () => {
       nextAction: "Managed network",
       sourceLeadId: lead.id,
     });
+    expect(updateWhere).toEqual([{ id: lead.id, version: 3, status: LeadStatus.ASSIGNED }]);
   });
 });

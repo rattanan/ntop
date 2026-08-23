@@ -120,7 +120,7 @@ export function EnterpriseCommandPalette({
               if (event.key === "ArrowUp") { event.preventDefault(); setActiveIndex((index) => Math.max(index - 1, 0)); }
               if (event.key === "Enter" && filtered[activeIndex]) { event.preventDefault(); goTo(filtered[activeIndex].href); }
             }}
-            placeholder="ค้นหาลูกค้า, Lead, Pipeline หรือหน้าที่ต้องการ…"
+            placeholder="ค้นหา Customer, Lead, Pipeline หรือหน้าที่ต้องการ…"
             autoComplete="off"
             role="combobox"
             aria-expanded="true"
@@ -149,7 +149,7 @@ export function EnterpriseCommandPalette({
               </div>
             );
           })}
-          {!filtered.length && <div className="command-empty"><Search /><strong>ไม่พบหน้าที่ค้นหา</strong><p>ลองใช้ชื่อโมดูล เช่น Lead, ลูกค้า หรือใบเสนอราคา</p></div>}
+          {!filtered.length && <div className="command-empty"><Search /><strong>ไม่พบหน้าที่ค้นหา</strong><p>ลองใช้ชื่อโมดูล เช่น Lead, Customer หรือใบเสนอราคา</p></div>}
         </div>
         <footer className="command-footer"><span><kbd>↑</kbd><kbd>↓</kbd> เลือก</span><span><kbd>ENTER</kbd> เปิด</span><Link href="/help" onClick={() => onOpenChange(false)}>ศูนย์ช่วยเหลือ</Link></footer>
       </section>

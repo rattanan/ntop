@@ -532,7 +532,7 @@ export async function loadDashboardData(
     return {
       section: "sales",
       title: "My Sales Workspace",
-      description: "Pipeline ส่วนตัว งานติดตาม ลูกค้าเงียบ และดีลที่กำลังจะปิด",
+      description: "Pipeline ส่วนตัว งานติดตาม Customer เงียบ และดีลที่กำลังจะปิด",
       metrics: [
         metric("sales-pipeline", "My Pipeline", moneyString(ownPipeline), "money", `${ownOpportunities.length} opportunities`, filterUrl("/opportunities", { ownerId: actor.id })),
         metric("sales-followup", "Follow-up / SLA", activityActions.length, "count", "Due within 48 hours", "/activities?due=1", activityActions.length ? "warning" : "positive"),

@@ -1,6 +1,6 @@
 import { LeadStatus, Prisma, type PrismaClient } from "@prisma/client";
 
-import { authorizedOrganizationUnitIds, type AuthorizationContext } from "../authorization/authorization-context";
+import { authorizedOrganizationUnitIds, buildAssignableOwnerAssignmentWhere, hasEnterpriseOrganizationScope, type AuthorizationContext } from "../authorization/authorization-context";
 import { matchesAssignmentRule, nextRoundRobinUser, type AssignmentCriteria } from "./lead-assignment";
 import type { LeadCommand, LeadRecord, LeadRepository } from "./lead-service";
 import { firstContactDueAt, formatLeadNumber, LEAD_QUALIFIED_VIEW_ROLES, LEAD_ROUND_ROBIN_ROLE, temperatureForScore } from "./lead-rules";
@@ -112,15 +112,23 @@ export class PrismaLeadRepository implements LeadRepository<LeadTransaction> {
     const sequence = await transaction.opportunityNumberSequence.update({ where: { id: sequenceId }, data: { nextValue: { increment: 1 } } });
     const opportunityRequirements = [input.lead.requirementSummary, input.lead.notes].filter((value): value is string => Boolean(value)).join("\n\n") || null;
     const opportunity = await transaction.opportunity.create({ data: { opportunityNumber: `OPP-${year}-${String(sequence.nextValue).padStart(6, "0")}`, name: input.opportunityName, customerId: input.customerId, flow: input.opportunityFlow, estimatedValue: input.estimatedValue, probability: input.probability, expectedCloseAt: input.expectedCloseAt, organizationUnitId: input.lead.organizationUnitId ?? null, ownerId: input.lead.ownerId, requirements: opportunityRequirements, nextAction: input.productInterest ?? input.lead.recommendedProducts ?? null, sourceLeadId: input.lead.id } });
-    const updated = await transaction.lead.updateMany({ where: { id: input.lead.id, version: input.expectedVersion, status: LeadStatus.QUALIFIED }, data: { status: LeadStatus.CONVERTED, customerId: input.customerId, contactId: contact.id, convertedAt: new Date(), version: { increment: 1 } } });
+    const updated = await transaction.lead.updateMany({ where: { id: input.lead.id, version: input.expectedVersion, status: input.lead.status }, data: { status: LeadStatus.CONVERTED, customerId: input.customerId, contactId: contact.id, convertedAt: new Date(), version: { increment: 1 } } });
     if (updated.count !== 1) return null;
     return { lead: record(await transaction.lead.findUniqueOrThrow({ where: { id: input.lead.id }, select }) as never), contactId: contact.id, opportunityId: opportunity.id };
   }
-  async isAssignableOwner(ownerId: string, organizationUnitId: string | null, transaction: LeadTransaction) {
-    return (await transaction.user.count({ where: { id: ownerId, active: true, ...(organizationUnitId ? { enterpriseRoleAssignments: { some: { organizationUnitId, active: true } } } : {}) } })) === 1;
+  async resolveAssignableOwner(ownerId: string, organizationUnitId: string | undefined, context: AuthorizationContext, transaction: LeadTransaction) {
+    if (!hasEnterpriseOrganizationScope(context) && authorizedOrganizationUnitIds(context).length === 0) return null;
+    const assignments = await transaction.userRoleAssignment.findMany({
+      where: { ...buildAssignableOwnerAssignmentWhere(context), userId: ownerId, ...(organizationUnitId ? { organizationUnitId } : {}) },
+      select: { organizationUnitId: true },
+      distinct: ["organizationUnitId"],
+      take: 2,
+    });
+    const organizationUnitIds = assignments.flatMap(assignment => assignment.organizationUnitId ? [assignment.organizationUnitId] : []);
+    return organizationUnitIds.length === 1 ? { ownerId, organizationUnitId: organizationUnitIds[0] } : null;
   }
-  async assignVersioned(input: { leadId: string; expectedVersion: number; currentStatus: LeadStatus; temperature: "HOT"|"WARM"|"COLD"; fromOwnerId: string; toOwnerId: string; actorId: string; reason: string; assignedAt: Date }, transaction: LeadTransaction) {
-    const updated = await transaction.lead.updateMany({ where: { id: input.leadId, version: input.expectedVersion, status: input.currentStatus }, data: { ownerId: input.toOwnerId, assignedAt: input.assignedAt, firstContactDueAt: input.currentStatus === LeadStatus.NEW ? firstContactDueAt(input.assignedAt,input.temperature) : undefined, status: input.currentStatus === LeadStatus.NEW ? LeadStatus.ASSIGNED : input.currentStatus, version: { increment: 1 } } });
+  async assignVersioned(input: { leadId: string; expectedVersion: number; currentStatus: LeadStatus; temperature: "HOT"|"WARM"|"COLD"; fromOwnerId: string; fromOrganizationUnitId: string | null; toOwnerId: string; toOrganizationUnitId: string; actorId: string; reason: string; assignedAt: Date }, transaction: LeadTransaction) {
+    const updated = await transaction.lead.updateMany({ where: { id: input.leadId, version: input.expectedVersion, status: input.currentStatus }, data: { ownerId: input.toOwnerId, organizationUnitId: input.toOrganizationUnitId, assignedAt: input.assignedAt, firstContactDueAt: input.currentStatus === LeadStatus.NEW ? firstContactDueAt(input.assignedAt,input.temperature) : undefined, status: input.currentStatus === LeadStatus.NEW ? LeadStatus.ASSIGNED : input.currentStatus, version: { increment: 1 } } });
     if (updated.count !== 1) return null;
     await transaction.leadAssignmentHistory.create({ data: { leadId: input.leadId, fromOwnerId: input.fromOwnerId, toOwnerId: input.toOwnerId, actorId: input.actorId, reason: input.reason, assignedAt: input.assignedAt } });
     return record(await transaction.lead.findUniqueOrThrow({ where: { id: input.leadId }, select }) as never);

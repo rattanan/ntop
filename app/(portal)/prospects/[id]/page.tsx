@@ -1,13 +1,14 @@
-import { ArrowRight, BadgeCheck, BrainCircuit, FileText, Pencil, ShieldAlert, TrendingUp } from "lucide-react";
+import { ArrowRight, BadgeCheck, BrainCircuit, Pencil, ShieldAlert, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ProspectActionForms, ProspectActivityManager, ProspectAiInsightActions, ProspectContactManager, ProspectDocumentUpload, type ProspectAiInsightDraft } from "@/components/prospect-action-forms";
+import { ProspectActionForms, ProspectActivityManager, ProspectAiInsightActions, ProspectContactManager, ProspectDocumentList, ProspectDocumentUpload, type ProspectAiInsightDraft } from "@/components/prospect-action-forms";
 import { ProspectSoftDeleteAction } from "@/components/data-retention-actions";
 import { requireSession } from "@/lib/auth";
-import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
+import { loadAssignableOwnerOptions, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { buildProspectScopeWhere, loadProspectPermissions } from "@/lib/prospect/prospect-authorization";
+import { formatDocumentSize } from "@/lib/prospect/prospect-document-format";
 import { prisma } from "@/lib/prisma";
 
 function scoreLevel(score: number | null, inverse = false) {
@@ -47,6 +48,13 @@ function aiInsightDraft(value: unknown): ProspectAiInsightDraft | null {
   };
 }
 
+function bangkokDateTimeInput(value: Date | null) {
+  if (!value) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(value);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
 export default async function ProspectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
@@ -64,13 +72,30 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
         convertedLead: { select: { id: true, leadNumber: true } },
       },
     }),
-    prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    permissions.has(PERMISSIONS.prospectAssign) ? loadAssignableOwnerOptions(context) : Promise.resolve([]),
   ]);
   if (!prospect) notFound();
   const canUpdate = permissions.has(PERMISSIONS.prospectUpdate);
   const canConvert = permissions.has(PERMISSIONS.prospectConvert);
   const primaryContact = prospect.contacts.find((contact) => contact.isPrimary) ?? prospect.contacts[0];
   const insightDraft = prospect.enrichmentStatus === "READY" ? aiInsightDraft(prospect.enrichmentData) : null;
+  const activities = prospect.activities.map(activity => ({
+    id: activity.id,
+    version: activity.version,
+    type: activity.type,
+    subject: activity.subject,
+    description: activity.notes ?? activity.description ?? "",
+    nextFollowUpAt: bangkokDateTimeInput(activity.nextFollowUpAt ?? activity.dueAt),
+    ownerName: activity.owner.name,
+    createdAt: activity.createdAt.toISOString(),
+  }));
+  const documents = prospect.documents.map(document => ({
+    id: document.id,
+    fileName: document.fileName,
+    category: document.category,
+    mimeType: document.mimeType,
+    formattedSize: formatDocumentSize(document.sizeBytes),
+  }));
 
   return <>
     <div className="customer-hero">
@@ -107,10 +132,10 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
     </div>
 
     <div className="detail-columns"><section className="card"><div className="card-header">Contacts</div><div className="card-body"><ProspectContactManager id={id} version={prospect.version} contacts={prospect.contacts} canUpdate={canUpdate} /></div></section>
-      <section className="card"><div className="card-header">Activities & Timeline</div><div className="card-body"><ProspectActivityManager id={id} canUpdate={canUpdate} /><div className="prospect-timeline-list">{prospect.activities.map((activity) => <div className="timeline" key={activity.id}><strong>{activity.type} · {activity.subject}</strong><p>{activity.description ?? activity.notes ?? ""}</p><small>{activity.owner.name} · {activity.createdAt.toLocaleString("th-TH")}</small></div>)}{prospect.statusHistory.map((history) => <div className="timeline" key={history.id}><strong>Status {history.fromStatus} → {history.toStatus}</strong><p>{history.reason}</p><small>{history.transitionedAt.toLocaleString("th-TH")}</small></div>)}{!prospect.activities.length && !prospect.statusHistory.length && <div className="compact-empty">ยังไม่มีกิจกรรม</div>}</div></div></section>
+      <section className="card"><div className="card-header">Activities & Timeline</div><div className="card-body"><ProspectActivityManager id={id} activities={activities} canUpdate={canUpdate} /><div className="prospect-timeline-list">{prospect.statusHistory.map((history) => <div className="timeline" key={history.id}><strong>Status {history.fromStatus} → {history.toStatus}</strong><p>{history.reason}</p><small>{history.transitionedAt.toLocaleString("th-TH")}</small></div>)}{!prospect.activities.length && !prospect.statusHistory.length && <div className="compact-empty">ยังไม่มีกิจกรรม</div>}</div></div></section>
     </div>
 
-    <section className="card prospect-documents"><div className="card-header"><div><span>Documents</span><small>เอกสารทั้งหมดถูกเก็บแบบ Private และตรวจ Malware ก่อนบันทึก</small></div><span className="badge muted">{prospect.documents.length} files</span></div><div className="card-body document-layout"><div className="document-list">{prospect.documents.map((document) => <article className="document-row" key={document.id}><span className="document-icon"><FileText aria-hidden="true" /></span><div><strong>{document.fileName}</strong><p>{document.category} · {document.mimeType} · {new Intl.NumberFormat("th-TH", { maximumFractionDigits: 1 }).format(document.sizeBytes / 1_000_000)} MB</p></div></article>)}{!prospect.documents.length && <div className="compact-empty">ยังไม่มีเอกสาร</div>}</div>{canUpdate && <ProspectDocumentUpload id={id} />}</div></section>
+    <section className="card prospect-documents"><div className="card-header"><div><span>Documents</span><small>เอกสารทั้งหมดถูกเก็บแบบ Private และตรวจ Malware ก่อนบันทึก</small></div><span className="badge muted">{prospect.documents.length} files</span></div><div className="card-body document-layout"><ProspectDocumentList id={id} documents={documents} canUpdate={canUpdate} />{canUpdate && <ProspectDocumentUpload id={id} />}</div></section>
 
     <ProspectActionForms id={id} version={prospect.version} status={prospect.status} owners={owners} canAssign={permissions.has(PERMISSIONS.prospectAssign)} canConvert={canConvert} transferSummary={{ company: prospect.companyName, contact: primaryContact?.name ?? "—", score: prospect.calculatedScore, requirement: prospect.businessPainPoints, products: prospect.recommendedProducts, estimatedValue: prospect.estimatedOpportunityValue?.toString() ?? prospect.expectedBudget?.toString() ?? null }} />
   </>;

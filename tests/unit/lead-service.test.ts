@@ -8,12 +8,14 @@ type Tx = { id: string };
 const tx: Tx = { id: "tx" };
 const actor = { id: "sales-1", role: "SALES" as const, authorization: { actorId: "sales-1", assignments: [{ role: "KAM" as const, scope: "SELF" as const, organizationUnitId: null }] } };
 const manager = { id: "manager-1", role: "SALES" as const, authorization: { actorId: "manager-1", assignments: [{ role: "TEAM_MANAGER" as const, scope: "ENTERPRISE" as const, organizationUnitId: null }] } };
-const lead: LeadRecord = { id: "lead-1", version: 1, company: "Acme", contactName: "Ada", contactEmail: "ada@acme.test", source: LeadSource.WEBSITE, status: LeadStatus.QUALIFIED, score: 80, ownerId: actor.id, customerId: null };
+const lead: LeadRecord = { id: "lead-1", version: 1, company: "Acme", contactName: "Ada", contactEmail: "ada@acme.test", source: LeadSource.WEBSITE, status: LeadStatus.QUALIFIED, score: 80, ownerId: actor.id, organizationUnitId: "org-parent", customerId: null };
 const leadCommand = { company: lead.company, contactName: lead.contactName, contactEmail: lead.contactEmail, source: lead.source, status: LeadStatus.NURTURING, score: lead.score };
 const opportunity = { opportunityName: "Acme Network", opportunityFlow: "DIRECT", estimatedValue: "100000.0000", expectedCloseAt: new Date("2026-12-01T00:00:00Z"), probability: 40 };
 
 class FakeLeadRepository implements LeadRepository<Tx> {
   value: LeadRecord | null = { ...lead };
+  assignable = true;
+  transitions: Array<{ fromStatus: LeadStatus; toStatus: LeadStatus }> = [];
   receipts = new Map<string,{leadId:string;customerId:string|null;contactId:string|null;opportunityId:string|null;resultVersion:number}>();
   transaction<T>(work:(transaction:Tx)=>Promise<T>){return work(tx);}
   async findAccessible(){return this.value?{...this.value}:null;}
@@ -24,10 +26,10 @@ class FakeLeadRepository implements LeadRepository<Tx> {
   async hasGrantedPermission(){return true;}
   async updateVersioned(id:string,expectedVersion:number,input:Parameters<LeadRepository<Tx>["updateVersioned"]>[2]){if(!this.value||this.value.id!==id||this.value.version!==expectedVersion)return null;this.value={...this.value,...input,customerId:input.customerId??null,version:expectedVersion+1};return this.value;}
   async markConverted(id:string,expectedVersion:number,customerId:string){if(!this.value||this.value.id!==id||this.value.version!==expectedVersion)return null;this.value={...this.value,status:LeadStatus.CONVERTED,customerId,version:expectedVersion+1};return this.value;}
-  async recordStatusTransition(){return undefined;}
+  async recordStatusTransition(input:Parameters<LeadRepository<Tx>["recordStatusTransition"]>[0]){this.transitions.push({fromStatus:input.fromStatus,toStatus:input.toStatus});}
   async completeConversion(input:Parameters<LeadRepository<Tx>["completeConversion"]>[0]){if(!this.value||this.value.version!==input.expectedVersion)return null;this.value={...this.value,status:LeadStatus.CONVERTED,customerId:input.customerId,contactId:"contact-1",version:this.value.version+1};return{lead:this.value,contactId:"contact-1",opportunityId:"opportunity-1"};}
-  async isAssignableOwner(){return true;}
-  async assignVersioned(input:Parameters<LeadRepository<Tx>["assignVersioned"]>[0]){if(!this.value||this.value.version!==input.expectedVersion)return null;this.value={...this.value,ownerId:input.toOwnerId,status:this.value.status===LeadStatus.NEW?LeadStatus.ASSIGNED:this.value.status,version:this.value.version+1};return this.value;}
+  async resolveAssignableOwner(ownerId:string,organizationUnitId:string|undefined){return this.assignable?{ownerId,organizationUnitId:organizationUnitId??"org-child"}:null;}
+  async assignVersioned(input:Parameters<LeadRepository<Tx>["assignVersioned"]>[0]){if(!this.value||this.value.version!==input.expectedVersion)return null;this.value={...this.value,ownerId:input.toOwnerId,organizationUnitId:input.toOrganizationUnitId,status:this.value.status===LeadStatus.NEW?LeadStatus.ASSIGNED:this.value.status,version:this.value.version+1};return this.value;}
 }
 
 function setup(duplicates:string[]=[]){
@@ -47,11 +49,15 @@ describe("LeadService",()=>{
   it("enforces minimum create contact and requirement data",async()=>{const {service}=setup();await expect(service.create(actor,{company:"Acme",contactName:"Ada",contactEmail:"",source:LeadSource.WEBSITE,status:LeadStatus.NEW,score:0},"corr","create-1")).rejects.toBeInstanceOf(LeadValidationError);});
   it("updates with optimistic concurrency and audit",async()=>{const {service,leads,events}=setup();const result=await service.update(actor,"lead-1",1,leadCommand,"corr","update-1");expect(result.version).toBe(2);expect(events).toEqual([{action:"lead.update",targetId:"lead-1"}]);await expect(service.update(actor,"lead-1",1,leadCommand,"corr","update-2")).rejects.toBeInstanceOf(LeadVersionConflictError);expect(leads.value?.version).toBe(2);});
 
-  it("allows a manager to reassign with reason and audit",async()=>{const {service,leads,events}=setup();const result=await service.assign(manager,"lead-1",1,"sales-2","สมดุลภาระงาน","corr","assign-1");expect(result.ownerId).toBe("sales-2");expect(leads.value?.version).toBe(2);expect(events).toEqual([{action:"lead.assign",targetId:"lead-1"}]);});
+  it("allows editing directly from ASSIGNED to QUALIFIED and records the transition",async()=>{const {service,leads,events}=setup();leads.value={...lead,status:LeadStatus.ASSIGNED};const result=await service.update(actor,"lead-1",1,{...leadCommand,status:LeadStatus.QUALIFIED},"corr","update-qualified");expect(result.status).toBe(LeadStatus.QUALIFIED);expect(leads.transitions).toEqual([{fromStatus:LeadStatus.ASSIGNED,toStatus:LeadStatus.QUALIFIED}]);expect(events).toEqual([{action:"lead.update",targetId:"lead-1"}]);});
+
+  it("allows a manager to reassign and moves access to the selected organization",async()=>{const {service,leads,events}=setup();const result=await service.assign(manager,"lead-1",1,"sales-2","สมดุลภาระงาน","corr","assign-1","org-child");expect(result).toMatchObject({ownerId:"sales-2",organizationUnitId:"org-child"});expect(leads.value?.version).toBe(2);expect(events).toEqual([{action:"lead.assign",targetId:"lead-1"}]);});
+
+  it("rejects an owner outside the actor organization scope",async()=>{const {service,leads}=setup();leads.assignable=false;await expect(service.assign(manager,"lead-1",1,"sales-outside","อยู่นอกสายงาน","corr","assign-2","org-sibling")).rejects.toBeInstanceOf(LeadAccessError);expect(leads.value).toMatchObject({ownerId:"sales-1",organizationUnitId:"org-parent",version:1});});
 
   it("denies direct assignment by a sales representative",async()=>{const {service}=setup();await expect(service.assign(actor,"lead-1",1,"sales-2","ขอเปลี่ยนเจ้าของ","corr","assign-1")).rejects.toBeInstanceOf(LeadAccessError);});
 
-  it("links an accessible existing customer exactly once",async()=>{const {service,leads,events}=setup();const input={expectedVersion:1,conversionMode:"LINK" as const,existingCustomerId:"customer-existing",...opportunity};const first=await service.convert(actor,"lead-1",input,"corr","convert-1");const second=await service.convert(actor,"lead-1",input,"corr","convert-1");expect(second).toEqual(first);expect(first.opportunityId).toBe("opportunity-1");expect(leads.value?.status).toBe(LeadStatus.CONVERTED);expect(events).toEqual([{action:"lead.convert",targetId:"lead-1"}]);});
+  it("converts an ASSIGNED Lead without requiring qualification and replays exactly once",async()=>{const {service,leads,events}=setup();leads.value={...lead,status:LeadStatus.ASSIGNED};const input={expectedVersion:1,conversionMode:"LINK" as const,existingCustomerId:"customer-existing",...opportunity};const first=await service.convert(actor,"lead-1",input,"corr","convert-1");const second=await service.convert(actor,"lead-1",input,"corr","convert-1");expect(second).toEqual(first);expect(first.opportunityId).toBe("opportunity-1");expect(leads.value?.status).toBe(LeadStatus.CONVERTED);expect(leads.transitions).toEqual([{fromStatus:LeadStatus.ASSIGNED,toStatus:LeadStatus.CONVERTED}]);expect(events).toEqual([{action:"lead.convert",targetId:"lead-1"}]);});
 
   it("requires an explicit override before creating a duplicate customer",async()=>{const {service,leads}=setup(["duplicate-1"]);await expect(service.convert(actor,"lead-1",{expectedVersion:1,conversionMode:"CREATE",taxId:"1234567890123",type:"B2B",segment:"B1",province:"Bangkok",...opportunity},"corr","convert-1")).rejects.toBeInstanceOf(LeadDuplicateResolutionRequiredError);expect(leads.value?.status).toBe(LeadStatus.QUALIFIED);});
 

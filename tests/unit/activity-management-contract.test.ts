@@ -27,7 +27,7 @@ describe("Activity management contract", () => {
   });
   it("shows linked Lead details in the activities list", () => {
     expect(list).toContain("lead: true");
-    expect(list).toContain("ลูกค้า / Opportunity / Lead");
+    expect(list).toContain("Customer / Opportunity / Lead");
     expect(list).toContain("activity.lead?.company");
     expect(list).toContain("activity.lead.leadNumber");
   });

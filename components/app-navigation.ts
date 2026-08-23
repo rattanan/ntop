@@ -43,7 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Prospect", href: "/prospects", icon: PackageSearch, keywords: "ผู้มุ่งหวัง", requiredPermission: NAVIGATION_PERMISSIONS.prospects },
       { label: "Lead", href: "/leads", icon: Target, keywords: "ลูกค้าเป้าหมาย", requiredPermission: NAVIGATION_PERMISSIONS.leads },
-      { label: "ลูกค้า", href: "/customers", icon: Users, keywords: "customer account", requiredPermission: NAVIGATION_PERMISSIONS.customers },
+      { label: "Customer", href: "/customers", icon: Users, keywords: "customer account", requiredPermission: NAVIGATION_PERMISSIONS.customers },
       { label: "โอกาสขาย", href: "/opportunities", icon: Gauge, keywords: "opportunity deal", requiredPermission: NAVIGATION_PERMISSIONS.opportunities },
       { label: "กิจกรรม", href: "/activities", icon: Activity, keywords: "meeting task", requiredPermission: NAVIGATION_PERMISSIONS.activities },
     ],
@@ -83,7 +83,7 @@ export const NAV_GROUPS: NavGroup[] = [
 export const QUICK_CREATE_ITEMS = [
   { label: "สร้าง Prospect", href: "/prospects/new", requiredPermission: QUICK_CREATE_PERMISSIONS.prospect },
   { label: "สร้าง Lead", href: "/leads/new", requiredPermission: QUICK_CREATE_PERMISSIONS.lead },
-  { label: "สร้างลูกค้า", href: "/customers/new", requiredPermission: QUICK_CREATE_PERMISSIONS.customer },
+  { label: "สร้าง Customer", href: "/customers/new", requiredPermission: QUICK_CREATE_PERMISSIONS.customer },
   { label: "สร้างโอกาสขาย", href: "/opportunities/new", requiredPermission: QUICK_CREATE_PERMISSIONS.opportunity },
   { label: "บันทึกกิจกรรม", href: "/activities/new", requiredPermission: QUICK_CREATE_PERMISSIONS.activity },
   { label: "สร้างเอกสารข้อเสนอ (Proposal)", href: "/proposals/new", requiredPermission: QUICK_CREATE_PERMISSIONS.proposal },

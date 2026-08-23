@@ -171,7 +171,7 @@ export function DashboardView({ data, userName }: { data: DashboardData; userNam
         <div className="dashboard-section-head"><div><p className="eyebrow">Pipeline intelligence</p><h2 id="dashboard-chart-title">Pipeline Analytics</h2></div><span>มูลค่า THB · สูงสุด 8 รายการต่อกราฟ</span></div>
         <div className="dashboard-chart-grid">
           <ChartCard title="Pipeline by Stage" subtitle="สถานะการขาย" points={data.charts.stage} testId="chart-stage"/>
-          <ChartCard title="Pipeline by Segment" subtitle="กลุ่มลูกค้า" points={data.charts.segment} testId="chart-segment"/>
+          <ChartCard title="Pipeline by Segment" subtitle="Customer Segment" points={data.charts.segment} testId="chart-segment"/>
           <ChartCard title="Pipeline by Product" subtitle="สินค้าใน Primary Quote ล่าสุด" points={data.charts.product} testId="chart-product"/>
           <ChartCard title="Pipeline by Owner" subtitle="ผู้รับผิดชอบ" points={data.charts.owner} testId="chart-owner"/>
           <ChartCard title="Pipeline by Month" subtitle="เดือนที่คาดว่าจะปิด" points={data.charts.month} testId="chart-month"/>

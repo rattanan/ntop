@@ -4,6 +4,7 @@ import { organizationAdminValidationMessage } from "../../lib/administration/org
 import {
   assignOrganizationApproverSchema,
   createOrganizationUnitSchema,
+  removeOrganizationUnitSchema,
   updateOrganizationHierarchySchema,
 } from "../../lib/administration/organization-admin-service";
 import { ORGANIZATION_CODE_PATTERN_SOURCE } from "../../lib/administration/organization-code";
@@ -96,5 +97,16 @@ describe("organizationAdminValidationMessage", () => {
 
   it("does not replace non-validation domain errors", () => {
     expect(organizationAdminValidationMessage(new Error("domain error"))).toBeNull();
+  });
+
+  it("requires a meaningful reason when removing an organization", () => {
+    const result = removeOrganizationUnitSchema.safeParse({
+      organizationUnitId: "org-1",
+      reason: "ลบ",
+    });
+
+    expect(organizationAdminValidationMessage(validationError(result))).toContain(
+      "อย่างน้อย 5 ตัวอักษร",
+    );
   });
 });

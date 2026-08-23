@@ -54,7 +54,7 @@ function failure(error: unknown): FormState {
   if (error instanceof LeadValidationError) return { errors: error.issues };
   if (error instanceof LeadVersionConflictError) return { message: "Lead ถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดหน้าใหม่ก่อนบันทึก" };
   if (error instanceof LeadDuplicateResolutionRequiredError) return { message: `พบ Customer ที่อาจซ้ำ ${error.duplicateCount} รายการ กรุณาเลือก Customer เดิมหรือระบุเหตุผล override อย่างน้อย 5 ตัวอักษร` };
-  if (error instanceof LeadConversionError) return { message: "ต้องเปลี่ยนสถานะ Lead เป็นผ่านการคัดกรองก่อน Convert" };
+  if (error instanceof LeadConversionError) return { message: "ไม่สามารถ Convert Lead นี้ได้ กรุณาตรวจสอบสถานะและ Customer ที่เลือก" };
   if (error instanceof LeadAccessError || error instanceof LeadIdempotencyConflictError) return { message: "ไม่สามารถดำเนินการกับ Lead หรือ Customer นี้ได้" };
   if (error instanceof PermissionDeniedError) return { message: "บัญชีนี้ไม่มีสิทธิ์ดำเนินการกับ Lead" };
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { message: "เลขนิติบุคคลนี้มีอยู่แล้ว กรุณาเชื่อม Customer เดิมแทนการสร้างใหม่" };
@@ -84,7 +84,12 @@ export async function updateLead(id: string, expectedVersion: number, _: FormSta
 export async function assignLead(id: string, expectedVersion: number, _: FormState, formData: FormData): Promise<FormState> {
   const currentActor = await actor();
   try {
-    await createLeadRuntime().assign(currentActor, id, expectedVersion, text(formData, "ownerId"), text(formData, "reason"), crypto.randomUUID(), text(formData, "idempotencyKey") || crypto.randomUUID());
+    let selection: unknown;
+    try { selection = JSON.parse(text(formData, "ownerAssignment")); }
+    catch { return { message: "กรุณาเลือกผู้รับผิดชอบและหน่วยงานใหม่" }; }
+    const parsed = z.object({ ownerId: z.string().trim().min(1), organizationUnitId: z.string().trim().min(1) }).strict().safeParse(selection);
+    if (!parsed.success) return { message: "กรุณาเลือกผู้รับผิดชอบและหน่วยงานใหม่" };
+    await createLeadRuntime().assign(currentActor, id, expectedVersion, parsed.data.ownerId, text(formData, "reason"), crypto.randomUUID(), text(formData, "idempotencyKey") || crypto.randomUUID(), parsed.data.organizationUnitId);
     revalidatePath("/leads");
     revalidatePath(`/leads/${id}`);
     redirect(`/leads/${id}`);
