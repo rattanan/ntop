@@ -25,6 +25,12 @@ describe("Activity management contract", () => {
     expect(list).toContain("buildActivityScopeWhere"); expect(list).toContain("/edit`}"); expect(detail).toContain("ActivityDeleteButton"); expect(edit).toContain("ActivityEditForm");
     expect(route).toContain("export async function GET"); expect(route).toContain("export async function PATCH"); expect(route).toContain("export async function DELETE");
   });
+  it("shows linked Lead details in the activities list", () => {
+    expect(list).toContain("lead: true");
+    expect(list).toContain("ลูกค้า / Opportunity / Lead");
+    expect(list).toContain("activity.lead?.company");
+    expect(list).toContain("activity.lead.leadNumber");
+  });
   it("requires delete confirmation reason and exposes accessible controls", () => {
     expect(component).toContain('aria-labelledby="delete-activity-title"'); expect(component).toContain('name="reason"'); expect(component).toContain("minLength={5}"); expect(component).toContain('<Notice variant="error">');
   });
