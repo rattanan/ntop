@@ -8,6 +8,7 @@ import { Bell, ChevronDown, ChevronRight, CircleHelp, Home, LogOut, Menu, Moon, 
 
 import { logout } from "@/app/actions";
 import { EnterpriseCommandPalette } from "@/components/enterprise-command-palette";
+import { AiChatBalloon } from "@/components/ai-chat-balloon";
 import { NAV_GROUPS, navigationLabel, visibleNavigation, visibleQuickCreate } from "@/components/app-navigation";
 import type { HeaderNotification } from "@/lib/notifications/header-notifications";
 
@@ -73,5 +74,6 @@ export function AppShell({ children, user, notifications, version }: { children:
       </header>
       <main className="content" id="main-content" tabIndex={-1}>{children}</main>
     </div>
+    <AiChatBalloon key={pathname} pageLabel={currentLabel}/>
   </div>;
 }
