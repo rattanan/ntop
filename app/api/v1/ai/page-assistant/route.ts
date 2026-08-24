@@ -4,9 +4,9 @@ import { z } from "zod";
 import { workflowApiError, workflowCorrelationId, workflowUnauthenticated } from "../../workflow-api-response";
 import { getSession } from "@/lib/auth";
 import { safeErrorIdentity } from "@/lib/api/safe-error-identity";
-import { AiConfigurationRuntimeError, createActiveProviderClient } from "@/lib/ai/provider-configuration-runtime";
+import { createActiveProviderClient } from "@/lib/ai/provider-configuration-runtime";
 import { PAGE_ASSISTANT_PROMPT_VERSION, PageAssistantService } from "@/lib/ai/page-assistant-service";
-import { appendPageAssistantAudit, pageAssistantEnabled } from "@/lib/ai/page-assistant-runtime";
+import { appendPageAssistantAudit } from "@/lib/ai/page-assistant-runtime";
 
 const inputSchema = z.strictObject({
   question: z.string().trim().min(1).max(1_000),
@@ -26,7 +26,6 @@ export async function POST(request: Request) {
   let input: z.infer<typeof inputSchema> | undefined;
   try {
     input = inputSchema.parse(await request.json());
-    if (!pageAssistantEnabled()) throw new AiConfigurationRuntimeError();
     const provider = await createActiveProviderClient();
     const result = await new PageAssistantService(provider.client).answer(input);
     const providerModel = result.providerModel ?? provider.model;

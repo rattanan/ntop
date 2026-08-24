@@ -15,12 +15,20 @@ describe("AI page assistant integration contract", () => {
     expect(component).toContain('event.key === "Escape"');
   });
 
-  it("enforces session, feature flag, provider provenance and metadata-only audit on the server", () => {
+  it("enforces session, active AI Settings, provider provenance and metadata-only audit on the server", () => {
     const route = fs.readFileSync(path.join(root, "app/api/v1/ai/page-assistant/route.ts"), "utf8");
     const runtime = fs.readFileSync(path.join(root, "lib/ai/page-assistant-runtime.ts"), "utf8");
+    const providerRuntime = fs.readFileSync(path.join(root, "lib/ai/provider-configuration-runtime.ts"), "utf8");
+    const environmentExample = fs.readFileSync(path.join(root, ".env.example"), "utf8");
     expect(route).toContain("const session = await getSession()");
-    expect(route).toContain("pageAssistantEnabled()");
     expect(route).toContain("createActiveProviderClient()");
+    expect(route).not.toContain("pageAssistantEnabled");
+    expect(route).not.toContain("AI_PAGE_ASSISTANT_ENABLED");
+    expect(runtime).not.toContain("AI_PAGE_ASSISTANT_ENABLED");
+    expect(environmentExample).not.toContain("AI_PAGE_ASSISTANT_ENABLED");
+    expect(providerRuntime).toContain("getActiveSecretConfiguration()");
+    expect(providerRuntime).toContain("!configuration?.enabled");
+    for (const setting of ["configuration.apiUrl", "configuration.model", "configuration.requestTimeoutMs"]) expect(providerRuntime).toContain(setting);
     expect(route).toContain("appendPageAssistantAudit(");
     expect(route).toContain("providerConfigurationVersionId");
     expect(runtime).not.toContain("question: input.question");

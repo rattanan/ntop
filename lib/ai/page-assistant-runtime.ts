@@ -6,10 +6,6 @@ import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-reposi
 import { prisma } from "../prisma";
 import { PAGE_ASSISTANT_PROMPT_VERSION } from "./page-assistant-service";
 
-export function pageAssistantEnabled() {
-  return process.env.AI_PAGE_ASSISTANT_ENABLED !== "false";
-}
-
 function auditWriter() {
   return new AppendOnlyAuditWriter<Prisma.TransactionClient>({
     store: new HashChainedAuditStore({ repository: new PrismaAuditLedgerRepository(), maxAttempts: 3 }),
