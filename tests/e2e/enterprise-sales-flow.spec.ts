@@ -145,7 +145,7 @@ test.describe("Enterprise Sales authenticated workflow", () => {
 
     const serviceForm = presalesPage.locator("form").filter({ hasText: "เพิ่ม Product / Service" });
     await selectOptionContaining(serviceForm.getByLabel("Service category"), "Broadband Internet");
-    await selectOptionContaining(serviceForm.getByLabel("Catalog item"), "NT-BB-1000");
+    await serviceForm.getByLabel("Catalog item").fill("NT-BB-1000");
     await serviceForm.getByLabel("Quantity").fill("1");
     await serviceForm.getByLabel("Bandwidth").fill("1000 Mbps");
     await serviceForm.getByLabel("Access technology").fill("FIBER");
