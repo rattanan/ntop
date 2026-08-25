@@ -21,7 +21,7 @@ const actor = {
 };
 const current: OpportunityTransitionRecord = {
   id: "opp-1", version: 1, stage: "QUALIFY", ownerId: "admin-1", organizationUnitId: null,
-  requirements: "Need", qualificationResult: "Qualified", stakeholderSummary: null,
+  requirements: "Need", qualificationResult: null, stakeholderSummary: null,
   nextAction: "Discovery meeting", expectedCloseAt: new Date("2026-09-01T00:00:00Z"),
   coverageConfirmed: false, solutionComplete: false, quoteSubmitted: false,
   quoteApproved: false, quoteAccepted: false,
@@ -45,7 +45,7 @@ function setup() {
     updateProfileVersioned: vi.fn().mockResolvedValue({ ...profile, version: 2 }),
     overrideProbabilityVersioned: vi.fn().mockResolvedValue({ ...profile, probability: 65, probabilitySource: "MANUAL_OVERRIDE", version: 2 }),
     appendProbabilityHistory: vi.fn().mockResolvedValue(undefined),
-    findPolicy: vi.fn().mockResolvedValue({ id: "policy-1", requiredFields: ["qualificationResult", "nextAction"], requiredPermission: "opportunity.transition" }),
+    findPolicy: vi.fn().mockResolvedValue({ id: "policy-1", requiredFields: ["nextAction"], requiredPermission: "opportunity.transition" }),
     hasGrantedPermission: vi.fn().mockResolvedValue(false),
     findReceipt: vi.fn().mockResolvedValue(null),
     transitionVersioned: vi.fn().mockResolvedValue({ ...current, stage: "DISCOVER", version: 2 }),
@@ -72,7 +72,7 @@ describe("OpportunityService", () => {
     expect(repository.updateProfileVersioned).toHaveBeenCalledWith("opp-1", 1, expect.objectContaining({ probability: profile.probability }), tx);
   });
 
-  it("applies configured transition, history, audit and receipt atomically", async () => {
+  it("transitions QUALIFY to DISCOVER without a qualification result when next action is present", async () => {
     const { service, repository, audit } = setup();
     await expect(service.transition(actor, "opp-1", { targetStage: "DISCOVER", command: "FORWARD", expectedVersion: 1 }, "corr-1", "idem-1")).resolves.toMatchObject({ stage: "DISCOVER", version: 2 });
     expect(repository.appendHistory).toHaveBeenCalledWith(expect.objectContaining({ fromStage: "QUALIFY", toStage: "DISCOVER", aggregateVersion: 2 }), tx);

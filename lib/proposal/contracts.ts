@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const PROPOSAL_AI_CAPABILITY = "proposal-generation";
 export const PROPOSAL_AI_SCHEMA_VERSION = "proposal.v1";
-export const PROPOSAL_AI_PROMPT_VERSION = "proposal-generation.prompt.v1";
+export const PROPOSAL_AI_PROMPT_VERSION = "proposal-generation.prompt.v2-th";
 
 export const DEFAULT_PROPOSAL_SECTION_DEFINITIONS = [
   ["EXECUTIVE_SUMMARY", "Executive Summary"],
@@ -20,6 +20,23 @@ export const DEFAULT_PROPOSAL_SECTION_DEFINITIONS = [
   ["TERMS_AND_CONDITIONS", "Terms & Conditions"],
   ["NEXT_STEPS", "Next Steps"],
 ] as const;
+
+export const THAI_PROPOSAL_SECTION_TITLES: Readonly<Record<(typeof DEFAULT_PROPOSAL_SECTION_DEFINITIONS)[number][0], string>> = {
+  EXECUTIVE_SUMMARY: "บทสรุปผู้บริหาร",
+  CUSTOMER_CHALLENGES: "ความท้าทายของลูกค้า",
+  BUSINESS_OBJECTIVES: "วัตถุประสงค์ทางธุรกิจ",
+  PROPOSED_SOLUTION: "โซลูชันที่นำเสนอ",
+  SOLUTION_BENEFITS: "ประโยชน์ของโซลูชัน",
+  IMPLEMENTATION_PLAN: "แผนการดำเนินงาน",
+  TIMELINE: "กำหนดการ",
+  PROJECT_SCOPE: "ขอบเขตโครงการ",
+  DELIVERABLES: "สิ่งส่งมอบ",
+  ASSUMPTIONS: "ข้อสมมติฐาน",
+  SUPPORT: "การสนับสนุนและบริการหลังการขาย",
+  PRICING_SUMMARY: "สรุปราคา",
+  TERMS_AND_CONDITIONS: "ข้อกำหนดและเงื่อนไข",
+  NEXT_STEPS: "ขั้นตอนถัดไป",
+};
 
 export const proposalSectionSchema = z.strictObject({
   sectionCode: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,99}$/),

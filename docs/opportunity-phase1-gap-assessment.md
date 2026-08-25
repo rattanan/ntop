@@ -15,6 +15,7 @@
 - Opportunity Health is deterministic, configurable, explainable and calculated only after authorization-scoped record lookup.
 - Opportunity list/detail use organization-aware authorization context rather than legacy `ADMIN/ownerId` checks.
 - List/detail expose identity, forecast, weighted value, health, probability evidence and responsive layouts.
+- Authorized users override Probability from the summary pencil action in a focused dialog; the redundant lower-page edit form is not displayed.
 
 ## Remaining Phase 1 scope
 

@@ -7,6 +7,8 @@ const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 const schema = read("prisma/schema.prisma");
 const migration = read("prisma/migrations/20260713220000_add_opportunity_pipeline_quote_approval/migration.sql");
 const compatibilityMigration = read("prisma/legacy-mariadb-5.5-opportunity-commercial.sql");
+const relaxedQualificationMigration = read("prisma/migrations/20260825180000_relax_qualify_discover_transition_policy/migration.sql");
+const relaxedQualificationCompatibilityMigration = read("prisma/legacy-mariadb-5.5-relax-qualify-discover-transition-policy.sql");
 
 describe("Opportunity/Pipeline/Quote/Approval persistence", () => {
   it("adds optimistic stage history and configured transitions", () => {
@@ -15,6 +17,17 @@ describe("Opportunity/Pipeline/Quote/Approval persistence", () => {
     expect(schema).toContain("model OpportunityCommandReceipt {");
     expect(migration).toContain("QUALIFY_DISCOVER");
     expect(migration).toContain("WON_REOPEN");
+  });
+
+  it("versions QUALIFY to DISCOVER so only next action is required", () => {
+    for (const policyMigration of [relaxedQualificationMigration, relaxedQualificationCompatibilityMigration]) {
+      expect(policyMigration).toContain("'QUALIFY_DISCOVER', 2");
+      expect(policyMigration).toContain("nextAction");
+      expect(policyMigration).not.toContain("JSON_ARRAY('qualificationResult')");
+      expect(policyMigration).not.toContain('["qualificationResult"]');
+      expect(policyMigration).toContain("`effectiveTo`");
+      expect(policyMigration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
+    }
   });
 
   it("stores money as Decimal and immutable commercial versions", () => {

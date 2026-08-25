@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { Pencil, X } from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import type { FormState } from "@/app/action-types";
@@ -49,10 +50,27 @@ export function OpportunityTransitionForm({ opportunityId, version, stage, expec
   </form>;
 }
 
-export function OpportunityProbabilityForm({ opportunityId, version, probability }: { opportunityId: string; version: number; probability: number }) {
+type ProbabilityHistoryItem = { id: string; previousProbability: number; newProbability: number; reason: string; changedByName: string; changedAt: string };
+
+export function OpportunityProbabilityDialog({ opportunityId, version, probability, history }: { opportunityId: string; version: number; probability: number; history: ProbabilityHistoryItem[] }) {
+  const dialog = useRef<HTMLDialogElement>(null);
   const [state, action, pending] = useActionState(overrideOpportunityProbability.bind(null, opportunityId), initial);
-  const key = useIdempotencyKey();
-  return <form action={action} className="probability-form"><input type="hidden" name="expectedVersion" value={version}/><input type="hidden" name="idempotencyKey" value={key}/><FormField label="Probability ใหม่ (%)" name="probability" required><Input name="probability" type="number" min="0" max="100" defaultValue={probability} required/></FormField><FormField label="เหตุผลการปรับ" name="reason" required help="เหตุผลจะถูกเก็บใน Audit history"><Input name="reason" minLength={5} maxLength={1000} required/></FormField><FormNotice state={state}/><button className="secondary" disabled={pending}>{pending?"กำลังบันทึก…":"บันทึก Probability"}</button></form>;
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  useEffect(() => { if (state.status === "success") dialog.current?.close(); }, [state.status]);
+  const openDialog = () => {
+    if (state.status === "success") setIdempotencyKey(crypto.randomUUID());
+    dialog.current?.showModal();
+  };
+  return <>
+    <button className="probability-edit-button" type="button" aria-label="แก้ไข Probability" title="แก้ไข Probability" onClick={openDialog}><Pencil aria-hidden="true"/></button>
+    <dialog className="confirm-dialog probability-dialog" ref={dialog} aria-labelledby="probability-dialog-title" onCancel={(event) => { if (pending) event.preventDefault(); }}>
+      <form action={action}>
+        <div className="confirm-dialog-head"><div><strong id="probability-dialog-title">Forecast probability override</strong><small>ระบุ Probability ใหม่พร้อมเหตุผลเพื่อบันทึก Audit history</small></div><button className="dialog-close" type="button" aria-label="ปิดหน้าต่าง" disabled={pending} onClick={() => dialog.current?.close()}><X aria-hidden="true"/></button></div>
+        <div className="confirm-dialog-body"><input type="hidden" name="expectedVersion" value={version}/><input type="hidden" name="idempotencyKey" value={idempotencyKey}/><div className="probability-dialog-fields"><FormField label="Probability ใหม่ (%)" name="probability" required><Input name="probability" type="number" min="0" max="100" defaultValue={probability} required autoFocus/></FormField><FormField label="เหตุผลการปรับ" name="reason" required help="เหตุผลจะถูกเก็บใน Audit history"><Input name="reason" minLength={5} maxLength={1000} required/></FormField></div><FormNotice state={state.status === "success" ? initial : state}/>{history.length>0&&<div className="probability-history"><h3>ประวัติล่าสุด</h3>{history.map((item)=><p key={item.id}><strong>{item.previousProbability}% → {item.newProbability}%</strong><span>{item.reason} · {item.changedByName} · {item.changedAt}</span></p>)}</div>}</div>
+        <div className="confirm-dialog-actions"><button className="secondary" type="button" disabled={pending} onClick={() => dialog.current?.close()}>ยกเลิก</button><button className="primary" disabled={pending}>{pending?"กำลังบันทึก…":"บันทึก Probability"}</button></div>
+      </form>
+    </dialog>
+  </>;
 }
 
 type QuoteEditorProduct = { id: string; code: string; name: string; listPrice: string; floorPrice: string | null };

@@ -29,7 +29,8 @@
 ## Addendum — Opportunity Transition Policy (2026-08-25)
 
 - เพิ่มบทความ `opportunity-transition-policy` เพื่อสรุป 5 ขั้นทำงานหลัก, 4 สถานะปลายทาง และ 26 policy routes ใน baseline ปัจจุบัน
-- ตรวจยืนยัน Active policy 26 รายการและ permission grants จาก development database ผ่าน `ssh ntop` เมื่อ 2026-08-25; ไม่มีการเขียนหรือแก้ข้อมูลบนฐาน
+- ตรวจยืนยัน Active policy 26 รายการและ permission grants จาก development database ผ่าน `ssh ntop` เมื่อ 2026-08-25 ก่อนออก policy version ใหม่
+- ใช้ audited Workflow Admin service สร้าง policy version 2 ของ `QUALIFY_DISCOVER` บน development database โดยกำหนดให้ `nextAction` เป็น gate เดียว ส่วน `qualificationResult` เป็นข้อมูลเสริมและไม่ block Transition ตามคำสั่งเจ้าของงานเมื่อ 2026-08-25
 - แจกแจง Required Fields สำหรับ FORWARD/WON/RETURN/LOST/CANCEL/EXPIRE/REOPEN พร้อมสิทธิ์พิเศษของ WON และ REOPEN
 - อธิบายการตรวจ scope, active/effective policy version, optimistic version, idempotency, history/evidence และ audit ฝั่ง server
 - เพิ่ม search contract สำหรับคำว่า `Transition Policy` และ `26 เส้นทาง` รวมถึงตรวจเนื้อหาของ gate หลักทุกกลุ่ม

@@ -430,6 +430,18 @@ kbd { padding:2px 6px;border:1px solid var(--nt-gray-300);border-bottom-width:2p
 .opportunity-summary>div>span { color:var(--muted-foreground);font-size:10px;font-weight:750;letter-spacing:.04em;text-transform:uppercase; }
 .opportunity-summary strong { min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-variant-numeric:tabular-nums; }
 .opportunity-summary small { color:var(--muted-foreground);font-size:10px; }
+.probability-summary { position:relative; }
+.probability-edit-button { position:absolute;top:10px;right:10px;width:32px;height:32px;display:grid;place-items:center;padding:0;border:1px solid var(--nt-gray-300);border-radius:var(--radius-sm);background:#fff;color:var(--nt-gray-600);cursor:pointer;transition:background var(--duration-fast),border-color var(--duration-fast),color var(--duration-fast); }
+.probability-edit-button:hover { border-color:#c3a900;background:#fff6c4;color:#6c5500; }
+.probability-edit-button svg { width:14px;height:14px; }
+.probability-dialog { text-align:left; }
+.opportunity-summary .probability-dialog strong { overflow:visible;font-size:inherit; }
+.opportunity-summary .probability-dialog .confirm-dialog-head strong { font-size:15px; }
+.opportunity-summary .probability-dialog .confirm-dialog-head small { font-size:11px; }
+.probability-dialog-fields { display:grid;gap:16px; }
+.probability-dialog .probability-history { max-height:180px;overflow-y:auto; }
+.probability-dialog .probability-history p { display:grid;gap:3px; }
+.probability-dialog .probability-history p span { text-align:left;overflow-wrap:anywhere; }
 .opportunity-tabs { position:sticky;top:68px;z-index:20;display:flex;gap:4px;margin-bottom:18px;padding:5px;overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:rgb(255 255 255 / .94);backdrop-filter:blur(12px); }
 .opportunity-tabs a { min-height:38px;display:inline-flex;align-items:center;padding:7px 13px;border-radius:var(--radius-md);color:var(--nt-gray-600);font-size:12px;font-weight:700;white-space:nowrap; }
 .opportunity-tabs a:hover { background:#fff6c4;color:var(--foreground); }

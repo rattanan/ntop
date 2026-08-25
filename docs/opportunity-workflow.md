@@ -42,7 +42,7 @@ stateDiagram-v2
 | From → To | Minimum exit/entry criteria | Actor | Audit/event |
 |---|---|---|---|
 | New → Qualification | required entry fields, owner active | KAM/Manager | OpportunityCreated |
-| Qualification → Need Analysis | qualification result, customer need, next action | owner/Manager | StageChanged |
+| Qualification → Need Analysis | next action; qualification result เป็นข้อมูลเสริมและไม่ block transition | owner/Manager | StageChanged |
 | Need Analysis → Solution Design | requirements, stakeholders, value/close date reviewed | owner/Manager | StageChanged |
 | Solution Design → Proposal | coverage result where required; solution version; cost/risk complete | owner with Presales/Coverage evidence | StageChanged |
 | Proposal → Negotiation | valid quote version submitted/sent; approval complete when required | owner/Manager | StageChanged |

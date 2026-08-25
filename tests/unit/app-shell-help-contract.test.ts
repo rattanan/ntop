@@ -51,7 +51,8 @@ describe("App shell and Help Center", () => {
     const content = article?.sections.flatMap((section) => section.body).join(" ") ?? "";
     expect(article?.title).toContain("5 ขั้นหลักและ 26 เส้นทาง");
     expect(content).toContain("เดินหน้า 4, ปิดชนะ 1, ย้อนขั้น 4, ปิดแพ้ 5, ยกเลิก 5, หมดอายุ 5 และเปิดใหม่ 2");
-    expect(content).toContain("Qualification Result และ Next Action");
+    expect(content).toContain("Next Action เท่านั้น");
+    expect(content).toContain("Qualification Result เป็นข้อมูลเสริมและไม่ block Transition");
     expect(content).toContain("Requirements, Stakeholder Summary และ Expected Close Date");
     expect(content).toContain("Coverage และ Solution Complete");
     expect(content).toContain("Quote Submitted และ Quote Approved");

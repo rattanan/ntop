@@ -42,8 +42,10 @@ new editable draft version is persisted.
 - A reusable active Template version provides ordered default sections. Template
   data is copied to a Proposal version so later Template edits do not rewrite
   Proposal history.
-- AI output contains the required Proposal section codes, has no unknown fields,
-  is bounded by input/output validation, and produces an editable Draft version.
+- AI output contains the required Proposal section codes, uses professional Thai
+  for every human-readable title and content while preserving supplied proper
+  nouns, identifiers, dates and monetary values, has no unknown fields, is
+  bounded by input/output validation, and produces an editable Draft version.
   AI outage returns a sanitized availability error and leaves manual workflows
   operational.
 - Proposal list/detail/dashboard queries are scoped and bounded to 200 records.
