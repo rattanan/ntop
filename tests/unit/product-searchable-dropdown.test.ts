@@ -22,12 +22,14 @@ describe("searchable Product dropdowns", () => {
     expect(findProductOption(products, "unknown")).toBeUndefined();
   });
 
-  it("uses the searchable control in Solution Design and Quotation while keeping Proposal multi-search", () => {
+  it("uses a category cascade in Solution Design while preserving Quotation and Proposal search", () => {
     const presales = readFileSync("components/presales-forms.tsx", "utf8");
     const quotation = readFileSync("components/workflow-forms.tsx", "utf8");
     const proposal = readFileSync("components/proposal-forms.tsx", "utf8");
     const control = readFileSync("components/searchable-product-select.tsx", "utf8");
-    expect(presales).toContain("<SearchableProductSelect");
+    expect(presales).toContain("product.serviceCategoryCode===category?.code");
+    expect(presales).toContain('disabled={!categoryId}');
+    expect(presales).not.toContain("<SearchableProductSelect");
     expect(quotation).toContain("<SearchableProductSelect");
     expect(proposal).toContain("filterProductOptions(products,query,50)");
     expect(control).toContain('role="combobox"');

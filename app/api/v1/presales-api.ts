@@ -70,3 +70,11 @@ export async function jsonBody(request: Request) {
     throw new PresalesValidationError(["body"]);
   }
 }
+
+export function presalesIdempotencyKey(request: Request, correlationId: string) {
+  const key = request.headers.get("idempotency-key")?.trim();
+  if (key && key.length <= 191) return key;
+  return NextResponse.json({
+    error: { code: "IDEMPOTENCY_KEY_REQUIRED", message: "Idempotency-Key is required", retryable: false, correlationId },
+  }, { status: 400 });
+}

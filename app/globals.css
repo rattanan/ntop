@@ -681,6 +681,41 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
   .module-tabs a { padding-inline:12px; }
 }
 
+/* Solution Design workspace */
+.solution-design-tabs { display:grid;gap:18px; }
+.solution-tab-list { position:sticky;top:68px;z-index:20;display:grid;grid-template-columns:repeat(7,minmax(116px,1fr));gap:5px;padding:6px;overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-lg);background:rgb(255 255 255 / .94);box-shadow:var(--shadow-xs);backdrop-filter:blur(12px); }
+.solution-tab-list button { min-height:58px;display:grid;align-content:center;gap:2px;padding:7px 10px;border:0;border-radius:var(--radius-md);background:transparent;color:var(--nt-gray-700);cursor:pointer;text-align:left;white-space:nowrap;transition:background var(--duration-fast),color var(--duration-fast),box-shadow var(--duration-fast); }
+.solution-tab-list button:hover { background:var(--muted);color:var(--foreground); }
+.solution-tab-list button[aria-selected="true"] { background:#fff1a3;color:var(--nt-ink-950);box-shadow:inset 0 0 0 1px #ead36b; }
+.solution-tab-list button span { font-size:12px;font-weight:800; }
+.solution-tab-list button small { color:var(--muted-foreground);font-size:9px;font-weight:550; }
+.solution-tab-panel { min-width:0; }
+.solution-tab-panel>.card:first-child { margin-top:0; }
+@media (max-width:900px) { .solution-tab-list { grid-template-columns:repeat(7,minmax(145px,1fr)); }.solution-tab-list button { min-height:54px; } }
+@media (max-width:600px) { .solution-tab-list { top:60px;margin-inline:-8px;border-radius:var(--radius-md); }.solution-tab-list button { min-height:52px; } }
+
+/* Service Category administration */
+.service-category-admin { display:grid;gap:24px; }
+.service-category-create { margin:0; }
+.checkbox-field { min-height:44px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--input-radius);background:var(--surface-subtle);font-size:12px;font-weight:650; }
+.checkbox-field input { width:17px;height:17px;accent-color:var(--nt-yellow-600); }
+.section-heading { display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px; }
+.section-heading h2 { margin:0;font-size:18px; }
+.section-heading p { margin:3px 0 0;color:var(--muted-foreground);font-size:11px; }
+.section-heading>span { color:var(--muted-foreground);font-size:11px;font-weight:700; }
+.service-category-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
+.service-category-grid>.card+.card { margin-top:0; }
+.service-category-card.is-deleted { opacity:.68; }
+.service-category-rules { display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px; }
+.service-category-rules span { padding:4px 8px;border-radius:999px;background:var(--muted);color:var(--nt-gray-700);font-size:10px;font-weight:700; }
+.service-category-editor { margin-top:10px; }
+.service-category-editor>summary { width:max-content;list-style:none;cursor:pointer; }
+.service-category-editor>summary::-webkit-details-marker { display:none; }
+.service-category-editor>form { display:grid;gap:14px;margin-top:12px;padding-top:14px;border-top:1px solid var(--border); }
+.service-category-delete { display:grid;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border); }
+.service-category-delete .danger-secondary { width:max-content; }
+@media (max-width:900px) { .service-category-grid { grid-template-columns:1fr; } }
+
 /* Sales Pipeline & Forecast */
 .pipeline-page { display:grid;gap:18px; }
 .pipeline-hero { display:flex;align-items:flex-start;justify-content:space-between;gap:24px; }
@@ -892,6 +927,7 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
   .customer-tabs,
   .opportunity-summary,
   .opportunity-tabs,
+  .solution-tab-list,
   .quick-create-menu,
   .notification-panel,
   .retention-inline-form,
@@ -953,6 +989,10 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
 [data-theme="dark"] .customer-tabs a.active { background:#3b351d;color:#ffea83;box-shadow:inset 0 0 0 1px #6b5d22; }
 [data-theme="dark"] .customer-tabs small { background:var(--muted);color:var(--muted-foreground); }
 [data-theme="dark"] .customer-tabs a.active small { background:#51461d;color:#ffec91; }
+[data-theme="dark"] .solution-tab-list button { color:var(--muted-foreground); }
+[data-theme="dark"] .solution-tab-list button:hover { background:var(--muted);color:var(--foreground); }
+[data-theme="dark"] .solution-tab-list button[aria-selected="true"] { background:#3b351d;color:#ffea83;box-shadow:inset 0 0 0 1px #6b5d22; }
+[data-theme="dark"] .checkbox-field { background:var(--surface-subtle);border-color:var(--border); }
 
 [data-theme="dark"] :is(.ai-insight-card,.ai-activity-card,.ai-proposal-card) { border-color:#5e5322;background:linear-gradient(145deg,var(--card) 55%,#252315); }
 [data-theme="dark"] .ai-insight-header,

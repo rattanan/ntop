@@ -29,6 +29,17 @@ describe("permission-driven application navigation", () => {
     expect(routes).toEqual(["/admin/audit"]);
   });
 
+  it("exposes Quotation and Service Category administration through explicit grants", () => {
+    const groups = visibleNavigation([
+      NAVIGATION_PERMISSIONS.quotes,
+      NAVIGATION_PERMISSIONS.adminServiceCategories,
+    ]);
+    expect(groups.flatMap((group) => group.items.map((item) => item.href))).toEqual([
+      "/quotes",
+      "/admin/service-categories",
+    ]);
+  });
+
   it("filters quick create independently from read navigation", () => {
     const items = visibleQuickCreate([
       NAVIGATION_PERMISSIONS.prospects,

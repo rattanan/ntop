@@ -116,3 +116,14 @@ export async function createActiveProviderClient() {
     return { client: new OpenAiCompatibleClient({ apiUrl: configuration.apiUrl, apiKey, model: configuration.model, timeoutMs: configuration.requestTimeoutMs }), configurationVersionId: configuration.id, model: configuration.model };
   } catch { throw new AiConfigurationRuntimeError(); }
 }
+
+export async function isProposalAiGenerationAvailable() {
+  if (process.env.AI_PROPOSAL_GENERATION_ENABLED !== "true") return false;
+  try {
+    await createActiveProviderClient();
+    return true;
+  } catch (error) {
+    if (error instanceof AiConfigurationRuntimeError) return false;
+    throw error;
+  }
+}

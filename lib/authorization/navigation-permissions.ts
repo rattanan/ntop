@@ -22,6 +22,7 @@ export const NAVIGATION_PERMISSIONS = {
   adminRiskRules: "navigation.admin.risk-rules.view",
   adminWorkflow: "navigation.admin.workflow.view",
   adminLeadManagement: "navigation.admin.lead-management.view",
+  adminServiceCategories: "navigation.admin.service-categories.view",
 } as const;
 
 export const QUICK_CREATE_PERMISSIONS = {

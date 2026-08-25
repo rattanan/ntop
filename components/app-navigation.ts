@@ -59,7 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "BOQ", href: "/boqs", icon: ListTree, keywords: "bill of quantities", requiredPermission: NAVIGATION_PERMISSIONS.boqs },
       { label: "บริการและราคา", href: "/products", icon: Boxes, keywords: "product service", requiredPermission: NAVIGATION_PERMISSIONS.products },
       { label: "Proposal", href: "/proposals", icon: FileCheck2, keywords: "proposal quotation ai", requiredPermission: NAVIGATION_PERMISSIONS.proposals },
-      { label: "ใบเสนอราคา", href: "/quotes", icon: FileText, keywords: "quote quotation", requiredPermission: NAVIGATION_PERMISSIONS.quotes },
+      { label: "Quotation", href: "/quotes", icon: FileText, keywords: "quote quotation ใบเสนอราคา", requiredPermission: NAVIGATION_PERMISSIONS.quotes },
       { label: "สัญญา", href: "/contracts", icon: FileCheck2, keywords: "contract agreement renewal", requiredPermission: NAVIGATION_PERMISSIONS.contracts },
       { label: "การอนุมัติ", href: "/approvals", icon: ShieldCheck, keywords: "approval", requiredPermission: NAVIGATION_PERMISSIONS.approvals },
     ],
@@ -76,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Risk Rules", href: "/admin/ai-risk", icon: Gauge, requiredPermission: NAVIGATION_PERMISSIONS.adminRiskRules },
       { label: "Workflow & Authority", href: "/admin/workflow", icon: ShieldCheck, requiredPermission: NAVIGATION_PERMISSIONS.adminWorkflow },
       { label: "Lead Assignment Rules", href: "/admin/lead-management", icon: Target, requiredPermission: NAVIGATION_PERMISSIONS.adminLeadManagement },
+      { label: "Service Categories", href: "/admin/service-categories", icon: ListTree, keywords: "product catalog category", requiredPermission: NAVIGATION_PERMISSIONS.adminServiceCategories },
     ],
   },
 ];

@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -15,6 +14,8 @@ import { createGovernedQuote } from "@/app/actions/quote";
 import { createOpportunity as createOpportunityAction, updateOpportunity as updateOpportunityAction } from "@/app/actions/opportunity";
 import { createLead as createLeadAction } from "@/app/actions/lead";
 import { createLoginRuntime } from "@/lib/identity/login-runtime";
+import { CatalogValidationError, ProductCodeConflictError } from "@/lib/presales/catalog-service";
+import { createCatalogRuntime } from "@/lib/presales/catalog-runtime";
 
 export type { FormState } from "@/app/action-types";
 const text = (value: FormDataEntryValue | null) => typeof value === "string" ? value.trim() : "";
@@ -46,8 +47,8 @@ export async function createActivity(state: FormState, formData: FormData): Prom
   return createActivityAction(state, formData);
 }
 
-const productSchema=z.object({code:z.string().min(2,"ระบุรหัสสินค้า"),name:z.string().min(2,"ระบุชื่อบริการ"),category:z.string().min(2,"ระบุหมวดหมู่"),listPrice:z.string().regex(/^\d+(\.\d{1,4})?$/,"ราคาไม่ถูกต้อง"),floorPrice:z.union([z.string().regex(/^\d+(\.\d{1,4})?$/,"Floor Price ไม่ถูกต้อง"),z.literal("")]),description:z.string().optional()});
-export async function createProduct(_:FormState,f:FormData):Promise<FormState>{const s=await requireSession();if(s.role!=="ADMIN")return {message:"เฉพาะผู้ดูแลระบบเท่านั้นที่จัดการ Product Catalog ได้"};const p=productSchema.safeParse({code:text(f.get("code")),name:text(f.get("name")),category:text(f.get("category")),listPrice:text(f.get("listPrice")),floorPrice:text(f.get("floorPrice")),description:text(f.get("description"))});if(!p.success)return errors(p.error);try{await prisma.product.create({data:{code:p.data.code,name:p.data.name,category:p.data.category,listPrice:p.data.listPrice,floorPrice:p.data.floorPrice||null,description:p.data.description||null}})}catch(e){if(e instanceof Prisma.PrismaClientKnownRequestError&&e.code==="P2002")return {errors:{code:["รหัสสินค้านี้มีอยู่แล้ว"]}};throw e}revalidatePath("/products");redirect("/products")}
+const productSchema=z.object({code:z.string().min(2,"ระบุรหัสสินค้า"),name:z.string().min(2,"ระบุชื่อบริการ"),serviceCategoryCode:z.string().min(1,"เลือก Service Category"),listPrice:z.string().regex(/^\d+(\.\d{1,4})?$/,"ราคาไม่ถูกต้อง"),floorPrice:z.union([z.string().regex(/^\d+(\.\d{1,4})?$/,"Floor Price ไม่ถูกต้อง"),z.literal("")]),description:z.string().optional(),idempotencyKey:z.string().uuid()});
+export async function createProduct(_:FormState,f:FormData):Promise<FormState>{const s=await requireSession();const p=productSchema.safeParse({code:text(f.get("code")),name:text(f.get("name")),serviceCategoryCode:text(f.get("serviceCategoryCode")),listPrice:text(f.get("listPrice")),floorPrice:text(f.get("floorPrice")),description:text(f.get("description")),idempotencyKey:text(f.get("idempotencyKey"))});if(!p.success)return errors(p.error);const authorization=await loadAuthorizationContext({actorId:s.id,legacyRole:s.role});const category=await prisma.serviceCategoryConfig.findFirst({where:{code:p.data.serviceCategoryCode,active:true,deletedAt:null}});if(!category)return{errors:{serviceCategoryCode:["ไม่พบ Service Category ที่เปิดใช้งาน"]}};try{await createCatalogRuntime().createProduct({...s,authorization},{code:p.data.code,name:p.data.name,category:category.name,serviceCategoryCode:category.code,listPrice:p.data.listPrice,floorPrice:p.data.floorPrice||null,description:p.data.description,requiresSiteSurvey:category.requiresSiteSurvey,requiresBoq:category.requiresBoq,requiresPhysicalInstallation:category.requiresPhysicalInstallation,active:true},crypto.randomUUID(),p.data.idempotencyKey)}catch(e){if(e instanceof ProductCodeConflictError)return{errors:{code:["รหัสสินค้านี้มีอยู่แล้ว"]}};if(e instanceof CatalogValidationError)return{message:e.message,errors:e.issues};throw e}revalidatePath("/products");redirect("/products")}
 
 export async function createQuote(state: FormState, formData: FormData): Promise<FormState> {
   return createGovernedQuote(state, formData);
