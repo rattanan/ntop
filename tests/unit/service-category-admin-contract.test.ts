@@ -50,20 +50,30 @@ describe("Service Category administration and Solution Design UX contract", () =
     expect(migration).not.toMatch(/DROP|TRUNCATE/i);
   });
 
-  it("renders paged Product search and a paged Service Category table without a delete-reason field", () => {
+  it("renders searchable, numbered and sortable Product and Service Category tables without a delete-reason field", () => {
     const products = read("app/(portal)/products/page.tsx");
     const categories = read("components/service-category-admin-console.tsx");
     const categoryPage = read("app/(portal)/admin/service-categories/page.tsx");
+    const categoryService = read("lib/presales/service-category-service.ts");
+    const pagination = read("components/page-number-navigation.tsx");
+    const sortableHeader = read("components/sortable-table-header.tsx");
     const action = read("app/actions/service-category.ts");
     expect(products).toContain('role="search"');
     expect(products).toContain('name="q"');
-    expect(products).toContain("take: PAGE_SIZE + 1");
-    expect(products).toContain('aria-label="แบ่งหน้า Product"');
+    expect(products).toContain("take: PAGE_SIZE");
+    expect(products).toContain("<PageNumberNavigation");
+    expect(products).toContain("<SortableTableHeader");
     expect(categories).toContain('<table className="table service-category-table">');
+    expect(categories).toContain('column="productCount"');
     expect(categories).toContain("category.productCount === 0");
     expect(categories).toContain("window.confirm");
     expect(categories).not.toContain('name="reason"');
-    expect(categoryPage).toContain("cursor: query.cursor");
+    expect(categoryPage).toContain("SERVICE_CATEGORY_SORTS.includes");
+    expect(categoryPage).toContain("page: requestedPage");
+    expect(categoryService).toContain("ORDER BY COUNT(p.id)");
+    expect(pagination).toContain('aria-current="page"');
+    expect(sortableHeader).toContain("aria-sort");
+    expect(sortableHeader).toContain('search.delete("page")');
     expect(action).not.toContain('reason: text(form, "reason")');
   });
 

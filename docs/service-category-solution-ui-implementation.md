@@ -14,10 +14,11 @@ denormalized Product label/code in the same transaction; historical Solution
 Service rows remain linked by category ID.
 
 The Product Catalog supports bounded server-side search across code, name,
-category and description with bidirectional cursor pagination. Service Category
-administration uses a paged table. Deletion requires an explicit browser
-confirmation but no free-text reason; the server allows the audited soft-delete
-only when no non-deleted Product references the category code.
+category and description with numbered pagination and allowlisted column
+sorting. Service Category administration uses a numbered, sortable table.
+Deletion requires an explicit browser confirmation but no free-text reason; the
+server allows the audited soft-delete only when no non-deleted Product
+references the category code.
 
 ## Solution Design behavior
 
@@ -35,7 +36,8 @@ only when no non-deleted Product references the category code.
 ## Verification
 
 - Product creation cannot submit a free-text category.
-- Product search and both administration lists remain bounded by cursor pages.
+- Product search and both administration lists use fixed page sizes and
+  allowlisted server-side sorting.
 - Service Category create/update/delete requires server-side catalog-manage
   permission and writes audit in the same transaction.
 - Service Category deletion is denied when any non-deleted Product still

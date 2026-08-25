@@ -32,6 +32,8 @@ const categoryInput = z.strictObject({
 });
 const updateInput = categoryInput.extend({ expectedVersion: z.number().int().positive() });
 const deleteInput = z.strictObject({ expectedVersion: z.number().int().positive() });
+export const SERVICE_CATEGORY_SORTS = ["displayOrder", "code", "name", "productCount", "active"] as const;
+export type ServiceCategorySort = typeof SERVICE_CATEGORY_SORTS[number];
 
 export class ServiceCategoryValidationError extends Error {
   constructor(readonly issues: Record<string, string[]>) {
@@ -68,38 +70,37 @@ async function requireManage(actor: Actor, tx: Tx) {
   if (!allowed) throw new ServiceCategoryAccessError();
 }
 
-export async function listServiceCategories(actor: Actor, input: { cursor?: string; direction?: "next" | "prev"; limit?: number } = {}) {
+export async function listServiceCategories(actor: Actor, input: { page?: number; limit?: number; sort?: ServiceCategorySort; order?: "asc" | "desc" } = {}) {
   return prisma.$transaction(async (tx) => {
     await requireManage(actor, tx);
     const limit = Math.min(50, Math.max(1, input.limit ?? 10));
-    const direction = input.direction === "prev" ? "prev" : "next";
-    const anchor = input.cursor ? await tx.serviceCategoryConfig.findUnique({ where: { id: input.cursor } }) : null;
-    const cursorWhere: Prisma.ServiceCategoryConfigWhereInput = anchor ? {
-      OR: direction === "prev"
-        ? [
-          { displayOrder: { lt: anchor.displayOrder } },
-          { displayOrder: anchor.displayOrder, name: { lt: anchor.name } },
-          { displayOrder: anchor.displayOrder, name: anchor.name, id: { lt: anchor.id } },
-        ]
-        : [
-          { displayOrder: { gt: anchor.displayOrder } },
-          { displayOrder: anchor.displayOrder, name: { gt: anchor.name } },
-          { displayOrder: anchor.displayOrder, name: anchor.name, id: { gt: anchor.id } },
-        ],
-    } : {};
-    const [rows, total] = await Promise.all([
-      tx.serviceCategoryConfig.findMany({
-        where: cursorWhere,
-        orderBy: direction === "prev" && anchor
-          ? [{ displayOrder: "desc" }, { name: "desc" }, { id: "desc" }]
-          : [{ displayOrder: "asc" }, { name: "asc" }, { id: "asc" }],
-        take: limit + 1,
-      }),
-      tx.serviceCategoryConfig.count(),
-    ]);
-    const hasExtra = rows.length > limit;
-    const pageRows = rows.slice(0, limit);
-    const categories = direction === "prev" && anchor ? pageRows.reverse() : pageRows;
+    const sort = input.sort && SERVICE_CATEGORY_SORTS.includes(input.sort) ? input.sort : "displayOrder";
+    const order: "asc" | "desc" = input.order === "desc" ? "desc" : "asc";
+    const total = await tx.serviceCategoryConfig.count();
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const page = Math.min(totalPages, Math.max(1, input.page ?? 1));
+    const skip = (page - 1) * limit;
+    let categories;
+    if (sort === "productCount") {
+      const sqlOrder = Prisma.raw(order === "desc" ? "DESC" : "ASC");
+      const ids = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT sc.id
+        FROM ServiceCategoryConfig sc
+        LEFT JOIN Product p ON p.serviceCategoryCode = sc.code AND p.deletedAt IS NULL
+        GROUP BY sc.id
+        ORDER BY COUNT(p.id) ${sqlOrder}, sc.id ASC
+        LIMIT ${limit} OFFSET ${skip}
+      `);
+      const rows = ids.length ? await tx.serviceCategoryConfig.findMany({ where: { id: { in: ids.map((item) => item.id) } } }) : [];
+      const rowById = new Map(rows.map((row) => [row.id, row]));
+      categories = ids.map((item) => rowById.get(item.id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
+    } else {
+      categories = await tx.serviceCategoryConfig.findMany({
+        orderBy: [{ [sort]: order }, { id: "asc" }],
+        skip,
+        take: limit,
+      });
+    }
     const codes = categories.map((category) => category.code);
     const productCounts = codes.length ? await tx.product.groupBy({
       by: ["serviceCategoryCode"],
@@ -110,9 +111,10 @@ export async function listServiceCategories(actor: Actor, input: { cursor?: stri
     return {
       items: categories.map((category) => ({ ...category, productCount: countByCode.get(category.code) ?? 0 })),
       total,
-      cursorApplied: Boolean(anchor),
-      hasPrevious: direction === "prev" && anchor ? hasExtra : Boolean(anchor),
-      hasNext: direction === "prev" && anchor ? true : hasExtra,
+      page,
+      totalPages,
+      sort,
+      order,
     };
   });
 }

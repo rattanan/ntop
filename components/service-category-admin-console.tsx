@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Fragment, useActionState, useState } from "react";
 
 import type { FormState } from "@/app/action-types";
@@ -9,7 +8,9 @@ import {
   deleteServiceCategoryAction,
   updateServiceCategoryAction,
 } from "@/app/actions/service-category";
+import { PageNumberNavigation } from "./page-number-navigation";
 import { FormNotice } from "./notice";
+import { SortableTableHeader } from "./sortable-table-header";
 
 type Category = {
   id: string;
@@ -25,7 +26,13 @@ type Category = {
   productCount: number;
 };
 
-type Pagination = { page: number; total: number; previousHref: string | null; nextHref: string | null };
+type Pagination = {
+  page: number;
+  total: number;
+  totalPages: number;
+  sort: "displayOrder" | "code" | "name" | "productCount" | "active";
+  order: "asc" | "desc";
+};
 const initial: FormState = {};
 
 function CategoryFields({ category }: { category?: Category }) {
@@ -56,7 +63,8 @@ function CategoryRow({ category }: { category: Category }) {
   const canDelete = !category.deletedAt && category.productCount === 0;
   return <Fragment>
     <tr className={category.deletedAt ? "is-deleted" : undefined}>
-      <td><strong>{category.code}</strong><br/><small>ลำดับ {category.displayOrder}</small></td>
+      <td>{category.displayOrder.toLocaleString("th-TH")}</td>
+      <td><strong>{category.code}</strong></td>
       <td>{category.name}</td>
       <td><div className="service-category-rules" aria-label={`กฎของ ${category.name}`}><span>{category.requiresSiteSurvey ? "Survey" : "ไม่ Survey"}</span><span>{category.requiresBoq ? "BOQ" : "ไม่ BOQ"}</span><span>{category.requiresPhysicalInstallation ? "ติดตั้ง" : "ไม่ติดตั้ง"}</span></div></td>
       <td>{category.productCount.toLocaleString("th-TH")}</td>
@@ -73,7 +81,7 @@ function CategoryRow({ category }: { category: Category }) {
         <FormNotice state={deleteState}/>
       </td>
     </tr>
-    {editing && !category.deletedAt && <tr id={editorId} className="service-category-edit-row"><td colSpan={6}>
+    {editing && !category.deletedAt && <tr id={editorId} className="service-category-edit-row"><td colSpan={7}>
       <form action={updateAction}>
         <input type="hidden" name="expectedVersion" value={category.version}/>
         <CategoryFields category={category}/><FormNotice state={updateState}/>
@@ -86,7 +94,15 @@ function CategoryRow({ category }: { category: Category }) {
 export function ServiceCategoryAdminConsole({ categories, pagination }: { categories: Category[]; pagination: Pagination }) {
   return <div className="service-category-admin"><CreateCategoryForm/><section className="card" aria-labelledby="service-category-list-title">
     <div className="card-header section-heading"><div><strong id="service-category-list-title">Service Categories</strong><small>แก้ไขกฎกลางที่ควบคุม Product, Site Survey และ BOQ</small></div><span>{pagination.total.toLocaleString("th-TH")} หมวด</span></div>
-    <div className="table-wrap"><table className="table service-category-table"><thead><tr><th>รหัส / ลำดับ</th><th>ชื่อหมวดหมู่</th><th>กฎบริการ</th><th>Products</th><th>สถานะ</th><th>การทำงาน</th></tr></thead><tbody>{categories.map((category) => <CategoryRow key={`${category.id}-${category.version}`} category={category}/>)}</tbody></table>{!categories.length && <div className="empty">ยังไม่มี Service Category</div>}</div>
-    <nav className="card-body actions table-pagination" aria-label="แบ่งหน้า Service Category"><span>หน้า {pagination.page} · แสดง {categories.length.toLocaleString("th-TH")} จาก {pagination.total.toLocaleString("th-TH")} หมวด</span>{pagination.previousHref && <Link className="secondary" href={pagination.previousHref} rel="prev">ก่อนหน้า</Link>}{pagination.nextHref && <Link className="secondary" href={pagination.nextHref} rel="next">ถัดไป</Link>}</nav>
+    <div className="table-wrap"><table className="table service-category-table"><thead><tr>
+      <SortableTableHeader basePath="/admin/service-categories" column="displayOrder" currentSort={pagination.sort} currentOrder={pagination.order} label="ลำดับ"/>
+      <SortableTableHeader basePath="/admin/service-categories" column="code" currentSort={pagination.sort} currentOrder={pagination.order} label="รหัส"/>
+      <SortableTableHeader basePath="/admin/service-categories" column="name" currentSort={pagination.sort} currentOrder={pagination.order} label="ชื่อหมวดหมู่"/>
+      <th>กฎบริการ</th>
+      <SortableTableHeader basePath="/admin/service-categories" column="productCount" currentSort={pagination.sort} currentOrder={pagination.order} label="Products"/>
+      <SortableTableHeader basePath="/admin/service-categories" column="active" currentSort={pagination.sort} currentOrder={pagination.order} label="สถานะ"/>
+      <th>การทำงาน</th>
+    </tr></thead><tbody>{categories.map((category) => <CategoryRow key={`${category.id}-${category.version}`} category={category}/>)}</tbody></table>{!categories.length && <div className="empty">ยังไม่มี Service Category</div>}</div>
+    <PageNumberNavigation ariaLabel="แบ่งหน้า Service Category" basePath="/admin/service-categories" itemCount={categories.length} page={pagination.page} params={{ sort: pagination.sort, order: pagination.order }} total={pagination.total} totalPages={pagination.totalPages} unit="หมวด"/>
   </section></div>;
 }
