@@ -32,7 +32,11 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
 
   const roleCodes = [...new Set(authorization.assignments.map((assignment) => assignment.role))];
   const [categories, products, requirements, configuredBoqManage] = await Promise.all([
-    prisma.serviceCategoryConfig.findMany({ where: { active: true, deletedAt: null }, orderBy: { displayOrder: "asc" } }),
+    prisma.serviceCategoryConfig.findMany({
+      where: { active: true },
+      select: { id: true, code: true, name: true, requiresSiteSurvey: true },
+      orderBy: { displayOrder: "asc" },
+    }),
     prisma.product.findMany({
       where: { active: true, deletedAt: null, serviceCategoryCode: { not: null } },
       select: { id: true, name: true, code: true, serviceCategoryCode: true },

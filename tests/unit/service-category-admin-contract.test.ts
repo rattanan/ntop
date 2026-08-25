@@ -15,6 +15,22 @@ describe("Service Category administration and Solution Design UX contract", () =
     expect(action).toContain("requiresSiteSurvey:category.requiresSiteSurvey");
   });
 
+  it("keeps public Product and Solution paths compatible while the additive migration rolls out", () => {
+    const productPage = read("app/(portal)/products/new/page.tsx");
+    const solutionPage = read("app/(portal)/solution-designs/[id]/page.tsx");
+    const action = read("app/actions.ts");
+    const solutionService = read("lib/solution-design/solution-design-service.ts");
+
+    expect(productPage).not.toContain("serviceCategoryConfig.findMany({where:{active:true,deletedAt:null}");
+    expect(solutionPage).not.toContain("serviceCategoryConfig.findMany({ where: { active: true, deletedAt: null }");
+    expect(action).not.toContain("serviceCategoryConfig.findFirst({where:{code:p.data.serviceCategoryCode,active:true,deletedAt:null}");
+    expect(productPage).toContain("select:{code:true,name:true,requiresSiteSurvey:true,requiresBoq:true}");
+    expect(solutionPage).toContain("select: { id: true, code: true, name: true, requiresSiteSurvey: true }");
+    expect(action).toContain("select:{code:true,name:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}");
+    expect(solutionService).toContain("select:{id:true,code:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}");
+    expect(solutionService).toContain("select:{code:true}");
+  });
+
   it("keeps Service Category CRUD permissioned, versioned, soft-deleted and audited", () => {
     const service = read("lib/presales/service-category-service.ts");
     const schema = read("prisma/schema.prisma");

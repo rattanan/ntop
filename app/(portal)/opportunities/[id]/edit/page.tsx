@@ -42,7 +42,8 @@ export default async function EditOpportunityPage({ params }: { params: Promise<
     estimatedValue: opportunity.estimatedValue.toString(), probability: opportunity.probability,
     expectedCloseAt: opportunity.expectedCloseAt?.toISOString().slice(0, 10),
     ownerId: opportunity.ownerId, nextAction: opportunity.nextAction,
-    requirements: opportunity.requirements, vendorAssessment: opportunity.vendorAssessment,
+    requirements: opportunity.requirements, qualificationResult: opportunity.qualificationResult,
+    stakeholderSummary: opportunity.stakeholderSummary, vendorAssessment: opportunity.vendorAssessment,
   };
 
   return <>

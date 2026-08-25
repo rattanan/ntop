@@ -15,6 +15,7 @@ import { OpportunityAccessError } from "@/lib/opportunity/opportunity-service";
 import { prisma } from "@/lib/prisma";
 
 function jsonObject(value: unknown): Record<string, unknown> { return value!==null&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{}; }
+function jsonStringArray(value: unknown): string[] { return Array.isArray(value)?value.filter((item):item is string=>typeof item==="string"):[]; }
 const healthLabels = { HEALTHY:"Healthy",WATCH:"Watch",AT_RISK:"At Risk",CRITICAL:"Critical" } as const;
 
 export default async function OpportunityDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -24,10 +25,19 @@ export default async function OpportunityDetail({ params }: { params: Promise<{ 
   let opportunity;
   try { opportunity = await getOpportunity(context,id); } catch (error) { if (error instanceof OpportunityAccessError) notFound(); throw error; }
   const roleCodes = context.assignments.map((item)=>item.role);
-  const [riskSignals,health,overrideGrant] = await Promise.all([
+  const policyAt = new Date();
+  const [riskSignals,health,overrideGrant,transitionPolicyRows] = await Promise.all([
     listOpportunityRiskSignals(prisma,id).catch(()=>[]), getOpportunityHealth(context,id),
     roleCodes.length?prisma.rolePermissionGrant.count({where:{roleCode:{in:roleCodes},permissionCode:PERMISSIONS.opportunityProbabilityOverride}}):Promise.resolve(0),
+    prisma.opportunityTransitionPolicyVersion.findMany({where:{fromStage:opportunity.stage,active:true,effectiveFrom:{lte:policyAt},OR:[{effectiveTo:null},{effectiveTo:{gt:policyAt}}]},select:{id:true,command:true,toStage:true,requiredFields:true,version:true},orderBy:[{version:"desc"},{createdAt:"desc"}],take:100}),
   ]);
+  const transitionRouteKeys = new Set<string>();
+  const transitions = transitionPolicyRows.flatMap((policy) => {
+    const routeKey = `${policy.command}:${policy.toStage}`;
+    if (transitionRouteKeys.has(routeKey)) return [];
+    transitionRouteKeys.add(routeKey);
+    return [{ id: policy.id, command: policy.command, targetStage: policy.toStage, requiredFields: jsonStringArray(policy.requiredFields) }];
+  });
   const canEdit=permissionPolicy.allows(session,PERMISSIONS.recordUpdate),canOverride=permissionPolicy.allows(session,PERMISSIONS.opportunityProbabilityOverride)||overrideGrant>0;
   const signalViews=riskSignals.map((signal)=>({id:signal.id,riskType:signal.riskType,ruleCode:signal.ruleVersion.rule.code,ruleVersion:signal.ruleVersion.version,thresholdSnapshot:jsonObject(signal.thresholdSnapshot),triggeringFacts:jsonObject(signal.triggeringFacts),severitySnapshot:jsonObject(signal.severitySnapshot),evaluatedAt:signal.evaluatedAt.toISOString()}));
   const money=new Intl.NumberFormat("th-TH",{style:"currency",currency:opportunity.currency,maximumFractionDigits:0}).format(Number(opportunity.estimatedValue));
@@ -43,7 +53,7 @@ export default async function OpportunityDetail({ params }: { params: Promise<{ 
     </section>
     {canEdit&&<OpportunityRelatedForms opportunityId={id}/>}
     {canOverride&&<section className="card" id="commercial"><div className="card-header"><strong>Forecast probability override</strong><small>ต้องระบุเหตุผลและระบบจะบันทึก Audit history</small></div><div className="card-body"><OpportunityProbabilityForm opportunityId={id} version={opportunity.version} probability={opportunity.probability}/>{opportunity.probabilityHistory.length>0&&<div className="probability-history"><h3>ประวัติล่าสุด</h3>{opportunity.probabilityHistory.map((item)=><p key={item.id}><strong>{item.previousProbability}% → {item.newProbability}%</strong><span>{item.reason} · {item.changedBy.name} · {item.changedAt.toLocaleString("th-TH")}</span></p>)}</div>}</div></section>}
-    {canEdit&&<section className="opportunity-transition" id="stage-transition"><OpportunityTransitionForm opportunityId={id} version={opportunity.version} stage={opportunity.stage} expectedCloseAt={opportunity.expectedCloseAt?.toISOString().slice(0,16)}/></section>}
+    {canEdit&&<section className="opportunity-transition" id="stage-transition"><OpportunityTransitionForm opportunityId={id} version={opportunity.version} stage={opportunity.stage} expectedCloseAt={opportunity.expectedCloseAt?.toISOString().slice(0,16)} transitions={transitions}/></section>}
     <section className="card" id="timeline"><div className="card-header"><strong>Timeline</strong></div><div className="card-body timeline-list">{opportunity.stageHistory.map((item)=><div className="timeline" key={item.id}><strong>{item.fromStage} → {item.toStage}</strong><p>{item.command}{item.reason?` · ${item.reason}`:""}</p><small>{item.transitionedAt.toLocaleString("th-TH")}</small></div>)}{!opportunity.stageHistory.length&&<p className="empty">ยังไม่มี transition history</p>}</div></section>
     <DealRiskPanel opportunityId={id} signals={signalViews} canRefresh={canEdit} canExplain={canEdit}/>
   </>;

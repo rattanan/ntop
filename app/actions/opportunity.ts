@@ -7,8 +7,28 @@ import type { FormState } from "@/app/action-types";
 import { requireSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { createOpportunityRuntime } from "@/lib/opportunity/opportunity-runtime";
+import {
+  OpportunityTransitionDeniedError,
+  OpportunityVersionConflictError,
+} from "@/lib/opportunity/opportunity-service";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
+const transitionFieldLabels: Record<string, string> = {
+  qualificationResult: "ผลการคัดกรอง",
+  nextAction: "กิจกรรมถัดไป",
+  requirements: "สรุปความต้องการ",
+  stakeholderSummary: "ผู้มีส่วนได้ส่วนเสียและผู้ตัดสินใจ",
+  expectedCloseAt: "วันคาดว่าจะปิด",
+  coverageConfirmed: "ผล Coverage ที่ยืนยันแล้ว",
+  solutionComplete: "Solution Design ที่เสร็จสมบูรณ์",
+  quoteSubmitted: "Quotation ที่ส่งแล้ว",
+  quoteApproved: "Quotation ที่อนุมัติแล้ว",
+  quoteAccepted: "Quotation ที่ลูกค้ายอมรับ",
+  reason: "เหตุผล",
+  lostReason: "เหตุผลที่ Lost",
+  lostCategory: "หมวดหมู่ Lost",
+  cancelledReason: "เหตุผลที่ยกเลิก",
+};
 
 function profile(form: FormData, actorId: string) {
   return {
@@ -76,6 +96,16 @@ export async function transitionOpportunity(id: string, _: FormState, form: Form
     revalidatePath("/opportunities");
     return { message: "เปลี่ยนขั้นตอนขายเรียบร้อย", status: "success" };
   } catch (error) {
+    if (error instanceof OpportunityTransitionDeniedError) {
+      if (error.missingFields.length) {
+        const missing = error.missingFields.map((field) => transitionFieldLabels[field] ?? field).join(", ");
+        return { message: `ยังเปลี่ยนขั้นตอนขายไม่ได้ กรุณากรอกหรือดำเนินการให้ครบ: ${missing}` };
+      }
+      return { message: "Transition นี้ไม่มี Policy ที่เปิดใช้งาน หรือบัญชีของคุณไม่มีสิทธิ์ดำเนินการ" };
+    }
+    if (error instanceof OpportunityVersionConflictError) {
+      return { message: "ข้อมูล Opportunity มีการเปลี่ยนแปลง กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง" };
+    }
     return { message: error instanceof Error ? error.message : "ไม่สามารถเปลี่ยนขั้นตอนขายได้" };
   }
 }

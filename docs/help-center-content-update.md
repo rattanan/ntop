@@ -25,3 +25,11 @@
 
 - Unit contract ตรวจรายการบทความ วันที่อัปเดต ความละเอียดขั้นต่ำ การค้นจากเนื้อหา/FAQ, deterministic Help ranking และ related slug integrity
 - Repository gate: `npm run lint`, `npm run typecheck`, `npm test`
+
+## Addendum — Opportunity Transition Policy (2026-08-25)
+
+- เพิ่มบทความ `opportunity-transition-policy` เพื่อสรุป 5 ขั้นทำงานหลัก, 4 สถานะปลายทาง และ 26 policy routes ใน baseline ปัจจุบัน
+- ตรวจยืนยัน Active policy 26 รายการและ permission grants จาก development database ผ่าน `ssh ntop` เมื่อ 2026-08-25; ไม่มีการเขียนหรือแก้ข้อมูลบนฐาน
+- แจกแจง Required Fields สำหรับ FORWARD/WON/RETURN/LOST/CANCEL/EXPIRE/REOPEN พร้อมสิทธิ์พิเศษของ WON และ REOPEN
+- อธิบายการตรวจ scope, active/effective policy version, optimistic version, idempotency, history/evidence และ audit ฝั่ง server
+- เพิ่ม search contract สำหรับคำว่า `Transition Policy` และ `26 เส้นทาง` รวมถึงตรวจเนื้อหาของ gate หลักทุกกลุ่ม

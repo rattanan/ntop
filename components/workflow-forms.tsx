@@ -19,24 +19,32 @@ function useIdempotencyKey() {
   return useState(() => crypto.randomUUID())[0];
 }
 
-export function OpportunityTransitionForm({ opportunityId, version, stage, expectedCloseAt }: { opportunityId: string; version: number; stage: string; expectedCloseAt?: string }) {
+type OpportunityTransitionOption = { id: string; command: string; targetStage: string; requiredFields: string[] };
+const transitionCommandLabels: Record<string, string> = { FORWARD:"เดินหน้า",RETURN:"ส่งกลับขั้นก่อน",LOST:"ปิดเป็น Lost",REOPEN:"Reopen",CANCEL:"ยกเลิก",EXPIRE:"ปิดเป็นหมดอายุ",WON:"ปิดเป็น Won" };
+const transitionFieldLabels: Record<string, string> = { qualificationResult:"ผลการคัดกรอง",nextAction:"กิจกรรมถัดไป",requirements:"สรุปความต้องการ",stakeholderSummary:"ผู้มีส่วนได้ส่วนเสียและผู้ตัดสินใจ",expectedCloseAt:"วันคาดว่าจะปิด",coverageConfirmed:"ผล Coverage ที่ยืนยันแล้ว",solutionComplete:"Solution Design ที่เสร็จสมบูรณ์",quoteSubmitted:"Quotation ที่ส่งแล้ว",quoteApproved:"Quotation ที่อนุมัติแล้ว",quoteAccepted:"Quotation ที่ลูกค้ายอมรับ",reason:"เหตุผล",lostReason:"เหตุผลที่ Lost",lostCategory:"หมวดหมู่ Lost",cancelledReason:"เหตุผลที่ยกเลิก" };
+const opportunityStageLabel = (stage: string) => STAGES.find(([value])=>value===stage)?.[1]??stage;
+
+export function OpportunityTransitionForm({ opportunityId, version, stage, expectedCloseAt, transitions }: { opportunityId: string; version: number; stage: string; expectedCloseAt?: string; transitions: OpportunityTransitionOption[] }) {
   const [state, action, pending] = useActionState(transitionOpportunity.bind(null, opportunityId), initial);
   const key = useIdempotencyKey();
+  const [selectedId,setSelectedId] = useState(transitions[0]?.id??"");
+  const selected = transitions.find((transition)=>transition.id===selectedId)??transitions[0];
   return <form action={action} className="card form-card">
     <div className="card-body">
       <input type="hidden" name="expectedVersion" value={version}/><input type="hidden" name="idempotencyKey" value={key}/>
-      <div className="form-section"><h2>Transition ขั้นตอนขาย</h2><p>สถานะปัจจุบัน: <strong>{stage}</strong> · version {version}</p>
-        <div className="form-grid">
-          <FormField label="คำสั่ง" name="command" required><select className="control" name="command" defaultValue="FORWARD"><option value="FORWARD">เดินหน้า</option><option value="RETURN">ส่งกลับขั้นก่อน</option><option value="LOST">ปิดเป็น Lost</option><option value="REOPEN">Reopen</option><option value="CANCEL">ยกเลิก</option><option value="EXPIRE">ปิดเป็นหมดอายุ</option><option value="WON">ปิดเป็น Won</option></select></FormField>
-          <FormField label="ขั้นตอนเป้าหมาย" name="targetStage" required><select className="control" name="targetStage" defaultValue={stage}>{STAGES.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></FormField>
+      <input type="hidden" name="command" value={selected?.command??""}/><input type="hidden" name="targetStage" value={selected?.targetStage??""}/>
+      <div className="form-section"><h2>Transition ขั้นตอนขาย</h2><p>สถานะปัจจุบัน: <strong>{opportunityStageLabel(stage)}</strong> · version {version}</p>
+        {selected ? <div className="form-grid">
+          <FormField label="เส้นทางที่อนุญาต" name="transitionRoute" required help="แสดงเฉพาะ Transition Policy ที่เปิดใช้งาน"><select className="control" value={selected.id} onChange={(event)=>setSelectedId(event.target.value)}>{transitions.map((transition)=><option key={transition.id} value={transition.id}>{transitionCommandLabels[transition.command]??transition.command} → {opportunityStageLabel(transition.targetStage)}</option>)}</select></FormField>
           <FormField label="วันคาดว่าจะปิด" name="expectedCloseAt"><Input name="expectedCloseAt" type="datetime-local" defaultValue={expectedCloseAt}/></FormField>
-          <FormField label="Lost category" name="lostCategory"><select className="control" name="lostCategory" defaultValue=""><option value="">เลือกเมื่อปิดเป็น Lost</option><option value="COMPETITOR">Competitor</option><option value="PRICE">Price</option><option value="NO_BUDGET">No Budget</option><option value="CUSTOMER_CANCELLED">Customer Cancelled</option><option value="TECHNICAL_LIMITATION">Technical Limitation</option><option value="OTHER">Other</option></select></FormField>
+          <div className="field full"><p className="help">ระบบจะตรวจข้อมูลก่อนเปลี่ยนขั้นตอน: {selected.requiredFields.map((field)=>transitionFieldLabels[field]??field).join(", ")||"ไม่มีข้อมูลเพิ่มเติม"} · <Link className="link" href={`/opportunities/${opportunityId}/edit`}>แก้ไขข้อมูล Opportunity</Link></p></div>
+          {selected.targetStage==="LOST"&&<><FormField label="Lost category" name="lostCategory" required><select className="control" name="lostCategory" defaultValue="" required><option value="" disabled>เลือกหมวดหมู่ Lost</option><option value="COMPETITOR">Competitor</option><option value="PRICE">Price</option><option value="NO_BUDGET">No Budget</option><option value="CUSTOMER_CANCELLED">Customer Cancelled</option><option value="TECHNICAL_LIMITATION">Technical Limitation</option><option value="OTHER">Other</option></select></FormField><div className="field full"><FormField label="เหตุผลที่ Lost" name="lostReason" required><Textarea name="lostReason" required/></FormField></div></>}
+          {selected.targetStage==="CANCELLED"&&<div className="field full"><FormField label="เหตุผลที่ยกเลิก" name="cancelledReason" required><Textarea name="cancelledReason" required/></FormField></div>}
           <div className="field full"><FormField label="เหตุผล" name="reason" required><Textarea name="reason" required/></FormField></div>
-          <div className="field full"><FormField label="Lost reason" name="lostReason"><Textarea name="lostReason"/></FormField></div><div className="field full"><FormField label="Cancelled reason" name="cancelledReason"><Textarea name="cancelledReason"/></FormField></div>
-        </div>
+        </div>:<div className="notice warning">ไม่มี Transition Policy ที่เปิดใช้งานจากขั้นตอนนี้ กรุณาติดต่อผู้ดูแล Workflow</div>}
       </div>
       <FormNotice state={state}/>
-      <div className="actions"><button className="primary" disabled={pending}>{pending?"กำลังเปลี่ยน…":"ยืนยัน Transition"}</button></div>
+      <div className="actions"><button className="primary" disabled={pending||!selected}>{pending?"กำลังเปลี่ยน…":"ยืนยัน Transition"}</button></div>
     </div>
   </form>;
 }
