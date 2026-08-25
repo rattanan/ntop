@@ -10,6 +10,8 @@ describe("Pipeline dashboard UI", () => {
     const page = read("app/(portal)/pipeline/page.tsx");
     expect(page).toContain("loadAuthorizationContext");
     expect(page).toContain("repository.listFacts");
+    expect(page).toContain('params.periodType : "YEAR"');
+    expect(page).toContain('includeUnscheduled: periodType === "YEAR"');
     expect(page).toContain("prisma.salesTarget.findMany");
     expect(page).toContain("prisma.opportunityStageHistory.findMany");
     expect(page).toContain('toStage: "WON"');

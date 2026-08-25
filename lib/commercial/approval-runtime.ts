@@ -6,6 +6,7 @@ import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-reposi
 import { prisma } from "../prisma";
 import { PrismaApprovalRepository } from "./prisma-approval-repository";
 import { ApprovalService } from "./approval-service";
+import { isApprovalWorkflowEnforced } from "../approval/approval-control";
 
 export function createApprovalRuntime() {
   return new ApprovalService(
@@ -13,5 +14,7 @@ export function createApprovalRuntime() {
     new AppendOnlyAuditWriter<Prisma.TransactionClient>({
       store: new HashChainedAuditStore({ repository: new PrismaAuditLedgerRepository(), maxAttempts: 3 }),
     }),
+    undefined,
+    () => isApprovalWorkflowEnforced("QUOTE_APPROVAL"),
   );
 }

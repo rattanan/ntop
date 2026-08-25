@@ -715,18 +715,20 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
 .section-heading h2 { margin:0;font-size:18px; }
 .section-heading p { margin:3px 0 0;color:var(--muted-foreground);font-size:11px; }
 .section-heading>span { color:var(--muted-foreground);font-size:11px;font-weight:700; }
-.service-category-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
-.service-category-grid>.card+.card { margin-top:0; }
-.service-category-card.is-deleted { opacity:.68; }
-.service-category-rules { display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px; }
+.card-header.section-heading { margin-bottom:0; }
+.service-category-table tr.is-deleted { opacity:.68; }
+.service-category-table td:last-child { min-width:190px; }
+.service-category-rules { display:flex;flex-wrap:wrap;gap:7px; }
 .service-category-rules span { padding:4px 8px;border-radius:999px;background:var(--muted);color:var(--nt-gray-700);font-size:10px;font-weight:700; }
-.service-category-editor { margin-top:10px; }
-.service-category-editor>summary { width:max-content;list-style:none;cursor:pointer; }
-.service-category-editor>summary::-webkit-details-marker { display:none; }
-.service-category-editor>form { display:grid;gap:14px;margin-top:12px;padding-top:14px;border-top:1px solid var(--border); }
-.service-category-delete { display:grid;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border); }
-.service-category-delete .danger-secondary { width:max-content; }
-@media (max-width:900px) { .service-category-grid { grid-template-columns:1fr; } }
+.service-category-row-actions { display:flex;flex-wrap:wrap;gap:7px; }
+.service-category-row-actions form { margin:0; }
+.service-category-delete-help { display:block;max-width:210px;margin-top:7px;color:var(--muted-foreground);line-height:1.4; }
+.service-category-edit-row>td { padding:0!important;background:var(--surface-subtle); }
+.service-category-edit-row form { display:grid;gap:14px;padding:16px; }
+.product-search-field { min-width:min(480px,100%); }
+.table-pagination { align-items:center;justify-content:flex-end;padding:14px 16px;margin:0;border-top:1px solid var(--border); }
+.table-pagination>span { margin-right:auto;color:var(--muted-foreground);font-size:11px;font-weight:700; }
+@media (max-width:600px) { .table-pagination { align-items:stretch; }.table-pagination>span { width:100%;margin-right:0; }.table-pagination .secondary { flex:1;justify-content:center; } }
 
 /* Sales Pipeline & Forecast */
 .pipeline-page { display:grid;gap:18px; }
@@ -1286,4 +1288,14 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
 }
 @media print {
   .ai-chat { display:none!important; }
+}
+.approval-workflow-mode-form {
+  display: grid;
+  grid-template-columns: minmax(120px, .6fr) minmax(220px, 1.5fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .approval-workflow-mode-form { grid-template-columns: 1fr; }
 }

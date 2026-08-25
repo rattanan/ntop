@@ -254,13 +254,13 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
   }
 
   async activeApprovalPolicy(transaction: Transaction): Promise<ActiveApprovalPolicy | null> {
-    const record = await transaction.approvalPolicy.findFirst({
-      where: { activeVersionId: { not: null } },
-      select: { activeVersion: { select: { id: true, definition: true } } },
+    const record = await transaction.approvalWorkflowConfiguration.findUnique({
+      where: { code: "QUOTE_APPROVAL" },
+      select: { policy: { select: { activeVersion: { select: { id: true, definition: true } } } } },
     });
-    if (!record?.activeVersion) return null;
-    const definition = policyDefinition(record.activeVersion.definition);
-    return definition ? { id: record.activeVersion.id, definition } : null;
+    if (!record?.policy.activeVersion) return null;
+    const definition = policyDefinition(record.policy.activeVersion.definition);
+    return definition ? { id: record.policy.activeVersion.id, definition } : null;
   }
 
   async submitVersion(input: Parameters<QuoteRepository<Transaction>["submitVersion"]>[0], transaction: Transaction) {

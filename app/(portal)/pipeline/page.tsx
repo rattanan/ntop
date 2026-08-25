@@ -18,12 +18,18 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
   const session = await requireSession();
   const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
   const params = await searchParams;
-  const rawPeriodType = typeof params.periodType === "string" ? params.periodType : "MONTH";
-  const periodType: PeriodType = allowedPeriodTypes.has(rawPeriodType as PeriodType) ? rawPeriodType as PeriodType : "MONTH";
+  const rawPeriodType = typeof params.periodType === "string" ? params.periodType : "YEAR";
+  const periodType: PeriodType = allowedPeriodTypes.has(rawPeriodType as PeriodType) ? rawPeriodType as PeriodType : "YEAR";
   const config = loadForecastConfig();
   const period = resolveFiscalPeriod(new Date(), periodType, config);
   const repository = new PrismaForecastRepository(prisma);
-  const facts = await prisma.$transaction((transaction) => repository.listFacts({ context, periodStart: period.periodStart, periodEnd: period.periodEnd, cutoffAt: new Date() }, transaction));
+  const facts = await prisma.$transaction((transaction) => repository.listFacts({
+    context,
+    periodStart: period.periodStart,
+    periodEnd: period.periodEnd,
+    cutoffAt: new Date(),
+    includeUnscheduled: periodType === "YEAR",
+  }, transaction));
   const ownerId = typeof params.ownerId === "string" ? params.ownerId : "";
   const category = typeof params.category === "string" ? params.category : "";
   const stage = typeof params.stage === "string" ? params.stage : "";

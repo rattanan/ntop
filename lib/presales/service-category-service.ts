@@ -31,7 +31,7 @@ const categoryInput = z.strictObject({
   active: z.boolean(),
 });
 const updateInput = categoryInput.extend({ expectedVersion: z.number().int().positive() });
-const deleteInput = z.strictObject({ expectedVersion: z.number().int().positive(), reason: z.string().trim().min(5).max(1000) });
+const deleteInput = z.strictObject({ expectedVersion: z.number().int().positive() });
 
 export class ServiceCategoryValidationError extends Error {
   constructor(readonly issues: Record<string, string[]>) {
@@ -48,6 +48,12 @@ export class ServiceCategoryVersionConflictError extends Error {
 export class ServiceCategoryCodeConflictError extends Error {
   constructor() { super("รหัส Service Category นี้มีอยู่แล้ว"); this.name = "ServiceCategoryCodeConflictError"; }
 }
+export class ServiceCategoryInUseError extends Error {
+  constructor(readonly productCount: number) {
+    super(`ลบ Service Category ไม่ได้ เพราะยังมี Product อ้างอิงอยู่ ${productCount} รายการ`);
+    this.name = "ServiceCategoryInUseError";
+  }
+}
 
 function validation(error: z.ZodError) {
   return new ServiceCategoryValidationError(error.flatten().fieldErrors as Record<string, string[]>);
@@ -62,12 +68,52 @@ async function requireManage(actor: Actor, tx: Tx) {
   if (!allowed) throw new ServiceCategoryAccessError();
 }
 
-export async function listServiceCategories(actor: Actor) {
+export async function listServiceCategories(actor: Actor, input: { cursor?: string; direction?: "next" | "prev"; limit?: number } = {}) {
   return prisma.$transaction(async (tx) => {
     await requireManage(actor, tx);
-    return tx.serviceCategoryConfig.findMany({
-      orderBy: [{ deletedAt: "asc" }, { displayOrder: "asc" }, { name: "asc" }],
-    });
+    const limit = Math.min(50, Math.max(1, input.limit ?? 10));
+    const direction = input.direction === "prev" ? "prev" : "next";
+    const anchor = input.cursor ? await tx.serviceCategoryConfig.findUnique({ where: { id: input.cursor } }) : null;
+    const cursorWhere: Prisma.ServiceCategoryConfigWhereInput = anchor ? {
+      OR: direction === "prev"
+        ? [
+          { displayOrder: { lt: anchor.displayOrder } },
+          { displayOrder: anchor.displayOrder, name: { lt: anchor.name } },
+          { displayOrder: anchor.displayOrder, name: anchor.name, id: { lt: anchor.id } },
+        ]
+        : [
+          { displayOrder: { gt: anchor.displayOrder } },
+          { displayOrder: anchor.displayOrder, name: { gt: anchor.name } },
+          { displayOrder: anchor.displayOrder, name: anchor.name, id: { gt: anchor.id } },
+        ],
+    } : {};
+    const [rows, total] = await Promise.all([
+      tx.serviceCategoryConfig.findMany({
+        where: cursorWhere,
+        orderBy: direction === "prev" && anchor
+          ? [{ displayOrder: "desc" }, { name: "desc" }, { id: "desc" }]
+          : [{ displayOrder: "asc" }, { name: "asc" }, { id: "asc" }],
+        take: limit + 1,
+      }),
+      tx.serviceCategoryConfig.count(),
+    ]);
+    const hasExtra = rows.length > limit;
+    const pageRows = rows.slice(0, limit);
+    const categories = direction === "prev" && anchor ? pageRows.reverse() : pageRows;
+    const codes = categories.map((category) => category.code);
+    const productCounts = codes.length ? await tx.product.groupBy({
+      by: ["serviceCategoryCode"],
+      where: { deletedAt: null, serviceCategoryCode: { in: codes } },
+      _count: { _all: true },
+    }) : [];
+    const countByCode = new Map(productCounts.map((item) => [item.serviceCategoryCode, item._count._all]));
+    return {
+      items: categories.map((category) => ({ ...category, productCount: countByCode.get(category.code) ?? 0 })),
+      total,
+      cursorApplied: Boolean(anchor),
+      hasPrevious: direction === "prev" && anchor ? hasExtra : Boolean(anchor),
+      hasNext: direction === "prev" && anchor ? true : hasExtra,
+    };
   });
 }
 
@@ -148,6 +194,8 @@ export async function deleteServiceCategory(actor: Actor, id: string, input: unk
     await requireManage(actor, tx);
     const current = await tx.serviceCategoryConfig.findFirst({ where: { id, deletedAt: null } });
     if (!current) throw new ServiceCategoryAccessError();
+    const productCount = await tx.product.count({ where: { serviceCategoryCode: current.code, deletedAt: null } });
+    if (productCount > 0) throw new ServiceCategoryInUseError(productCount);
     const result = await tx.serviceCategoryConfig.updateMany({
       where: { id, version: parsed.data.expectedVersion, deletedAt: null },
       data: { active: false, deletedAt: new Date(), deletedById: actor.id, version: { increment: 1 } },
@@ -162,9 +210,9 @@ export async function deleteServiceCategory(actor: Actor, id: string, input: unk
       targetVersion: String(deleted.version),
       outcome: "SUCCESS",
       correlationId,
-      reason: parsed.data.reason,
-      data: { previousVersion: current.version, deletionMode: "SOFT_DELETE", code: current.code },
+      reason: "Administrator confirmed deletion of an unused Service Category.",
+      data: { previousVersion: current.version, deletionMode: "SOFT_DELETE", code: current.code, linkedProductCount: 0 },
     }, { transaction: tx });
     return deleted;
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

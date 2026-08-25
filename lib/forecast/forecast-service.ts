@@ -9,7 +9,7 @@ import { loadForecastConfig } from "./forecast-config";
 export interface ForecastRepository<TTransaction> {
   transaction<T>(work: (transaction: TTransaction) => Promise<T>): Promise<T>;
   findSnapshot(key: string, context: AuthorizationContext, transaction: TTransaction): Promise<{ id: string; snapshotKey: string; pipelineAmount: string; weightedAmount: string } | null>;
-  listFacts(input: { context: AuthorizationContext; periodStart: Date; periodEnd: Date; cutoffAt: Date }, transaction: TTransaction): Promise<PipelineFact[]>;
+  listFacts(input: { context: AuthorizationContext; periodStart: Date; periodEnd: Date; cutoffAt: Date; includeUnscheduled?: boolean }, transaction: TTransaction): Promise<PipelineFact[]>;
   createSnapshot(input: { snapshotKey: string; periodStart: Date; periodEnd: Date; cutoffAt: Date; timezone: string; formulaVersion: string; scopeSnapshot: Record<string, unknown>; createdById: string; calculation: ReturnType<typeof calculateForecast> }, transaction: TTransaction): Promise<{ id: string; snapshotKey: string; pipelineAmount: string; weightedAmount: string }>;
 }
 

@@ -4,6 +4,7 @@ import type { Role } from "@prisma/client";
 
 import type { AuditWriter } from "../audit/audit-writer";
 import type { AuthorizationContext } from "../authorization/authorization-context";
+import { ApprovalWorkflowDisabledError } from "../approval/approval-control";
 import {
   assertPermission,
   PERMISSIONS,
@@ -102,6 +103,9 @@ export class QuoteFloorPriceError extends Error {
 export class ApprovalPolicyUnavailableError extends Error {
   constructor() { super("Approval policy is unavailable."); this.name = "ApprovalPolicyUnavailableError"; }
 }
+export class QuoteApprovalDeferredError extends ApprovalWorkflowDisabledError {
+  constructor() { super("QUOTE_APPROVAL"); this.name = "QuoteApprovalDeferredError"; }
+}
 export class QuoteTransitionError extends Error {
   constructor() { super("Quote status transition is not allowed."); this.name = "QuoteTransitionError"; }
 }
@@ -128,6 +132,7 @@ export class QuoteService<TTransaction> {
     private readonly now: () => Date = () => new Date(),
     private readonly hash: (value: string) => string = (value) =>
       createHash("sha256").update(value).digest("hex"),
+    private readonly approvalEnabled: () => boolean | Promise<boolean> = () => true,
   ) {}
 
   async createVersion(actor: Actor, draft: QuoteDraftInput, correlationId: string, idempotencyKey: string) {
@@ -203,6 +208,7 @@ export class QuoteService<TTransaction> {
 
   async submit(actor: Actor, quoteVersionId: string, correlationId: string, idempotencyKey: string) {
     assertPermission(actor, PERMISSIONS.quoteSubmit, this.permissions);
+    if (!await this.approvalEnabled()) throw new QuoteApprovalDeferredError();
     return this.repository.transaction(async (transaction) => {
       const receipt = await this.repository.findReceipt(actor.id, idempotencyKey, "quote.version.submit", transaction);
       if (receipt) return { requestId: receipt.targetId };

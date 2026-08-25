@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { AuditWriter } from "../../lib/audit/audit-writer";
 import { ApprovalDecisionDeniedError, ApprovalService, type ApprovalRepository, type ApprovalRequestRecord } from "../../lib/commercial/approval-service";
+import { ApprovalWorkflowDisabledError } from "../../lib/approval/approval-control";
 
 type Tx = { id: string };
 const tx = { id: "tx" };
@@ -11,7 +12,7 @@ const request: ApprovalRequestRecord = {
   policyInputSnapshot: { total: "5000000" }, previousDecisionHash: null,
 };
 function actor(id = "approver") { return { id, role: "SALES" as const, authorization: { actorId: id, assignments: [{ role: "TEAM_MANAGER" as const, scope: "ORG_UNIT" as const, organizationUnitId: "org" }] } }; }
-function setup() {
+function setup(approvalEnabled = true) {
   const repo: ApprovalRepository<Tx> = {
     transaction: vi.fn(async (work) => work(tx)), findReceipt: vi.fn().mockResolvedValue(null), saveReceipt: vi.fn().mockResolvedValue(undefined),
     findActionable: vi.fn().mockResolvedValue(request), findAuthority: vi.fn().mockResolvedValue({ id: "grant", roleCode: "TEAM_MANAGER", maximumAmount: "10000000" }),
@@ -19,10 +20,17 @@ function setup() {
     recordDecision: vi.fn().mockResolvedValue({ decisionId: "decision", requestStatus: "APPROVED", requestVersion: 2 }),
   };
   const audit: AuditWriter<Tx> = { append: vi.fn(async (event) => ({ ...event, id: "audit", recordedAt: new Date() })) };
-  return { repo, audit, service: new ApprovalService(repo, audit, () => new Date("2026-07-13T00:00:00Z")) };
+  return { repo, audit, service: new ApprovalService(repo, audit, () => new Date("2026-07-13T00:00:00Z"), () => approvalEnabled) };
 }
 
 describe("ApprovalService", () => {
+  it("blocks every decision action while the workflow is centrally disabled", async () => {
+    const { service, repo } = setup(false);
+    await expect(service.decide(actor(), { requestId: "req", stepId: "step", action: "APPROVE", reason: "within authority", expectedVersion: 1 }, "corr", "disabled")).rejects.toBeInstanceOf(ApprovalWorkflowDisabledError);
+    expect(repo.transaction).not.toHaveBeenCalled();
+    expect(repo.recordDecision).not.toHaveBeenCalled();
+  });
+
   it("enforces maker-checker", async () => {
     const { service, repo } = setup();
     await expect(service.decide(actor("maker"), { requestId: "req", stepId: "step", action: "APPROVE", reason: "ok", expectedVersion: 1 }, "corr", "idem")).rejects.toBeInstanceOf(ApprovalDecisionDeniedError);

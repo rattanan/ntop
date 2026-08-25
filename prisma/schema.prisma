@@ -1737,8 +1737,39 @@ model ApprovalPolicy {
   activeVersionId String?                 @unique
   activeVersion   ApprovalPolicyVersion?  @relation("ActiveApprovalPolicyVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
   versions        ApprovalPolicyVersion[] @relation("ApprovalPolicyVersions")
+  workflowConfiguration ApprovalWorkflowConfiguration? @relation("ApprovalWorkflowPolicy")
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
+}
+
+model ApprovalSystemConfiguration {
+  id          String   @id @db.VarChar(64)
+  mode        String   @default("DISABLED") @db.VarChar(16)
+  version     Int      @default(1)
+  reason      String?  @db.VarChar(1000)
+  updatedById String?  @db.VarChar(191)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ApprovalWorkflowConfiguration {
+  id           String         @id @db.VarChar(64)
+  code         String         @unique @db.VarChar(100)
+  name         String         @db.VarChar(191)
+  moduleCode   String         @db.VarChar(64)
+  amountSource String?        @db.VarChar(191)
+  mode         String         @default("DISABLED") @db.VarChar(16)
+  policyId     String         @unique
+  policy       ApprovalPolicy @relation("ApprovalWorkflowPolicy", fields: [policyId], references: [id], onDelete: Restrict)
+  displayOrder Int            @default(0)
+  version      Int            @default(1)
+  reason       String?        @db.VarChar(1000)
+  updatedById  String?        @db.VarChar(191)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([mode, displayOrder])
+  @@index([moduleCode, displayOrder])
 }
 
 model ApprovalPolicyVersion {

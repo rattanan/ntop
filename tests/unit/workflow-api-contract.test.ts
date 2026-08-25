@@ -46,6 +46,20 @@ describe("Workflow REST v1 contract", () => {
     for (const route of [create, submit, decision]) expect(route).toContain("requireIdempotencyKey");
   });
 
+  it("keeps Quote creation available while approval is deferred by configuration", () => {
+    const runtime = read("lib/commercial/quote-runtime.ts");
+    const service = read("lib/commercial/quote-service.ts");
+    const detail = read("app/(portal)/quotes/[id]/page.tsx");
+    const apiResponse = read("app/api/v1/workflow-api-response.ts");
+    const environment = read(".env.example");
+    expect(runtime).toContain('isApprovalWorkflowEnforced("QUOTE_APPROVAL")');
+    expect(environment).toContain('APPROVAL_EMERGENCY_DISABLED="false"');
+    const createMethod = service.slice(service.indexOf("async createVersion(actor"), service.indexOf("async submit(actor"));
+    expect(createMethod).not.toContain("approvalEnabled");
+    expect(detail).toContain('approvalEnabled && version.status === "DRAFT"');
+    expect(apiResponse).toContain('code = "APPROVAL_WORKFLOW_DISABLED"');
+  });
+
   it("keeps pipeline bounded and scope-derived", () => {
     const route = read("app/api/v1/pipeline/route.ts");
     expect(route).toContain("loadAuthorizationContext");

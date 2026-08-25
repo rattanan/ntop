@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 
 import { PermissionDeniedError } from "@/lib/authorization/permission-policy";
 import { ApprovalAccessError, ApprovalDecisionDeniedError, ApprovalVersionConflictError } from "@/lib/commercial/approval-service";
-import { ApprovalPolicyUnavailableError, QuoteAccessError, QuoteFloorPriceError, QuoteSubmissionGateError, QuoteVersionImmutableError } from "@/lib/commercial/quote-service";
+import { ApprovalPolicyUnavailableError, QuoteAccessError, QuoteApprovalDeferredError, QuoteFloorPriceError, QuoteSubmissionGateError, QuoteVersionImmutableError } from "@/lib/commercial/quote-service";
 import { ForecastValidationError } from "@/lib/forecast/forecast-service";
 import { OpportunityAccessError, OpportunityIdempotencyConflictError, OpportunityProbabilityOverrideDeniedError, OpportunityTransitionDeniedError, OpportunityValidationError, OpportunityVersionConflictError } from "@/lib/opportunity/opportunity-service";
 import { LeadAccessError, LeadConversionError, LeadDuplicateResolutionRequiredError, LeadIdempotencyConflictError, LeadMergeDeniedError, LeadValidationError, LeadVersionConflictError } from "@/lib/lead/lead-service";
@@ -14,6 +14,7 @@ import { ProposalAccessError, ProposalConfigurationError, ProposalTerminalError,
 import { ContractAccessError, ContractConfigurationError, ContractDateRangeError, ContractMakerCheckerError, ContractServiceOrderError, ContractSignatureRequiredError, ContractTerminalError, ContractTransitionError, ContractVersionConflictError } from "@/lib/contract/contract-service";
 import { ContractFinancialError } from "@/lib/contract/contract-financials";
 import { ContractDocumentValidationError } from "@/lib/contract/contract-document-service";
+import { ApprovalWorkflowDisabledError } from "@/lib/approval/approval-control";
 
 export function workflowCorrelationId(request: Request) {
   const supplied = request.headers.get("x-correlation-id")?.trim();
@@ -35,7 +36,9 @@ export function workflowApiError(error: unknown, correlationId: string) {
   let code = "INTERNAL_ERROR";
   const message = "ไม่สามารถดำเนินการได้";
   let fieldErrors: Array<{ field: string; code: string }> | undefined;
-  if (error instanceof SyntaxError || error instanceof ZodError || error instanceof ForecastValidationError || error instanceof OpportunityValidationError || error instanceof LeadValidationError || error instanceof AiInputPolicyError || error instanceof AiOutputValidationError || error instanceof ContractFinancialError || error instanceof ContractDateRangeError || error instanceof ContractDocumentValidationError) {
+  if (error instanceof ApprovalWorkflowDisabledError) {
+    status = 409; code = "APPROVAL_WORKFLOW_DISABLED";
+  } else if (error instanceof SyntaxError || error instanceof ZodError || error instanceof ForecastValidationError || error instanceof OpportunityValidationError || error instanceof LeadValidationError || error instanceof AiInputPolicyError || error instanceof AiOutputValidationError || error instanceof ContractFinancialError || error instanceof ContractDateRangeError || error instanceof ContractDocumentValidationError) {
     status = 400; code = "VALIDATION_FAILED";
   } else if (error instanceof PermissionDeniedError || error instanceof ApprovalDecisionDeniedError || error instanceof OpportunityProbabilityOverrideDeniedError) {
     status = 403; code = "FORBIDDEN";
@@ -63,6 +66,8 @@ export function workflowApiError(error: unknown, correlationId: string) {
     fieldErrors = error.violations.map((item) => ({ field: `items.${item.productId}.unitPrice`, code: "BELOW_FLOOR" }));
   } else if (error instanceof QuoteVersionImmutableError) {
     status = 409; code = "QUOTE_VERSION_IMMUTABLE";
+  } else if (error instanceof QuoteApprovalDeferredError) {
+    status = 409; code = "QUOTE_APPROVAL_DEFERRED";
   } else if (error instanceof ApprovalPolicyUnavailableError) {
     status = 503; code = "APPROVAL_POLICY_UNAVAILABLE";
   } else if (error instanceof ProposalTransitionError) {

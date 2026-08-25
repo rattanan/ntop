@@ -6,6 +6,11 @@ import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-reposi
 import { prisma } from "../prisma";
 import { PrismaQuoteRepository } from "./prisma-quote-repository";
 import { QuoteService } from "./quote-service";
+import { isApprovalWorkflowEnforced } from "../approval/approval-control";
+
+export function isQuoteApprovalEnabled() {
+  return isApprovalWorkflowEnforced("QUOTE_APPROVAL");
+}
 
 export function createQuoteRuntime() {
   return new QuoteService(
@@ -13,5 +18,9 @@ export function createQuoteRuntime() {
     new AppendOnlyAuditWriter<Prisma.TransactionClient>({
       store: new HashChainedAuditStore({ repository: new PrismaAuditLedgerRepository(), maxAttempts: 3 }),
     }),
+    undefined,
+    undefined,
+    undefined,
+    isQuoteApprovalEnabled,
   );
 }

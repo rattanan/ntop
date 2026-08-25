@@ -1,6 +1,7 @@
 import type { AuthorizationContext } from "../authorization/authorization-context";
 import { assertPermission, PERMISSIONS, PermissionDeniedError, type Permission, type PermissionPolicy, permissionPolicy } from "../authorization/permission-policy";
 import type { AuditWriter } from "../audit/audit-writer";
+import { ApprovalWorkflowDisabledError } from "../approval/approval-control";
 import { calculateContractFinancials } from "./contract-financials";
 import type { ContractCreateInput, ContractEditInput } from "./contracts";
 
@@ -30,7 +31,7 @@ export interface ContractRepository<Tx> {
 }
 
 export class ContractService<Tx> {
-  constructor(private readonly repository: ContractRepository<Tx>, private readonly audit: AuditWriter<Tx>, private readonly permissions: PermissionPolicy = permissionPolicy, private readonly now = () => new Date()) {}
+  constructor(private readonly repository: ContractRepository<Tx>, private readonly audit: AuditWriter<Tx>, private readonly permissions: PermissionPolicy = permissionPolicy, private readonly now = () => new Date(), private readonly approvalEnabled: () => boolean | Promise<boolean> = () => true) {}
 
   async create(actor: ContractActor, draft: ContractCreateInput, correlationId: string) {
     assertPermission(actor, PERMISSIONS.contractManage, this.permissions);
@@ -63,6 +64,7 @@ export class ContractService<Tx> {
     return this.repository.transaction(async (tx) => {
       const contract = await this.required(contractId, actor, tx);
       this.mutable(contract, expectedVersion);
+      if ((toStatusCode === "PENDING_APPROVAL" || contract.statusCode === "PENDING_APPROVAL") && !await this.approvalEnabled()) throw new ApprovalWorkflowDisabledError("CONTRACT_APPROVAL");
       const [edge, target] = await Promise.all([this.repository.findTransition(contract.statusCode, toStatusCode, tx), this.repository.statusIsActive(toStatusCode, tx)]);
       if (!edge || !target) throw new ContractTransitionError();
       if (edge.makerChecker && contract.ownerId === actor.id) throw new ContractMakerCheckerError();

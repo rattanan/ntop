@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuditWriter } from "../../lib/audit/audit-writer";
-import { QuoteFloorPriceError, QuoteService, QuoteSubmissionGateError, type QuoteRepository, type QuoteVersionRecord } from "../../lib/commercial/quote-service";
+import { QuoteApprovalDeferredError, QuoteFloorPriceError, QuoteService, QuoteSubmissionGateError, type QuoteRepository, type QuoteVersionRecord } from "../../lib/commercial/quote-service";
 
 type Tx = { id: string }; const tx = { id: "tx" };
 const actor = { id: "admin", role: "ADMIN" as const, authorization: { actorId: "admin", assignments: [{ role: "ADMIN" as const, scope: "ENTERPRISE" as const, organizationUnitId: null }] } };
 const version: QuoteVersionRecord = { id: "qv", quoteId: "q", versionNumber: 1, status: "DRAFT", makerId: "admin", opportunityId: "opp", customerId: "customer", customerSegment: "B1", coverageConfirmed: false, solutionComplete: false, opportunityRisk: "NONE", total: "1000.0000", discountPct: "0.0000", grossMarginPct: "20.0000", productCategories: ["Network"], costConfirmed: false, nonStandardTerms: false };
 
-function setup() {
+function setup({ approvalEnabled = true }: { approvalEnabled?: boolean } = {}) {
   const repository: QuoteRepository<Tx> = {
     transaction: vi.fn(async (work) => work(tx)), findReceipt: vi.fn().mockResolvedValue(null), saveReceipt: vi.fn().mockResolvedValue(undefined),
     findOpportunity: vi.fn().mockResolvedValue({ id: "opp", customerId: "customer", customerSegment: "B1", coverageConfirmed: false, solutionComplete: false, opportunityRisk: "NONE" }),
@@ -18,15 +18,23 @@ function setup() {
     submitVersion: vi.fn().mockResolvedValue({ requestId: "request" }),
   };
   const audit: AuditWriter<Tx> = { append: vi.fn(async (event) => ({ ...event, id: "audit", recordedAt: new Date() })) };
-  return { repository, audit, service: new QuoteService(repository, audit) };
+  return { repository, audit, service: new QuoteService(repository, audit, undefined, undefined, undefined, () => approvalEnabled) };
 }
 
 describe("QuoteService", () => {
   it("creates an Opportunity-bound immutable version with a receipt", async () => {
-    const { service, repository } = setup();
+    const { service, repository } = setup({ approvalEnabled: false });
     await service.createVersion(actor, { opportunityId: "opp", currency: "THB", items: [{ productId: "product", quantity: "1", discountPct: "10" }] }, "corr", "idem");
     expect(repository.createVersion).toHaveBeenCalledWith(expect.objectContaining({ versionNumber: 1, opportunity: expect.objectContaining({ id: "opp" }) }), tx);
+    expect(repository.activeApprovalPolicy).not.toHaveBeenCalled();
     expect(repository.saveReceipt).toHaveBeenCalled();
+  });
+
+  it("defers approval submission without mutating the Draft", async () => {
+    const { service, repository } = setup({ approvalEnabled: false });
+    await expect(service.submit(actor, "qv", "corr", "idem")).rejects.toBeInstanceOf(QuoteApprovalDeferredError);
+    expect(repository.transaction).not.toHaveBeenCalled();
+    expect(repository.submitVersion).not.toHaveBeenCalled();
   });
 
   it("supports multiple detail lines and an explicit selling price", async () => {

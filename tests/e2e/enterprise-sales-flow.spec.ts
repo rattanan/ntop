@@ -36,6 +36,7 @@ test.describe("Enterprise Sales authenticated workflow", () => {
   test.skip(!password, "Set E2E_PASSWORD to the local seeded test-account password.");
 
   test("Enterprise Sales completes Prospect through Contract, Service Order and Customer Activity", async ({ page, browser }) => {
+    test.skip(process.env.E2E_APPROVAL_ENFORCED !== "true", "Approval is disabled by default; configure the test database workflows as ENFORCED and set E2E_APPROVAL_ENFORCED=true to exercise this flow.");
     test.setTimeout(900_000);
     const suffix = Date.now().toString();
     const company = `E2E Broadband Enterprise ${suffix}`;

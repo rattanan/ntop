@@ -32,12 +32,12 @@ describe("organization administration UI contract", () => {
     expect(component).not.toContain('defaultValue="TEAM_MANAGER"');
   });
 
-  it("exposes a confirmed remove action for each effective quotation approver", () => {
-    const page = read("app/(portal)/admin/organization/page.tsx");
-    const component = read("components/organization-admin-console.tsx");
-    expect(page).toContain("RemoveOrganizationApproverForm");
-    expect(component).toContain("removeOrganizationApprover");
-    expect(component).toContain("window.confirm");
+  it("moves approver authority controls to the central Approval Control Center", () => {
+    const organizationPage = read("app/(portal)/admin/organization/page.tsx");
+    const approvalPage = read("app/(portal)/admin/workflow/page.tsx");
+    expect(organizationPage).toContain('href="/admin/workflow"');
+    expect(organizationPage).not.toContain("AssignOrganizationApproverForm");
+    expect(approvalPage).toContain("deactivateAuthorityGrant");
   });
 
   it("exposes accessible edit and soft-delete dialogs for organization units", () => {

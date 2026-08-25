@@ -6,10 +6,16 @@
 | Version | 1.0 |
 | Owner | Pricing and Commercial Governance |
 | Reviewers | Finance, Sales Director, Legal, Security, Auditor, Product, QA |
-| Last Updated | 2026-07-11 |
+| Last Updated | 2026-08-25 |
 | Related Documents | [Requirements](product-requirements.md), [Domain](domain-model.md), [Permissions](roles-and-permissions.md), [Opportunity](opportunity-workflow.md), [API](api-design.md) |
 | Assumptions | Policy versioned; maker-checker mandatory for exceptional commercial terms |
 | Open Decisions | Named Commercial Committee members; operational reminder/escalation timing; detailed legal trigger catalog |
+
+## Temporary implementation state (2026-08-25)
+
+ตามคำสั่งล่าสุดของเจ้าของงาน ระบบพัก Approval ทั้งระบบไว้ก่อนจนกว่าเงื่อนไขและ operational ownership จะได้รับการยืนยัน การตั้งค่ากลางอยู่ที่ Administration → Approval Control Center โดย `ApprovalSystemConfiguration` และ workflow ทั้ง 7 รายการเริ่มต้นเป็น `DISABLED`: Quotation, Proposal, Solution Technical, Solution Commercial, Site Survey Result, BOQ และ Contract ผู้มีสิทธิ์ยังสร้างหรือแก้ไข Draft ได้ แต่ UI และ server ไม่อนุญาตให้ส่งเข้ากระบวนการอนุมัติหรือบันทึกคำตัดสิน ระบบไม่ auto-approve และไม่เปลี่ยนสถานะให้ดูเหมือนผ่านอนุมัติ
+
+Admin สามารถ Publish policy version, กำหนดผู้อนุมัติตามวงเงิน/role, maker-checker, permission และ Authority Grant ล่วงหน้าได้โดยยังไม่เปิดใช้งาน การเปิดภายหลังต้อง Publish policy ที่มี approver step แล้วตั้ง workflow เป็น `ENFORCED` และตั้ง Global Mode เป็น `ENFORCED` การเปลี่ยน mode ใช้ optimistic version และมี audit evidence ค่า `APPROVAL_EMERGENCY_DISABLED=true` เป็น deployment override สำหรับบังคับปิดทุก workflow โดยไม่แก้ configuration ที่เก็บไว้ การพักนี้ไม่ใช่การยกเลิก baseline FR-007/BR-004
 
 ## 1. Policy inputs
 

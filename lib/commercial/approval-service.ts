@@ -4,6 +4,7 @@ import type { Role } from "@prisma/client";
 
 import type { AuditWriter } from "../audit/audit-writer";
 import type { AuthorizationContext } from "../authorization/authorization-context";
+import { ApprovalWorkflowDisabledError } from "../approval/approval-control";
 import { decimal } from "./decimal-money";
 
 export type ApprovalAction = "APPROVE" | "REJECT" | "RETURN" | "DELEGATE" | "ESCALATE";
@@ -60,6 +61,7 @@ export class ApprovalService<TTransaction> {
     private readonly repository: ApprovalRepository<TTransaction>,
     private readonly auditWriter: AuditWriter<TTransaction>,
     private readonly now: () => Date = () => new Date(),
+    private readonly approvalEnabled: () => boolean | Promise<boolean> = () => true,
   ) {}
 
   async decide(
@@ -69,6 +71,7 @@ export class ApprovalService<TTransaction> {
     idempotencyKey: string,
   ) {
     if (!input.reason.trim()) throw new ApprovalDecisionDeniedError();
+    if (!await this.approvalEnabled()) throw new ApprovalWorkflowDisabledError("QUOTE_APPROVAL");
     return this.repository.transaction(async (transaction) => {
       const receipt = await this.repository.findReceipt(actor.id, idempotencyKey, "approval.decision", transaction);
       if (receipt) return { decisionId: receipt.targetId };

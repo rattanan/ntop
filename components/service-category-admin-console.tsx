@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import Link from "next/link";
+import { Fragment, useActionState, useState } from "react";
 
 import type { FormState } from "@/app/action-types";
 import {
@@ -21,8 +22,10 @@ type Category = {
   requiresPhysicalInstallation: boolean;
   active: boolean;
   deletedAt: Date | null;
+  productCount: number;
 };
 
+type Pagination = { page: number; total: number; previousHref: string | null; nextHref: string | null };
 const initial: FormState = {};
 
 function CategoryFields({ category }: { category?: Category }) {
@@ -46,39 +49,44 @@ function CreateCategoryForm() {
 }
 
 function CategoryRow({ category }: { category: Category }) {
+  const [editing, setEditing] = useState(false);
   const [updateState, updateAction, updating] = useActionState(updateServiceCategoryAction.bind(null, category.id), initial);
   const [deleteState, deleteAction, deleting] = useActionState(deleteServiceCategoryAction.bind(null, category.id), initial);
-  return <article className={`card service-category-card${category.deletedAt ? " is-deleted" : ""}`}>
-    <div className="card-header">
-      <div><strong>{category.name}</strong><small>{category.code} · ลำดับ {category.displayOrder}</small></div>
-      <span className={`badge ${category.active && !category.deletedAt ? "success" : "muted"}`}>{category.deletedAt ? "ลบแล้ว" : category.active ? "ใช้งาน" : "ปิดใช้งาน"}</span>
-    </div>
-    <div className="card-body">
-      <div className="service-category-rules" aria-label="กฎของหมวดหมู่">
-        <span>{category.requiresSiteSurvey ? "ต้อง Survey" : "ไม่บังคับ Survey"}</span>
-        <span>{category.requiresBoq ? "ต้องทำ BOQ" : "ไม่บังคับ BOQ"}</span>
-        <span>{category.requiresPhysicalInstallation ? "ติดตั้งหน้างาน" : "ไม่บังคับติดตั้ง"}</span>
-      </div>
-      {!category.deletedAt && <details className="service-category-editor">
-        <summary className="secondary">แก้ไข</summary>
-        <form action={updateAction}>
-          <input type="hidden" name="expectedVersion" value={category.version}/>
-          <CategoryFields category={category}/><FormNotice state={updateState}/>
-          <button className="primary" disabled={updating}>{updating ? "กำลังบันทึก…" : "บันทึกการแก้ไข"}</button>
-        </form>
-      </details>}
-      {!category.deletedAt && <form action={deleteAction} className="service-category-delete" onSubmit={(event) => { if (!window.confirm(`ยืนยันลบหมวด ${category.name}? Product เดิมจะยังคงข้อมูลไว้`)) event.preventDefault(); }}>
+  const editorId = `service-category-editor-${category.id}`;
+  const canDelete = !category.deletedAt && category.productCount === 0;
+  return <Fragment>
+    <tr className={category.deletedAt ? "is-deleted" : undefined}>
+      <td><strong>{category.code}</strong><br/><small>ลำดับ {category.displayOrder}</small></td>
+      <td>{category.name}</td>
+      <td><div className="service-category-rules" aria-label={`กฎของ ${category.name}`}><span>{category.requiresSiteSurvey ? "Survey" : "ไม่ Survey"}</span><span>{category.requiresBoq ? "BOQ" : "ไม่ BOQ"}</span><span>{category.requiresPhysicalInstallation ? "ติดตั้ง" : "ไม่ติดตั้ง"}</span></div></td>
+      <td>{category.productCount.toLocaleString("th-TH")}</td>
+      <td><span className={`badge ${category.active && !category.deletedAt ? "success" : "muted"}`}>{category.deletedAt ? "ลบแล้ว" : category.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></td>
+      <td>
+        {!category.deletedAt && <div className="service-category-row-actions">
+          <button type="button" className="secondary" aria-expanded={editing} aria-controls={editorId} onClick={() => setEditing((value) => !value)}>{editing ? "ปิด" : "แก้ไข"}</button>
+          <form action={deleteAction} onSubmit={(event) => { if (!window.confirm(`ยืนยันลบหมวด ${category.name}? ระบบจะลบได้เมื่อไม่มี Product อ้างอิงอยู่เท่านั้น`)) event.preventDefault(); }}>
+            <input type="hidden" name="expectedVersion" value={category.version}/>
+            <button className="danger-secondary" disabled={deleting || !canDelete} aria-describedby={!canDelete ? `delete-help-${category.id}` : undefined}>{deleting ? "กำลังลบ…" : "ลบ"}</button>
+          </form>
+        </div>}
+        {!category.deletedAt && !canDelete && <small id={`delete-help-${category.id}`} className="service-category-delete-help">ลบไม่ได้: มี Product อ้างอิง {category.productCount.toLocaleString("th-TH")} รายการ</small>}
+        <FormNotice state={deleteState}/>
+      </td>
+    </tr>
+    {editing && !category.deletedAt && <tr id={editorId} className="service-category-edit-row"><td colSpan={6}>
+      <form action={updateAction}>
         <input type="hidden" name="expectedVersion" value={category.version}/>
-        <label className="field"><span>เหตุผลที่ลบ</span><input className="control" name="reason" minLength={5} maxLength={1000} required placeholder="ระบุเหตุผลเพื่อบันทึก Audit"/></label>
-        <FormNotice state={deleteState}/><button className="danger-secondary" disabled={deleting}>{deleting ? "กำลังลบ…" : "ลบหมวดหมู่"}</button>
-      </form>}
-    </div>
-  </article>;
+        <CategoryFields category={category}/><FormNotice state={updateState}/>
+        <div className="actions"><button className="primary" disabled={updating}>{updating ? "กำลังบันทึก…" : "บันทึกการแก้ไข"}</button><button type="button" className="secondary" onClick={() => setEditing(false)}>ยกเลิก</button></div>
+      </form>
+    </td></tr>}
+  </Fragment>;
 }
 
-export function ServiceCategoryAdminConsole({ categories }: { categories: Category[] }) {
-  return <div className="service-category-admin"><CreateCategoryForm/><section aria-labelledby="service-category-list-title">
-    <div className="section-heading"><div><h2 id="service-category-list-title">Service Categories</h2><p>แก้ไขกฎกลางที่ควบคุม Product, Site Survey และ BOQ</p></div><span>{categories.length} หมวด</span></div>
-    <div className="service-category-grid">{categories.map((category) => <CategoryRow key={`${category.id}-${category.version}`} category={category}/>)}</div>
+export function ServiceCategoryAdminConsole({ categories, pagination }: { categories: Category[]; pagination: Pagination }) {
+  return <div className="service-category-admin"><CreateCategoryForm/><section className="card" aria-labelledby="service-category-list-title">
+    <div className="card-header section-heading"><div><strong id="service-category-list-title">Service Categories</strong><small>แก้ไขกฎกลางที่ควบคุม Product, Site Survey และ BOQ</small></div><span>{pagination.total.toLocaleString("th-TH")} หมวด</span></div>
+    <div className="table-wrap"><table className="table service-category-table"><thead><tr><th>รหัส / ลำดับ</th><th>ชื่อหมวดหมู่</th><th>กฎบริการ</th><th>Products</th><th>สถานะ</th><th>การทำงาน</th></tr></thead><tbody>{categories.map((category) => <CategoryRow key={`${category.id}-${category.version}`} category={category}/>)}</tbody></table>{!categories.length && <div className="empty">ยังไม่มี Service Category</div>}</div>
+    <nav className="card-body actions table-pagination" aria-label="แบ่งหน้า Service Category"><span>หน้า {pagination.page} · แสดง {categories.length.toLocaleString("th-TH")} จาก {pagination.total.toLocaleString("th-TH")} หมวด</span>{pagination.previousHref && <Link className="secondary" href={pagination.previousHref} rel="prev">ก่อนหน้า</Link>}{pagination.nextHref && <Link className="secondary" href={pagination.nextHref} rel="next">ถัดไป</Link>}</nav>
   </section></div>;
 }

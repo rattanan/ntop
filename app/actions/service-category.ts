@@ -10,6 +10,7 @@ import {
   deleteServiceCategory,
   ServiceCategoryAccessError,
   ServiceCategoryCodeConflictError,
+  ServiceCategoryInUseError,
   ServiceCategoryValidationError,
   ServiceCategoryVersionConflictError,
   updateServiceCategory,
@@ -41,7 +42,7 @@ function input(form: FormData) {
 
 function failure(error: unknown): FormState {
   if (error instanceof ServiceCategoryValidationError) return { message: error.message, errors: error.issues };
-  if (error instanceof ServiceCategoryCodeConflictError || error instanceof ServiceCategoryVersionConflictError || error instanceof ServiceCategoryAccessError) return { message: error.message };
+  if (error instanceof ServiceCategoryCodeConflictError || error instanceof ServiceCategoryVersionConflictError || error instanceof ServiceCategoryAccessError || error instanceof ServiceCategoryInUseError) return { message: error.message };
   return { message: "ไม่สามารถบันทึก Service Category ได้" };
 }
 
@@ -69,7 +70,6 @@ export async function deleteServiceCategoryAction(id: string, _: FormState, form
   try {
     await deleteServiceCategory(await actor(), id, {
       expectedVersion: Number(text(form, "expectedVersion")),
-      reason: text(form, "reason"),
     }, crypto.randomUUID());
     revalidatePath("/admin/service-categories");
     revalidatePath("/products/new");

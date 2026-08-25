@@ -9,6 +9,7 @@ import {
 } from "../authorization/permission-policy";
 import type { AuditWriter } from "../audit/audit-writer";
 import type { AuditJsonValue } from "../audit/redact-audit-data";
+import { ApprovalWorkflowDisabledError } from "../approval/approval-control";
 import {
   defaultProposalSections,
   type ProposalCreateInput,
@@ -86,6 +87,7 @@ export class ProposalService<TTransaction> {
     private readonly auditWriter: AuditWriter<TTransaction>,
     private readonly permissions: PermissionPolicy = permissionPolicy,
     private readonly now: () => Date = () => new Date(),
+    private readonly approvalEnabled: () => boolean | Promise<boolean> = () => true,
   ) {}
 
   async create(actor: ProposalActor, draft: ProposalCreateInput, correlationId: string, idempotencyKey: string) {
@@ -138,6 +140,9 @@ export class ProposalService<TTransaction> {
 
   async transition(actor: ProposalActor, proposalId: string, input: { expectedVersion: number; toStatusCode: string; comment: string }, correlationId: string, idempotencyKey: string) {
     assertPermission(actor, PERMISSIONS.proposalManage, this.permissions);
+    if (["PENDING_REVIEW", "PENDING_DIRECTOR", "APPROVED"].includes(input.toStatusCode) && !await this.approvalEnabled()) {
+      throw new ApprovalWorkflowDisabledError("PROPOSAL_APPROVAL");
+    }
     return this.repository.transaction(async (transaction) => {
       const replay = await this.replay(actor, proposalId, idempotencyKey, "proposal.transition", transaction);
       if (replay) return replay;

@@ -17,6 +17,7 @@ import { loadAuthorizationContext } from "@/lib/authorization/authorization-cont
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { prisma } from "@/lib/prisma";
 import { getSolutionDesign, PresalesAccessError } from "@/lib/solution-design/solution-design-service";
+import { isApprovalWorkflowEnforced } from "@/lib/approval/approval-control";
 
 export default async function SolutionDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,7 +32,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
   }
 
   const roleCodes = [...new Set(authorization.assignments.map((assignment) => assignment.role))];
-  const [categories, products, requirements, configuredBoqManage] = await Promise.all([
+  const [categories, products, requirements, configuredBoqManage, technicalApprovalEnabled, commercialApprovalEnabled] = await Promise.all([
     prisma.serviceCategoryConfig.findMany({
       where: { active: true },
       select: { id: true, code: true, name: true, requiresSiteSurvey: true },
@@ -48,6 +49,8 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
       orderBy: { requirementNumber: "asc" },
     }),
     roleCodes.length ? prisma.rolePermissionGrant.count({ where: { roleCode: { in: roleCodes }, permissionCode: PERMISSIONS.boqManage } }) : Promise.resolve(0),
+    isApprovalWorkflowEnforced("SOLUTION_TECHNICAL_REVIEW"),
+    isApprovalWorkflowEnforced("SOLUTION_COMMERCIAL_APPROVAL"),
   ]);
   const canManageBoq = permissionPolicy.allows(session, PERMISSIONS.boqManage) || configuredBoqManage > 0;
   const siteOptions = design.sites.map((site) => ({ id: site.id, siteName: site.siteName }));
@@ -79,7 +82,8 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
         <article className="card"><span>Technical feasibility</span><strong>{design.technicalFeasibility}</strong></article>
         <article className="card"><span>Survey</span><strong>{design.surveyRequired ? "Required" : "Not required"}</strong></article>
       </section>
-      <SolutionWorkflowForm designId={id} status={design.statusCode} />
+      {(!technicalApprovalEnabled||!commercialApprovalEnabled)&&<p className="notice">Solution Approval ถูกพักไว้ คุณยังจัดทำข้อมูล Design, Survey และ BOQ Draft ได้ตามปกติ</p>}
+      <SolutionWorkflowForm designId={id} status={design.statusCode} technicalApprovalEnabled={technicalApprovalEnabled} commercialApprovalEnabled={commercialApprovalEnabled} />
       <SolutionDesignTabs panels={{
         services: <><section className="card"><div className="card-header"><div><strong>Products &amp; Services</strong><small>บริการที่เลือกจะกำหนดกฎ Survey และ BOQ จาก Service Category</small></div><span>{design.services.length}</span></div><div className="card-body related-list">{design.services.map((service, index) => <article key={service.id}><strong>Service {index + 1} · {service.requestedBandwidth ?? "ไม่ระบุ bandwidth"}</strong><p>{service.accessTechnology ?? "Any access technology"}</p><small>{service.surveyRequired ? "Survey required" : "No survey"} · {service.boqRequired ? "BOQ required" : "No BOQ"}</small></article>)}{!design.services.length&&<div className="compact-empty">ยังไม่มี Product หรือ Service ใน Solution นี้</div>}</div></section><AddServiceForm designId={id} categories={categories} products={products}/></>,
         sites: <><section className="card"><div className="card-header"><div><strong>Installation Sites</strong><small>สถานที่ติดตั้งและพิกัดสำหรับ Coverage / Site Survey</small></div><span>{design.sites.length}</span></div><div className="card-body related-list">{design.sites.map(site=><article key={site.id}><strong>{site.siteCode?`${site.siteCode} · `:""}{site.siteName}</strong><p>{site.addressLine1}, {site.district}, {site.province}</p><small>{site.latitude.toString()}, {site.longitude.toString()}</small></article>)}{!design.sites.length&&<div className="compact-empty">ยังไม่มี Installation Site</div>}</div></section><AddSiteForm designId={id}/></>,

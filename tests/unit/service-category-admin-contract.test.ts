@@ -41,10 +41,30 @@ describe("Service Category administration and Solution Design UX contract", () =
     expect(service).toContain('action: "service-category.delete"');
     expect(service).toContain("version: { increment: 1 }");
     expect(service).toContain("deletedAt: new Date()");
+    expect(service).toContain("ServiceCategoryInUseError");
+    expect(service).toContain("tx.product.count");
+    expect(service).toContain("Prisma.TransactionIsolationLevel.Serializable");
     expect(schema).toMatch(/model ServiceCategoryConfig \{[\s\S]*version\s+Int\s+@default\(1\)/);
     expect(migration).toContain("navigation.admin.service-categories.view");
     expect(migration).toContain("navigation.quotes.view");
     expect(migration).not.toMatch(/DROP|TRUNCATE/i);
+  });
+
+  it("renders paged Product search and a paged Service Category table without a delete-reason field", () => {
+    const products = read("app/(portal)/products/page.tsx");
+    const categories = read("components/service-category-admin-console.tsx");
+    const categoryPage = read("app/(portal)/admin/service-categories/page.tsx");
+    const action = read("app/actions/service-category.ts");
+    expect(products).toContain('role="search"');
+    expect(products).toContain('name="q"');
+    expect(products).toContain("take: PAGE_SIZE + 1");
+    expect(products).toContain('aria-label="แบ่งหน้า Product"');
+    expect(categories).toContain('<table className="table service-category-table">');
+    expect(categories).toContain("category.productCount === 0");
+    expect(categories).toContain("window.confirm");
+    expect(categories).not.toContain('name="reason"');
+    expect(categoryPage).toContain("cursor: query.cursor");
+    expect(action).not.toContain('reason: text(form, "reason")');
   });
 
   it("filters Catalog Item by selected Service Category in UI and server", () => {

@@ -46,6 +46,17 @@ async function main() {
   for(const[roleCode,codes]of Object.entries(presalesPermissionMatrix))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
   const proposalApprovalPermissions:Record<string,string[]>={ADMIN:["proposal.review.manager","proposal.approve.director"],TEAM_MANAGER:["proposal.review.manager"],SALES_DIRECTOR:["proposal.approve.director"]};
   for(const[roleCode,codes]of Object.entries(proposalApprovalPermissions))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
+  await prisma.approvalSystemConfiguration.upsert({where:{id:"approval_system"},update:{},create:{id:"approval_system",mode:"DISABLED",reason:"Approval conditions are not yet approved; draft creation remains available."}});
+  const approvalWorkflows=[
+    ["approval_workflow_quote","QUOTE_APPROVAL","Quotation Approval","COMMERCIAL","QuoteVersion.total","approval_quote",10],
+    ["approval_workflow_proposal","PROPOSAL_APPROVAL","Proposal Approval","PROPOSAL",null,"approval_proposal",20],
+    ["approval_workflow_solution_technical","SOLUTION_TECHNICAL_REVIEW","Solution Technical Review","PRESALES",null,"approval_solution_technical",30],
+    ["approval_workflow_solution_commercial","SOLUTION_COMMERCIAL_APPROVAL","Solution Commercial Approval","PRESALES","SolutionDesign.estimatedPrice","approval_solution_commercial",40],
+    ["approval_workflow_site_survey","SITE_SURVEY_RESULT_APPROVAL","Site Survey Result Approval","PRESALES",null,"approval_site_survey",50],
+    ["approval_workflow_boq","BOQ_APPROVAL","BOQ Approval","PRESALES","BoqHeader.totalContractValue","approval_boq",60],
+    ["approval_workflow_contract","CONTRACT_APPROVAL","Contract Approval","CONTRACT","Contract.totalContractValue","approval_contract",70],
+  ] as const;
+  for(const[id,code,name,moduleCode,amountSource,policyId,displayOrder]of approvalWorkflows){const policy=await prisma.approvalPolicy.upsert({where:{code},update:{},create:{id:policyId,code}});await prisma.approvalWorkflowConfiguration.upsert({where:{code},update:{name,moduleCode,amountSource,displayOrder},create:{id,code,name,moduleCode,amountSource,policyId:policy.id,displayOrder,mode:"DISABLED",reason:"Temporarily disabled pending approved conditions."}});}
   const proposalSections = [
     ["EXECUTIVE_SUMMARY","Executive Summary"],["CUSTOMER_CHALLENGES","Customer Challenges"],["BUSINESS_OBJECTIVES","Business Objectives"],["PROPOSED_SOLUTION","Proposed Solution"],["SOLUTION_BENEFITS","Solution Benefits"],["IMPLEMENTATION_PLAN","Implementation Plan"],["TIMELINE","Timeline"],["PROJECT_SCOPE","Project Scope"],["DELIVERABLES","Deliverables"],["ASSUMPTIONS","Assumptions"],["SUPPORT","Support"],["PRICING_SUMMARY","Pricing Summary"],["TERMS_AND_CONDITIONS","Terms & Conditions"],["NEXT_STEPS","Next Steps"],
   ] as const;

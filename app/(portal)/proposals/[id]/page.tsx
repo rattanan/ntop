@@ -8,6 +8,7 @@ import { loadAuthorizationContext } from "@/lib/authorization/authorization-cont
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { buildOpportunityScopeWhere } from "@/lib/opportunity/opportunity-query";
 import { prisma } from "@/lib/prisma";
+import { isApprovalWorkflowEnforced } from "@/lib/approval/approval-control";
 
 const dateTime=new Intl.DateTimeFormat("th-TH",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Bangkok"});
 
@@ -23,7 +24,9 @@ export default async function ProposalDetailPage({params}:{params:Promise<{id:st
   const policies=await prisma.proposalStatusTransition.findMany({where:{fromStatusCode:proposal.statusCode,toStatusCode:{in:allowed},active:true}});
   const requiredPermissions=policies.flatMap((policy)=>policy.requiredPermission?[policy.requiredPermission]:[]);const roleCodes=context.assignments.map((assignment)=>assignment.role);
   const grants=requiredPermissions.length&&roleCodes.length?await prisma.rolePermissionGrant.findMany({where:{roleCode:{in:roleCodes},permissionCode:{in:requiredPermissions}},select:{permissionCode:true}}):[];const granted=new Set(grants.map((grant)=>grant.permissionCode));
-  const allowedByPolicy=policies.filter((policy)=>(!policy.makerChecker||proposal.ownerId!==session.id)&&(!policy.requiredPermission||session.role==="ADMIN"||granted.has(policy.requiredPermission))).map((policy)=>policy.toStatusCode);
+  const approvalEnabled=await isApprovalWorkflowEnforced("PROPOSAL_APPROVAL");
+  const approvalStatuses=new Set(["PENDING_REVIEW","PENDING_DIRECTOR","APPROVED"]);
+  const allowedByPolicy=policies.filter((policy)=>approvalEnabled||!approvalStatuses.has(policy.toStatusCode)).filter((policy)=>(!policy.makerChecker||proposal.ownerId!==session.id)&&(!policy.requiredPermission||session.role==="ADMIN"||granted.has(policy.requiredPermission))).map((policy)=>policy.toStatusCode);
   const transitions=await prisma.proposalStatusDefinition.findMany({where:{code:{in:allowedByPolicy},active:true},select:{code:true,label:true},orderBy:{sortOrder:"asc"}});
   const versionCompare=proposal.versions.map((version)=>({versionNumber:version.versionNumber,createdAt:version.createdAt.toISOString(),sections:version.sections.map((section)=>({sectionCode:section.sectionCode,title:section.title,content:section.content}))}));
   const tags=Array.isArray(latest.tags)?latest.tags.filter((item):item is string=>typeof item==="string"):[];

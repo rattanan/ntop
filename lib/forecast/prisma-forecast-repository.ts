@@ -29,12 +29,17 @@ export class PrismaForecastRepository implements ForecastRepository<Transaction>
     return { id: record.id, snapshotKey: record.snapshotKey, pipelineAmount: record.pipelineAmount.toFixed(4), weightedAmount: record.weightedAmount.toFixed(4) };
   }
 
-  async listFacts(input: { context: AuthorizationContext; periodStart: Date; periodEnd: Date; cutoffAt: Date }, transaction: Transaction): Promise<PipelineFact[]> {
+  async listFacts(input: { context: AuthorizationContext; periodStart: Date; periodEnd: Date; cutoffAt: Date; includeUnscheduled?: boolean }, transaction: Transaction): Promise<PipelineFact[]> {
     const records = await transaction.opportunity.findMany({
       where: {
         ...buildOpportunityScopeWhere(input.context),
         stage: { notIn: ["WON", "LOST", "CANCELLED"] },
-        expectedCloseAt: { gte: input.periodStart, lt: input.periodEnd },
+        AND: [input.includeUnscheduled
+          ? { OR: [
+              { expectedCloseAt: { gte: input.periodStart, lt: input.periodEnd } },
+              { expectedCloseAt: null },
+            ] }
+          : { expectedCloseAt: { gte: input.periodStart, lt: input.periodEnd } }],
         createdAt: { lte: input.cutoffAt },
       },
       include: {

@@ -12,6 +12,7 @@ import {
 } from "@/lib/solution-design/solution-design-service";
 
 import { workflowCorrelationId, workflowUnauthenticated } from "./workflow-api-response";
+import { ApprovalWorkflowDisabledError } from "@/lib/approval/approval-control";
 
 export async function presalesActor(request: Request) {
   const correlationId = workflowCorrelationId(request);
@@ -28,7 +29,10 @@ export function presalesApiError(error: unknown, correlationId: string) {
   let status = 500;
   let code = "INTERNAL_ERROR";
   let fieldErrors: undefined | Array<{ field: string; code: string }>;
-  if (error instanceof PresalesValidationError) {
+  if (error instanceof ApprovalWorkflowDisabledError) {
+    status = 409;
+    code = "APPROVAL_WORKFLOW_DISABLED";
+  } else if (error instanceof PresalesValidationError) {
     status = 400;
     code = "VALIDATION_FAILED";
     fieldErrors = error.fields.map(field => ({ field, code: "INVALID" }));

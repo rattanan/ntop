@@ -94,6 +94,8 @@
 
 `POST /quotes/{id}/submit` ระบุ `quoteVersion`; สร้าง policy snapshot/approval request แบบ idempotent
 
+Temporary runtime behavior ตั้งแต่ 2026-08-25: เมื่อ Global Mode หรือ workflow mode ใน Approval Control Center เป็น `DISABLED` คำสั่ง submit/decision ของ Approval ตอบ HTTP 409 พร้อม code `APPROVAL_WORKFLOW_DISABLED` และไม่สร้างหรือแก้ Approval Request ส่วน endpoint สร้าง/แก้ Draft ยังคงทำงานตามสิทธิ์และ validation เดิม ค่า `APPROVAL_EMERGENCY_DISABLED=true` บังคับปิดทุก workflow ได้ในเหตุฉุกเฉิน
+
 `POST /approval-requests/{id}/decisions`
 
 ```json
