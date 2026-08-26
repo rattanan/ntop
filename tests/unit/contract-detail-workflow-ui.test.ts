@@ -27,6 +27,16 @@ describe("Contract detail workflow and evidence layout", () => {
     expect(controls).not.toContain('data-testid="contract-signature-submit"');
   });
 
+  it("shows uploaded Contract document versions in a bounded server-side table", () => {
+    expect(page).toContain('id="contract-documents"');
+    expect(page).toContain("prisma.contractDocumentVersion.findMany");
+    expect(page).toContain("take: documentPageSize");
+    expect(page).toContain("documentSortKeys.has");
+    expect(page).toContain("SortableTableHeader");
+    expect(page).toContain("PageNumberNavigation");
+    expect(page).toContain("ไม่พบเอกสาร");
+  });
+
   it("allows owners to see permitted transitions without a maker-checker filter", () => {
     expect(page).not.toContain("edge.makerChecker && contract.ownerId === session.id");
     expect(page).not.toContain("หลัก maker-checker");
