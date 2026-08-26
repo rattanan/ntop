@@ -8,9 +8,11 @@ function setup() {
     findCreateReceipt: vi.fn(async (): Promise<{ requestHash: string; targetId: string; targetVersion: number } | null> => null),
     create: vi.fn(async () => ({ id: "activity-new", version: 1 })),
     saveCreateReceipt: vi.fn(async () => undefined),
-    findAccessible: vi.fn(async () => ({ id: "activity-1", version: 2, ownerId: "user-1", statusCode: "OPEN", terminal: false, customerId: "customer-1", opportunityId: null })),
+    findAccessible: vi.fn(async () => ({ id: "activity-1", version: 2, ownerId: "user-1", statusCode: "OPEN", terminal: false, type: "MEETING", notes: "Customer confirmed the rollout.\nAction send revised plan", description: null, customerId: "customer-1", opportunityId: null })),
     targetIsAccessible: vi.fn(async () => true),
     updateVersioned: vi.fn(async () => ({ id: "activity-1", version: 3 })),
+    updateResultsVersioned: vi.fn(async () => ({ id: "activity-1", version: 3 })),
+    updateInsightVersioned: vi.fn(async () => ({ id: "activity-1", version: 3 })),
     softDeleteVersioned: vi.fn(async () => ({ id: "activity-1", version: 3 })),
     actorHasPermission: vi.fn(async () => false),
     assigneeIsEligible: vi.fn(async () => true),
@@ -55,6 +57,31 @@ describe("ActivityService", () => {
     expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.update", targetVersion: "3" }), { transaction: tx });
   });
 
+  it("updates outcome, customer feedback and next action with versioned audit evidence", async () => {
+    const { service, repository, audit, actor, tx } = setup();
+    await expect(service.updateResults(actor as never, "activity-1", { expectedVersion: 2, outcome: "Scope approved", customerFeedback: "ต้องการเริ่มเดือนหน้า", nextAction: "ส่ง revised plan" }, "corr-results")).resolves.toEqual({ id: "activity-1", version: 3 });
+    expect(repository.updateResultsVersioned).toHaveBeenCalledWith("activity-1", 2, { outcome: "Scope approved", customerFeedback: "ต้องการเริ่มเดือนหน้า", nextAction: "ส่ง revised plan" }, tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.results.update", data: expect.objectContaining({ hasOutcome: true, hasCustomerFeedback: true, hasNextAction: true }) }), { transaction: tx });
+  });
+
+  it("generates a reviewable Meeting Insight draft and persists it only after confirmation", async () => {
+    const { service, repository, audit, actor, tx } = setup();
+    await expect(service.draftMeetingInsight(actor as never, "activity-1")).resolves.toEqual({ summary: "Customer confirmed the rollout. Action send revised plan", actionItems: "Action send revised plan" });
+    expect(repository.updateInsightVersioned).not.toHaveBeenCalled();
+    await expect(service.confirmMeetingInsight(actor as never, "activity-1", { expectedVersion: 2, aiSummary: "Customer confirmed rollout", actionItems: "Send revised plan" }, "corr-insight")).resolves.toEqual({ id: "activity-1", version: 3 });
+    expect(repository.updateInsightVersioned).toHaveBeenCalledWith("activity-1", 2, { aiSummary: "Customer confirmed rollout", actionItems: "Send revised plan" }, tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.meeting-insight.confirm", data: expect.objectContaining({ humanConfirmed: true }) }), { transaction: tx });
+  });
+
+  it("denies result and Meeting Insight writes for a Viewer before repository mutation", async () => {
+    const first = setup();
+    await expect(first.service.updateResults({ ...first.actor, role: "VIEWER" } as never, "activity-1", { expectedVersion: 2, outcome: "Should not save" }, "corr-denied-results")).rejects.toThrow("Permission denied");
+    expect(first.repository.updateResultsVersioned).not.toHaveBeenCalled();
+    const second = setup();
+    await expect(second.service.confirmMeetingInsight({ ...second.actor, role: "VIEWER" } as never, "activity-1", { expectedVersion: 2, aiSummary: "Should not save", actionItems: "" }, "corr-denied-insight")).rejects.toThrow("Permission denied");
+    expect(second.repository.updateInsightVersioned).not.toHaveBeenCalled();
+  });
+
   it("soft deletes with a required reason and audit evidence", async () => {
     const { service, repository, audit, actor, tx } = setup();
     await service.remove(actor as never, "activity-1", { expectedVersion: 2, reason: "Duplicate activity" }, "corr-2");
@@ -88,7 +115,7 @@ describe("ActivityService", () => {
 
   it("prevents a non-owner from completing an owner-only Activity", async () => {
     const { service, repository, actor } = setup();
-    vi.mocked(repository.findAccessible).mockResolvedValue({ id: "activity-1", version: 2, ownerId: "user-2", statusCode: "OPEN", terminal: false, customerId: "customer-1", opportunityId: null });
+    vi.mocked(repository.findAccessible).mockResolvedValue({ id: "activity-1", version: 2, ownerId: "user-2", statusCode: "OPEN", terminal: false, type: "MEETING", notes: "Meeting notes", description: null, customerId: "customer-1", opportunityId: null });
     await expect(service.transition(actor as never, "activity-1", { expectedVersion: 2, toStatusCode: "COMPLETED", reason: "Try complete" }, "corr-6")).rejects.toThrow("Permission denied");
     expect(repository.transitionVersioned).not.toHaveBeenCalled();
     expect(repository.recordStatusHistory).not.toHaveBeenCalled();

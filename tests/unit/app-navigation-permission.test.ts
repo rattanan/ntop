@@ -37,6 +37,7 @@ describe("permission-driven application navigation", () => {
     expect(groups.flatMap((group) => group.items.map((item) => item.href))).toEqual([
       "/quotes",
       "/admin/service-categories",
+      "/admin/solution-reference-data",
     ]);
   });
 

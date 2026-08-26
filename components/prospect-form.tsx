@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 
 import { Notice } from "@/components/notice";
 import { FormField, Input, Textarea } from "@/components/form-field";
-import { COMPANY_SIZE_OPTIONS, type CustomerClassificationOption } from "@/lib/customer/customer-classification";
+import { COMPANY_SIZE_OPTIONS, omitBlankLegacySubIndustry, type CustomerClassificationOption } from "@/lib/customer/customer-classification-options";
 import { prospectCommandSchema, type ProspectCommand } from "@/lib/prospect/prospect-validation";
 
 const sources = Object.values(ProspectSource);
@@ -30,9 +30,11 @@ function firstFormError(value: unknown): string | null {
 export function ProspectForm({
   prospect,
   classifications,
+  preserveLegacySubIndustry = false,
 }: {
   prospect?: Partial<ProspectCommand> & { id: string; version: number };
   classifications: CustomerClassificationOption[];
+  preserveLegacySubIndustry?: boolean;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -83,6 +85,7 @@ export function ProspectForm({
     async (values) => {
       setMessage("");
       setDuplicates([]);
+      const submitValues = omitBlankLegacySubIndustry(values, preserveLegacySubIndustry);
       const response = await fetch(
         prospect ? `/api/v1/prospects/${prospect.id}` : "/api/v1/prospects",
         {
@@ -92,7 +95,7 @@ export function ProspectForm({
             "idempotency-key": crypto.randomUUID(),
           },
           body: JSON.stringify(
-            prospect ? { ...values, expectedVersion: prospect.version } : values,
+            prospect ? { ...submitValues, expectedVersion: prospect.version } : submitValues,
           ),
         },
       );
@@ -145,7 +148,7 @@ export function ProspectForm({
             {field("branchNumber", "เลขสาขา")}
             <FormField label="ประเภท Customer" name="customerType"><select className="control" {...register("customerType")}><option value="">ไม่ระบุ</option><option value="B2G">B2G — ภาครัฐ</option><option value="B2B">B2B — ภาคเอกชน</option></select></FormField>
             <FormField label="Segment" name="organizationType"><select className="control" {...register("organizationType", { onChange: () => setValue("subIndustry", "", { shouldDirty: true }) })}><option value="">เลือก Segment</option>{classifications.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
-            <FormField label="อุตสาหกรรมย่อย" name="subIndustry"><select className="control" disabled={!selectedSegment} {...register("subIndustry")}><option value="">ไม่ระบุ</option>{subIndustries.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
+            <FormField label="อุตสาหกรรมย่อย" name="subIndustry" help={preserveLegacySubIndustry ? "ค่าเดิมไม่อยู่ในรายการอ้างอิง ระบบจะเก็บค่าเดิมไว้จนกว่าจะเลือกรายการใหม่" : undefined}><select className="control" disabled={!selectedSegment} {...register("subIndustry")}><option value="">ไม่ระบุ</option>{subIndustries.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
             <FormField label="ขนาดบริษัท" name="companySize"><select className="control" {...register("companySize")}><option value="">ไม่ระบุ</option>{COMPANY_SIZE_OPTIONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
             <FormField label="จำนวนพนักงาน" name="numberOfEmployees">
               <Input

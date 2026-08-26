@@ -8,6 +8,7 @@ import { createProposal, editProposal, restoreProposal, transitionProposal } fro
 import { filterProductOptions } from "@/lib/presales/product-option-search";
 import type { ProposalSectionInput } from "@/lib/proposal/contracts";
 import { FormNotice } from "./notice";
+import { SearchableOptionSelect } from "./searchable-option-select";
 
 const initial: FormState = {};
 const key = () => crypto.randomUUID();
@@ -17,7 +18,7 @@ export function ProposalCreateForm({ opportunities, templates, initialOpportunit
   const [idempotencyKey] = useState(key);
   return <form action={action} className="card proposal-form"><div className="card-body"><input type="hidden" name="idempotencyKey" value={idempotencyKey}/><div className="form-grid">
     <label className="field full"><span>Proposal Name</span><input className="control" name="name" maxLength={255} required/></label>
-    <label className="field"><span>Opportunity</span><select className="control" name="opportunityId" defaultValue={initialOpportunityId??""} required><option value="" disabled>เลือก Opportunity</option>{opportunities.map((item)=><option key={item.id} value={item.id}>{item.name} — {item.customerName}</option>)}</select></label>
+    <label className="field"><span>Opportunity</span><SearchableOptionSelect name="opportunityId" options={opportunities.map(item=>({id:item.id,label:item.name,description:item.customerName}))} defaultValue={initialOpportunityId} placeholder="ค้นหา Opportunity หรือลูกค้า" required/></label>
     <label className="field"><span>Template</span><select className="control" name="templateId" defaultValue=""><option value="">Standard Proposal</option>{templates.map((item)=><option key={item.id} value={item.id}>{item.category} — {item.name}</option>)}</select></label>
     <label className="field"><span>Expire Date</span><input className="control" name="expireDate" type="date"/></label>
     <label className="field"><span>Tags</span><input className="control" name="tags" placeholder="enterprise, cloud"/></label>

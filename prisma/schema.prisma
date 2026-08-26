@@ -2193,6 +2193,21 @@ model ServiceCategoryConfig {
   @@index([deletedAt, active, displayOrder, name])
 }
 
+model SolutionReferenceOption {
+  id           String   @id @default(cuid())
+  version      Int      @default(1)
+  groupCode    String   @db.VarChar(64)
+  code         String   @db.VarChar(100)
+  name         String   @db.VarChar(255)
+  active       Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([groupCode, code])
+  @@index([groupCode, active, displayOrder, name])
+}
+
 model SolutionStatusDefinition {
   id                     String   @id @default(cuid())
   entityType             String   @default("SOLUTION_DESIGN") @db.VarChar(32)

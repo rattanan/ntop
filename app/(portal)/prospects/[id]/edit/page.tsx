@@ -9,6 +9,7 @@ import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { buildProspectScopeWhere, loadProspectPermissions } from "@/lib/prospect/prospect-authorization";
 import { prisma } from "@/lib/prisma";
 import { loadCustomerClassifications } from "@/lib/customer/customer-classification";
+import { normalizeSubIndustryCode } from "@/lib/customer/customer-classification-options";
 
 export default async function EditProspectPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
@@ -23,11 +24,13 @@ export default async function EditProspectPage({ params }: { params: Promise<{ i
   }),loadCustomerClassifications()]);
   if (!prospect) notFound();
   const primaryContact = prospect.contacts[0];
+  const normalizedSubIndustry = normalizeSubIndustryCode(prospect.organizationType, prospect.subIndustry, classifications);
   const values = {
     id: prospect.id, version: prospect.version, companyName: prospect.companyName,
     companyNameEnglish: prospect.companyNameEnglish ?? undefined, taxId: prospect.taxId ?? undefined,
     branchNumber: prospect.branchNumber ?? undefined, customerType: prospect.customerType === "B2G" || prospect.customerType === "B2B" ? prospect.customerType as "B2G" | "B2B" : undefined,
-    organizationType: prospect.organizationType ?? undefined, subIndustry: prospect.subIndustry ?? undefined,
+    organizationType: prospect.organizationType ?? undefined,
+    subIndustry: normalizedSubIndustry,
     companySize: prospect.companySize === "SMALL" || prospect.companySize === "MEDIUM" || prospect.companySize === "LARGE" ? prospect.companySize as "SMALL" | "MEDIUM" | "LARGE" : undefined, numberOfEmployees: prospect.numberOfEmployees ?? undefined,
     website: prospect.website ?? undefined, address: prospect.address ?? undefined,
     subDistrict: prospect.subDistrict ?? undefined, district: prospect.district ?? undefined,
@@ -59,6 +62,10 @@ export default async function EditProspectPage({ params }: { params: Promise<{ i
       <Link className="back-link" href={`/prospects/${id}`}><ArrowLeft aria-hidden="true" />กลับหน้ารายละเอียด</Link>
       <p className="eyebrow">Prospect Management</p><h1>แก้ไข {prospect.companyName}</h1>
     </div></div>
-    <ProspectForm prospect={values} classifications={classifications} />
+    <ProspectForm
+      prospect={values}
+      classifications={classifications}
+      preserveLegacySubIndustry={Boolean(prospect.subIndustry && !normalizedSubIndustry)}
+    />
   </>;
 }

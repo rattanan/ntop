@@ -6,6 +6,7 @@ const page = readFileSync(join(process.cwd(), "app/(portal)/contracts/new/page.t
 const form = readFileSync(join(process.cwd(), "components/contract-create-form.tsx"), "utf8");
 const action = readFileSync(join(process.cwd(), "app/(portal)/contracts/actions.ts"), "utf8");
 const repository = readFileSync(join(process.cwd(), "lib/contract/prisma-contract-repository.ts"), "utf8");
+const styles = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
 
 describe("Contract create form", () => {
   it("offers only accepted quote versions that do not already have a contract", () => {
@@ -34,5 +35,12 @@ describe("Contract create form", () => {
     expect(page).toContain("quantity: item.quantity.toString()");
     expect(page).toContain("unitPrice: item.unitPrice.toString()");
     expect(page).toContain("discountAmount: item.discountAmount.toString()");
+  });
+
+  it("keeps the empty quotation message at the full panel width", () => {
+    expect(page).toContain('className="card-body contract-quote-options"');
+    expect(page).toContain('className="empty"');
+    expect(styles).toContain(".contract-quote-options>.empty { width:100%;min-width:0;grid-column:1/-1");
+    expect(styles).toContain("white-space:normal;overflow-wrap:anywhere");
   });
 });

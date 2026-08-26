@@ -22,6 +22,9 @@ The existing `SalesDocument` service is currently scoped to Prospect/Lead storag
 - Create components, network connections, requirement mappings, assumptions/constraints/risks, technical reviews and commercial reviews.
 - Enforce Opportunity/team scope, assigned survey scope, explicit permissions, restricted cost serialization and audit critical mutations in the same transaction.
 - Show Solution Design, Site Survey and BOQ work queues, KPI summaries, detail pages and assigned-survey notifications.
+- Carry an authorized Opportunity into Solution Design creation through `opportunityId` and expose searchable Opportunity selectors in Solution Design, Proposal and Quotation creation.
+- Edit non-terminal Solution Design name, category, description, objective and target date with optimistic version checking, immutable version evidence and audit in the same transaction.
+- Configure Solution Category, Component Type and risk Category/Probability/Impact/Severity through administrator-managed `SolutionReferenceOption` records instead of accepting arbitrary free text.
 
 ## Routes and APIs
 
@@ -66,6 +69,8 @@ It adds service/status configuration, versioning, sites, services, components, n
 
 `prisma/seed.ts` seeds status definitions/transitions, BOQ sections, category rules, permissions and synthetic demo users/products when demo mode is enabled. Seed identities use `example.test` and contain no real personal data.
 
+Migration `20260826150000_add_solution_reference_options` adds the grouped `SolutionReferenceOption` table. The normal seed path populates Solution Category, Component Type and risk reference groups before the optional demo-data boundary. Proposal Template category remains a separate document-template concern and is not reused as Solution Category.
+
 ## Manual role flow
 
 1. KAM or Pre-Sales opens an Opportunity and creates the Solution Design.
@@ -95,6 +100,7 @@ Real-database integration coverage is in `tests/integration/solution-design-real
 - Production NTSP submission, polling, webhook, authentication, retries and reconciliation are intentionally not implemented.
 - The shared document store has not yet been generalized beyond its current Prospect/Lead ownership model; Site Survey attachment DTO fields are prepared, but Survey photo/document upload requires that separate Documents-module extension.
 - Map-pin selection is not included because the repository has no existing map component; validated manual GPS entry is supported.
+- Province-dependent District and place-search/map-pin selection remain pending an approved, complete Thai administrative-area dataset and an approved map/geocoding provider. The implementation must not silently introduce a public geocoding dependency into the private-cloud baseline.
 - Full performance/security/DR/UAT evidence and a live MySQL migration rehearsal require the dedicated test environment; the configured database was unreachable during this local run.
 
 ## Integration status

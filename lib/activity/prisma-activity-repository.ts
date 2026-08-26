@@ -19,7 +19,7 @@ export class PrismaActivityRepository implements ActivityRepository {
     await transaction.activityCommandReceipt.create({ data: { ...input, command: "activity.create" } });
   }
   findAccessible(id: string, context: AuthorizationContext, transaction: ActivityTransaction) {
-    return transaction.activity.findFirst({ where: { id, deletedAt: null, ...buildActivityScopeWhere(context) }, select: { id: true, version: true, ownerId: true, statusCode: true, status: { select: { terminal: true } }, customerId: true, opportunityId: true } }).then((value) => value ? { ...value, terminal: value.status.terminal } : null);
+    return transaction.activity.findFirst({ where: { id, deletedAt: null, ...buildActivityScopeWhere(context) }, select: { id: true, version: true, ownerId: true, statusCode: true, type: true, notes: true, description: true, status: { select: { terminal: true } }, customerId: true, opportunityId: true } }).then((value) => value ? { ...value, terminal: value.status.terminal } : null);
   }
   async targetIsAccessible(input: { customerId?: string | null; opportunityId?: string | null }, context: AuthorizationContext, transaction: ActivityTransaction) {
     const [customer, opportunity] = await Promise.all([
@@ -29,6 +29,14 @@ export class PrismaActivityRepository implements ActivityRepository {
     return customer === 1 && opportunity === 1;
   }
   async updateVersioned(id: string, expectedVersion: number, data: { subject: string; type: ActivityType; dueAt: Date | null; notes: string | null; customerId: string | null; opportunityId: string | null }, transaction: ActivityTransaction) {
+    const updated = await transaction.activity.updateMany({ where: { id, version: expectedVersion, deletedAt: null }, data: { ...data, version: { increment: 1 } } });
+    return updated.count === 1 ? transaction.activity.findUniqueOrThrow({ where: { id }, select: { id: true, version: true } }) : null;
+  }
+  async updateResultsVersioned(id: string, expectedVersion: number, data: { outcome: string | null; customerFeedback: string | null; nextAction: string | null }, transaction: ActivityTransaction) {
+    const updated = await transaction.activity.updateMany({ where: { id, version: expectedVersion, deletedAt: null }, data: { ...data, version: { increment: 1 } } });
+    return updated.count === 1 ? transaction.activity.findUniqueOrThrow({ where: { id }, select: { id: true, version: true } }) : null;
+  }
+  async updateInsightVersioned(id: string, expectedVersion: number, data: { aiSummary: string; actionItems: string | null }, transaction: ActivityTransaction) {
     const updated = await transaction.activity.updateMany({ where: { id, version: expectedVersion, deletedAt: null }, data: { ...data, version: { increment: 1 } } });
     return updated.count === 1 ? transaction.activity.findUniqueOrThrow({ where: { id }, select: { id: true, version: true } }) : null;
   }

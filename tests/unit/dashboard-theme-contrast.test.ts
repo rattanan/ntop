@@ -32,6 +32,7 @@ describe("dashboard dark-theme contrast", () => {
     ["quick-create dark interaction", "#ffe58a", "#292719", 4.5],
     ["hero primary text", "#f8fafc", "#4b3e0a", 4.5],
     ["hero secondary text", "#e0d6aa", "#4b3e0a", 3],
+    ["field-help tooltip text", "#30343b", "#fffdf2", 4.5],
   ])("keeps %s readable", (_label, foreground, background, minimum) => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(minimum);
   });
@@ -52,6 +53,14 @@ describe("dashboard dark-theme contrast", () => {
     expect(globalCss).toContain(".quick-create-menu a { min-height:42px;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--foreground)");
     expect(globalCss).toContain(".quick-create-menu a:is(:hover,:focus-visible,:active) { background:var(--surface-hover);color:var(--on-warning); }");
     expect(globalCss).not.toContain(".quick-create-menu a:hover { background:#fff8d3; }");
+  });
+
+  it("keeps shared field-help tooltips readable in light and dark themes", () => {
+    expect(globalCss).toContain("--field-help-tooltip-background: #fffdf2");
+    expect(globalCss).toContain("--field-help-tooltip-foreground: #30343b");
+    expect(globalCss).toContain("background:var(--field-help-tooltip-background);color:var(--field-help-tooltip-foreground)");
+    expect(globalCss).toContain(".related-summary-help .field-help-tooltip { color:var(--field-help-tooltip-foreground)");
+    expect(globalCss).not.toContain("background:#fffdf2;color:var(--nt-ink-800)");
   });
 
   it.each([

@@ -1,0 +1,29 @@
+import { Prisma, type Role } from "@prisma/client";
+import { z } from "zod";
+
+import { AppendOnlyAuditWriter } from "../audit/audit-writer";
+import { HashChainedAuditStore } from "../audit/hash-chained-audit-store";
+import { PrismaAuditLedgerRepository } from "../audit/prisma-audit-ledger-repository";
+import type { AuthorizationContext } from "../authorization/authorization-context";
+import { PERMISSIONS, permissionPolicy } from "../authorization/permission-policy";
+import { prisma } from "../prisma";
+
+export const SOLUTION_REFERENCE_GROUPS=["SOLUTION_CATEGORY","COMPONENT_TYPE","RISK_CATEGORY","RISK_PROBABILITY","RISK_IMPACT","RISK_SEVERITY"] as const;
+export type SolutionReferenceGroup=typeof SOLUTION_REFERENCE_GROUPS[number];
+export const SOLUTION_REFERENCE_SORTS=["groupCode","displayOrder","code","name","active"] as const;
+export type SolutionReferenceSort=typeof SOLUTION_REFERENCE_SORTS[number];
+type Actor={id:string;role:Role;authorization:AuthorizationContext};type Tx=Prisma.TransactionClient;
+const audit=new AppendOnlyAuditWriter<Tx>({store:new HashChainedAuditStore({repository:new PrismaAuditLedgerRepository(),maxAttempts:3})});
+const optionInput=z.strictObject({groupCode:z.enum(SOLUTION_REFERENCE_GROUPS),code:z.string().trim().min(2).max(100).regex(/^[A-Z0-9_]+$/),name:z.string().trim().min(2).max(255),displayOrder:z.number().int().min(0).max(100000),active:z.boolean()});
+const updateInput=optionInput.extend({expectedVersion:z.number().int().positive()});
+
+export class SolutionReferenceError extends Error{constructor(message="ไม่สามารถจัดการ Reference Data ได้",readonly issues?:Record<string,string[]>){super(message);this.name="SolutionReferenceError";}}
+async function requireManage(actor:Actor,tx:Tx){if(permissionPolicy.allows(actor,PERMISSIONS.productCatalogManage))return;const roles=[...new Set(actor.authorization.assignments.map(item=>item.role))];if(!roles.length||!await tx.rolePermissionGrant.count({where:{roleCode:{in:roles},permissionCode:PERMISSIONS.productCatalogManage}}))throw new SolutionReferenceError("ไม่มีสิทธิ์จัดการ Reference Data");}
+
+export async function listActiveSolutionReferenceOptions(groupCodes:readonly SolutionReferenceGroup[]){return prisma.solutionReferenceOption.findMany({where:{groupCode:{in:[...groupCodes]},active:true},select:{id:true,groupCode:true,code:true,name:true,displayOrder:true},orderBy:[{groupCode:"asc"},{displayOrder:"asc"},{name:"asc"}],take:500});}
+
+export async function listSolutionReferenceOptions(actor:Actor,input:{q?:string;groupCode?:SolutionReferenceGroup;page?:number;limit?:number;sort?:SolutionReferenceSort;order?:"asc"|"desc"}){return prisma.$transaction(async tx=>{await requireManage(actor,tx);const limit=Math.min(50,Math.max(1,input.limit??20));const q=input.q?.trim().slice(0,100)??"";const where:Prisma.SolutionReferenceOptionWhereInput={...(input.groupCode?{groupCode:input.groupCode}:{}),...(q?{OR:[{code:{contains:q}},{name:{contains:q}}]}:{})};const total=await tx.solutionReferenceOption.count({where});const totalPages=Math.max(1,Math.ceil(total/limit));const page=Math.min(totalPages,Math.max(1,input.page??1));const sort=input.sort&&SOLUTION_REFERENCE_SORTS.includes(input.sort)?input.sort:"groupCode";const order:"asc"|"desc"=input.order==="desc"?"desc":"asc";const items=await tx.solutionReferenceOption.findMany({where,orderBy:[{[sort]:order},{displayOrder:"asc"},{id:"asc"}],skip:(page-1)*limit,take:limit});return{items,total,totalPages,page,sort,order,q,groupCode:input.groupCode};});}
+
+export async function createSolutionReferenceOption(actor:Actor,input:unknown,correlationId:string){const parsed=optionInput.safeParse(input);if(!parsed.success)throw new SolutionReferenceError("ข้อมูล Reference Data ไม่ถูกต้อง",parsed.error.flatten().fieldErrors as Record<string,string[]>);try{return await prisma.$transaction(async tx=>{await requireManage(actor,tx);const created=await tx.solutionReferenceOption.create({data:parsed.data});await audit.append({actorId:actor.id,action:"solution-reference.create",targetType:"SolutionReferenceOption",targetId:created.id,targetVersion:"1",outcome:"SUCCESS",correlationId,data:{groupCode:created.groupCode,code:created.code,active:created.active}},{transaction:tx});return created;});}catch(error){if(error instanceof Prisma.PrismaClientKnownRequestError&&error.code==="P2002")throw new SolutionReferenceError("รหัสนี้มีอยู่แล้วในกลุ่มที่เลือก");throw error;}}
+
+export async function updateSolutionReferenceOption(actor:Actor,id:string,input:unknown,correlationId:string){const parsed=updateInput.safeParse(input);if(!parsed.success)throw new SolutionReferenceError("ข้อมูล Reference Data ไม่ถูกต้อง",parsed.error.flatten().fieldErrors as Record<string,string[]>);try{return await prisma.$transaction(async tx=>{await requireManage(actor,tx);const current=await tx.solutionReferenceOption.findUnique({where:{id}});if(!current)throw new SolutionReferenceError("ไม่พบ Reference Data");const result=await tx.solutionReferenceOption.updateMany({where:{id,version:parsed.data.expectedVersion},data:{groupCode:parsed.data.groupCode,code:parsed.data.code,name:parsed.data.name,displayOrder:parsed.data.displayOrder,active:parsed.data.active,version:{increment:1}}});if(!result.count)throw new SolutionReferenceError("ข้อมูลถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดหน้าใหม่");const updated=await tx.solutionReferenceOption.findUniqueOrThrow({where:{id}});await audit.append({actorId:actor.id,action:"solution-reference.update",targetType:"SolutionReferenceOption",targetId:id,targetVersion:String(updated.version),outcome:"SUCCESS",correlationId,data:{previousVersion:current.version,groupCode:updated.groupCode,code:updated.code,active:updated.active}},{transaction:tx});return updated;});}catch(error){if(error instanceof Prisma.PrismaClientKnownRequestError&&error.code==="P2002")throw new SolutionReferenceError("รหัสนี้มีอยู่แล้วในกลุ่มที่เลือก");throw error;}}

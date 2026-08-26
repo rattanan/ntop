@@ -23,9 +23,10 @@ function quoteItems(form: FormData) {
 export async function createGovernedQuote(_: FormState, form: FormData): Promise<FormState> {
   const session = await requireSession();
   const quoteId = text(form, "quoteId") || undefined;
+  let resultQuoteId = quoteId;
   try {
     const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
-    await createQuoteRuntime().createVersion(
+    const created = await createQuoteRuntime().createVersion(
       { ...session, authorization },
       {
         quoteId,
@@ -39,12 +40,13 @@ export async function createGovernedQuote(_: FormState, form: FormData): Promise
       crypto.randomUUID(),
       text(form, "idempotencyKey"),
     );
+    resultQuoteId = created.quoteId;
   } catch (error) {
     return { message: error instanceof Error ? error.message : "ไม่สามารถสร้างใบเสนอราคาได้" };
   }
   revalidatePath("/quotes");
   if (quoteId) revalidatePath(`/quotes/${quoteId}`);
-  redirect("/quotes");
+  redirect(resultQuoteId ? `/quotes/${resultQuoteId}` : "/quotes");
 }
 
 export async function submitQuoteVersion(quoteId: string, quoteVersionId: string, _: FormState, form: FormData): Promise<FormState> {

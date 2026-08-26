@@ -8,6 +8,11 @@ const detail = readFileSync("app/(portal)/activities/[id]/page.tsx", "utf8");
 const edit = readFileSync("app/(portal)/activities/[id]/edit/page.tsx", "utf8");
 const route = readFileSync("app/api/v1/activities/[id]/route.ts", "utf8");
 const component = readFileSync("components/activity-management.tsx", "utf8");
+const detailInputs = readFileSync("components/activity-detail-inputs.tsx", "utf8");
+const workflowControls = readFileSync("components/activity-workflow-controls.tsx", "utf8");
+const resultsRoute = readFileSync("app/api/v1/activities/[id]/results/route.ts", "utf8");
+const insightRoute = readFileSync("app/api/v1/activities/[id]/insight/route.ts", "utf8");
+const insightConfirmRoute = readFileSync("app/api/v1/activities/[id]/insight/confirm/route.ts", "utf8");
 const opportunity = readFileSync("lib/opportunity/opportunity-query-service.ts", "utf8");
 const prospect = readFileSync("app/(portal)/prospects/[id]/page.tsx", "utf8");
 const lead = readFileSync("app/(portal)/leads/[id]/page.tsx", "utf8");
@@ -61,5 +66,21 @@ describe("Activity management contract", () => {
     expect(detail).toContain("ประวัติสถานะ");
     expect(detail).toContain("history.fromStatus.label");
     expect(detail).toContain("history.actor.name");
+  });
+  it("places status input with history and Activity Assignment at the bottom of the right rail", () => {
+    expect(detail).toContain("<ActivityStatusForm");
+    expect(detail).toContain("<ActivityAssignmentPanel");
+    expect(detail.indexOf("activity-status-history")).toBeLessThan(detail.indexOf("<ActivityAssignmentPanel"));
+    expect(workflowControls).toContain('className="activity-status-form"');
+    expect(workflowControls).toContain('className="card activity-assignment-card"');
+  });
+  it("provides audited result inputs and a human-confirmed Meeting Insight draft", () => {
+    for (const name of ["outcome", "customerFeedback", "nextAction"]) expect(detailInputs).toContain(`name="${name}"`);
+    expect(detailInputs).toContain("Generate AI Meeting Insight");
+    expect(detailInputs).toContain("AI Draft — รอการยืนยัน");
+    expect(detailInputs).toContain("ยืนยันใช้ Insight");
+    expect(resultsRoute).toContain("createActivityRuntime().updateResults");
+    expect(insightRoute).toContain("createActivityRuntime().draftMeetingInsight");
+    expect(insightConfirmRoute).toContain("createActivityRuntime().confirmMeetingInsight");
   });
 });

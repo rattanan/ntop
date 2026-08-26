@@ -172,6 +172,10 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
         });
     if (input.draft.quoteId) {
       const supersededAt = new Date();
+      await transaction.quoteVersion.updateMany({
+        where: { quoteId: quote.id, status: "DRAFT" },
+        data: { status: "SUPERSEDED" },
+      });
       const approvedVersions = await transaction.quoteVersion.findMany({
         where: { quoteId: quote.id, status: "APPROVED" },
         select: { id: true },

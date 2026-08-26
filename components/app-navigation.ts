@@ -77,6 +77,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Approval Control Center", href: "/admin/workflow", icon: ShieldCheck, requiredPermission: NAVIGATION_PERMISSIONS.adminWorkflow },
       { label: "Lead Assignment Rules", href: "/admin/lead-management", icon: Target, requiredPermission: NAVIGATION_PERMISSIONS.adminLeadManagement },
       { label: "Service Categories", href: "/admin/service-categories", icon: ListTree, keywords: "product catalog category", requiredPermission: NAVIGATION_PERMISSIONS.adminServiceCategories },
+      { label: "Solution Reference Data", href: "/admin/solution-reference-data", icon: ListTree, keywords: "solution component risk category", requiredPermission: NAVIGATION_PERMISSIONS.adminServiceCategories },
     ],
   },
 ];

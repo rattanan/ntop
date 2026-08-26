@@ -39,13 +39,42 @@ function helpElement(control: FormControl, labelText: string, standalone = false
   return wrapper;
 }
 
+function helpAnchorForLabel(label: HTMLLabelElement, labelText: string) {
+  const existing = label.querySelector<HTMLElement>(":scope > [data-field-label-content], :scope > span:not(.required):not(.sr-only)");
+  if (existing) {
+    existing.classList.add("field-label-content");
+    existing.dataset.fieldLabelContent = "true";
+    label.classList.add("field-label-assisted");
+    return existing;
+  }
+  const anchor = document.createElement("span");
+  anchor.className = "field-label-content";
+  anchor.dataset.fieldLabelContent = "true";
+  anchor.textContent = labelText;
+  const textNode = Array.from(label.childNodes).find((node) =>
+    node.nodeType === Node.TEXT_NODE && Boolean(node.textContent?.trim()),
+  );
+  if (textNode) textNode.replaceWith(anchor); else label.prepend(anchor);
+  label.classList.add("field-label-assisted");
+  return anchor;
+}
+
+function placeHelpAfterLabelText(label: HTMLLabelElement, labelText: string, help: HTMLElement) {
+  helpAnchorForLabel(label, labelText).append(help);
+}
+
 function decorate(root: ParentNode) {
   root.querySelectorAll<HTMLLabelElement>("form label").forEach((label) => {
-    if (label.dataset.fieldAssistance === "true" || label.closest(".field-help")) return;
+    if (label.closest(".field-help")) return;
     const control = controlForLabel(label);
     if (!control?.name || ["checkbox", "radio", "hidden"].includes(control.type)) return;
-    const labelText = (label.querySelector(":scope > span")?.textContent ?? label.childNodes[0]?.textContent ?? control.name).replace("*", "").trim();
-    label.append(helpElement(control, labelText));
+    const labelText = (label.querySelector(":scope > span:not(.required):not(.sr-only)")?.textContent ?? label.childNodes[0]?.textContent ?? control.name).replace("*", "").trim();
+    if (label.dataset.fieldAssistance === "true") {
+      const misplacedHelp = label.querySelector<HTMLElement>(":scope > .field-help[data-field-help='true']");
+      if (misplacedHelp) placeHelpAfterLabelText(label, labelText, misplacedHelp);
+      return;
+    }
+    placeHelpAfterLabelText(label, labelText, helpElement(control, labelText));
     label.dataset.fieldAssistance = "true";
     control.dataset.fieldAssistance = "true";
   });

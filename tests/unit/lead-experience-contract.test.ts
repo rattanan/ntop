@@ -15,13 +15,28 @@ describe("Lead experience alignment",()=>{
   });
 
   it("carries document links forward without duplicating SalesDocument rows",()=>{
-    const service=read("lib/prospect/prospect-service.ts"),detail=read("app/(portal)/leads/[id]/page.tsx"),documents=read("lib/lead/lead-document-service.ts");
+    const service=read("lib/prospect/prospect-service.ts"),detail=read("app/(portal)/leads/[id]/page.tsx"),documents=read("lib/lead/lead-document-service.ts"),actions=read("components/lead-detail-actions.tsx");
     expect(service).toContain("tx.salesDocument.updateMany");
     expect(service).toContain("data: { leadId: lead.id }");
     expect(detail).toContain("salesDocuments:{where:{deletedAt:null}");
     expect(detail).toContain("<LeadDocumentPanel");
     expect(documents).toContain("buildLeadScopeWhere(actor.authorization)");
     expect(documents).toContain('action:"lead.document.download"');
+    expect(actions).toContain('id="lead-document-category"');
+    expect(actions).toContain('className="file-control"');
+    expect(actions).toContain("file.size > 10_000_000");
+  });
+
+  it("places overview and AI Insight in one responsive row with readable section spacing",()=>{
+    const detail=read("app/(portal)/leads/[id]/page.tsx"),actions=read("components/lead-detail-actions.tsx"),css=read("app/globals.css");
+    expect(detail).toContain('className="lead-overview-row"');
+    expect(detail).toContain('className="card lead-overview-card"');
+    expect(detail.indexOf("lead-overview-card")).toBeLessThan(detail.indexOf("<LeadInsightPanel"));
+    expect(detail).toContain('className="card-header lead-section-header"');
+    expect(actions).toContain("Generate AI Insight");
+    expect(css).toContain(".lead-overview-row { display:grid");
+    expect(css).toContain(".lead-section-header>div { min-width:0;display:grid;gap:4px; }");
+    expect(css).toContain("@media (max-width:1100px){.lead-overview-row{grid-template-columns:1fr}}");
   });
 
   it("uses dialogs for assignment, activity and both conversion actions",()=>{

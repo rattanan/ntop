@@ -25,7 +25,7 @@
 | Domain | Endpoints (representative) | Requirements |
 |---|---|---|
 | Customer | `/customers`, `/customers/{id}`, `/customers/{id}/contacts`, `/customers/{id}/relationships`, `/customers/{id}/ownership` | BR-001, FR-001, FR-010 |
-| Lead/Activity | `/leads`, `/leads/{id}/transitions`, `/activities` | FR-002, FR-003 |
+| Lead/Activity | `/leads`, `/leads/{id}/transitions`, `/activities`, `/activities/{id}/results`, `/activities/{id}/status`, `/activities/{id}/insight` และ `/activities/{id}/insight/confirm` | FR-002, FR-003 |
 | Opportunity | `/opportunities`, `/opportunities/{id}/transitions`, `/opportunities/{id}/timeline` | FR-004 |
 | Presales | `/products`, `/coverage-checks`, `/solutions` | FR-005 |
 | Commercial | `/quotes`, `/quotes/{id}/versions`, `/quotes/{id}/submit`, `/approval-requests/{id}/decisions` | FR-006, FR-007 |

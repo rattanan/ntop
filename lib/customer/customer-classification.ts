@@ -1,16 +1,9 @@
 import { prisma } from "@/lib/prisma";
 
-export type CustomerClassificationOption = {
-  code: string;
-  name: string;
-  subIndustries: Array<{ code: string; name: string }>;
-};
+import type { CustomerClassificationOption } from "./customer-classification-options";
 
-export const COMPANY_SIZE_OPTIONS = [
-  { code: "SMALL", name: "เล็ก" },
-  { code: "MEDIUM", name: "กลาง" },
-  { code: "LARGE", name: "ใหญ่" },
-] as const;
+export { COMPANY_SIZE_OPTIONS, normalizeSubIndustryCode } from "./customer-classification-options";
+export type { CustomerClassificationOption } from "./customer-classification-options";
 
 export async function loadCustomerClassifications(): Promise<CustomerClassificationOption[]> {
   return prisma.customerSegment.findMany({

@@ -56,7 +56,7 @@ describe("Workflow REST v1 contract", () => {
     expect(environment).toContain('APPROVAL_EMERGENCY_DISABLED="false"');
     const createMethod = service.slice(service.indexOf("async createVersion(actor"), service.indexOf("async submit(actor"));
     expect(createMethod).not.toContain("approvalEnabled");
-    expect(detail).toContain('approvalEnabled && version.status === "DRAFT"');
+    expect(detail).toContain('approvalEnabled&&latest.status==="DRAFT"');
     expect(apiResponse).toContain('code = "APPROVAL_WORKFLOW_DISABLED"');
   });
 

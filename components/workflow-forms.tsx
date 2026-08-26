@@ -13,6 +13,7 @@ import { STAGES } from "@/lib/constants";
 import { FormField, Input, Textarea } from "./form-field";
 import { FormNotice } from "./notice";
 import { SearchableProductSelect } from "./searchable-product-select";
+import { SearchableOptionSelect } from "./searchable-option-select";
 
 const initial: FormState = {};
 
@@ -87,7 +88,7 @@ export function GovernedQuoteForm({ products, opportunities, quoteId, proposalId
   const total = lines.reduce((sum, line) => sum + lineTotal(line), ZERO);
   return <form action={action} className="quote-editor"><input type="hidden" name="idempotencyKey" value={key}/><input type="hidden" name="quoteId" value={quoteId ?? ""}/><input type="hidden" name="proposalId" value={proposalId ?? ""}/><input type="hidden" name="itemsJson" value={JSON.stringify(lines.map(({ productId, quantity, unitPrice, discountPct }) => ({ productId, quantity, unitPrice, discountPct })))}/>
     <section className="card quote-header-card"><div className="card-header"><div><span className="quote-step">01</span><div><strong>Quotation Header</strong><small>ข้อมูลหลักของใบเสนอราคาและ Opportunity</small></div></div><span className="badge muted">Draft Version</span></div><div className="card-body"><div className="form-grid">
-      <FormField label="Opportunity" name="opportunityId" required><select id="opportunityId" className="control" name="opportunityId" defaultValue={initialOpportunityId ?? ""} required disabled={Boolean(initialOpportunityId)}><option value="" disabled>เลือก Opportunity</option>{opportunities.map(item=><option key={item.id} value={item.id}>{item.name} — {item.customerName}</option>)}</select>{initialOpportunityId&&<input type="hidden" name="opportunityId" value={initialOpportunityId}/>}</FormField>
+      <FormField label="Opportunity" name="opportunityId" required><SearchableOptionSelect id="opportunityId" name="opportunityId" options={opportunities.map(item=>({id:item.id,label:item.name,description:item.customerName}))} defaultValue={initialOpportunityId} placeholder="ค้นหา Opportunity หรือลูกค้า" required disabled={Boolean(initialOpportunityId)}/></FormField>
       <FormField label="สกุลเงิน" name="currency"><Input name="currency" value="THB" readOnly/></FormField>
       <FormField label="ใช้ได้ถึง" name="validUntil"><Input name="validUntil" type="date" defaultValue={initialValidUntil}/></FormField>
       <div className="field full"><FormField label="หมายเหตุ / เงื่อนไขการขาย" name="notes"><Textarea name="notes" defaultValue={initialNotes}/></FormField></div>

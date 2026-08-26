@@ -55,6 +55,14 @@ new editable draft version is persisted.
   may link a new or new-version Quote only when Proposal and Opportunity match;
   the governed Quote calculation, floor-price gates, Approval policy, Decimal
   storage, and server authorization remain unchanged.
+- Saving Proposal edits returns to the Proposal detail after the immutable
+  version and audit transaction succeeds.
+- Quotation Product/Service selection is searchable by Product code or name.
+- Quotation detail renders the latest version as a customer-facing document with
+  line items, totals, validity, notes and signature placeholders. Internal cost
+  and margin remain outside the printable document.
+- Editing a Draft/Rejected/Returned Quotation creates a new Draft version and
+  supersedes the previous Draft instead of mutating historical line items.
 - All dates are stored as timezone-aware instants and rendered using the current
   application timezone conventions. Monetary values remain in existing Decimal
   Quote fields; Proposal content does not introduce floating-point money.
@@ -65,11 +73,12 @@ new editable draft version is persisted.
 
 The schema keeps clean extension points for document references, delivery events,
 and customer acceptance, but this increment does not claim production-ready
-binary PDF/Word rendering, email open/download tracking, public customer portal,
+server-generated binary PDF/Word rendering, email open/download tracking, public customer portal,
 object-storage upload/malware scanning, or digital signature. Those require the
 approved object storage, queue/worker, mail, public identity, and signing adapters
-described in the system architecture. Print uses the authenticated browser view;
-Quote export and delivery adapters remain separate follow-on acceptance gates.
+described in the system architecture. Print and Download PDF use the authenticated
+browser print view, where the user selects Save as PDF; no server-generated PDF
+is claimed. Quote export and delivery adapters remain separate follow-on gates.
 
 ## Compatibility and migration
 

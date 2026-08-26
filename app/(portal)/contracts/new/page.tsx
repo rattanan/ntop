@@ -54,7 +54,7 @@ export default async function NewContractPage({
         <Link className="secondary" href="/contracts">Back</Link>
       </div>
       <section className="card">
-        <div className="card-body proposal-status-cards">
+        <div className="card-body contract-quote-options">
           {quotes.map((candidate) => <Link key={candidate.id} href={`/contracts/new?quoteVersionId=${candidate.id}`}>
             <strong>{candidate.quote.quoteNo} · v{candidate.versionNumber}</strong>
             <span>{candidate.quote.customer.name}</span>

@@ -33,6 +33,8 @@ const updateSchema = z.strictObject({
 const deleteSchema = z.strictObject({ expectedVersion: z.number().int().positive(), reason: z.string().trim().min(5).max(1000) });
 const assignSchema = z.strictObject({ expectedVersion: z.number().int().positive(), ownerId: z.string().trim().min(1).max(191), reason: z.string().trim().min(3).max(1000) });
 const transitionSchema = z.strictObject({ expectedVersion: z.number().int().positive(), toStatusCode: z.string().trim().min(1).max(32), reason: z.string().trim().min(3).max(1000), outcome: z.string().trim().max(20_000).optional() });
+const resultsSchema = z.strictObject({ expectedVersion: z.number().int().positive(), outcome: z.string().trim().max(20_000).nullable().optional(), customerFeedback: z.string().trim().max(20_000).nullable().optional(), nextAction: z.string().trim().max(20_000).nullable().optional() });
+const insightConfirmationSchema = z.strictObject({ expectedVersion: z.number().int().positive(), aiSummary: z.string().trim().min(1).max(20_000), actionItems: z.string().trim().max(20_000) });
 
 export class ActivityAccessError extends Error { constructor() { super("ไม่พบ Activity หรือไม่มีสิทธิ์เข้าถึง"); this.name = "ActivityAccessError"; } }
 export class ActivityConflictError extends Error { constructor() { super("Activity ถูกแก้ไขโดยผู้ใช้อื่น กรุณาโหลดข้อมูลล่าสุด"); this.name = "ActivityConflictError"; } }
@@ -46,9 +48,11 @@ export interface ActivityRepository {
   findCreateReceipt(actorId: string, idempotencyKey: string, transaction: ActivityTransaction): Promise<{ requestHash: string; targetId: string; targetVersion: number } | null>;
   create(input: { subject: string; type: ActivityType; dueAt: Date | null; notes: string | null; aiSummary: string | null; actionItems: string | null; customerId: string | null; opportunityId: string | null; ownerId: string }, transaction: ActivityTransaction): Promise<{ id: string; version: number }>;
   saveCreateReceipt(input: { actorId: string; idempotencyKey: string; requestHash: string; targetId: string; targetVersion: number }, transaction: ActivityTransaction): Promise<void>;
-  findAccessible(id: string, context: AuthorizationContext, transaction: ActivityTransaction): Promise<{ id: string; version: number; ownerId: string; statusCode: string; terminal: boolean; customerId: string | null; opportunityId: string | null } | null>;
+  findAccessible(id: string, context: AuthorizationContext, transaction: ActivityTransaction): Promise<{ id: string; version: number; ownerId: string; statusCode: string; terminal: boolean; type: ActivityType; notes: string | null; description: string | null; customerId: string | null; opportunityId: string | null } | null>;
   targetIsAccessible(input: { customerId?: string | null; opportunityId?: string | null }, context: AuthorizationContext, transaction: ActivityTransaction): Promise<boolean>;
   updateVersioned(id: string, expectedVersion: number, data: { subject: string; type: ActivityType; dueAt: Date | null; notes: string | null; customerId: string | null; opportunityId: string | null }, transaction: ActivityTransaction): Promise<{ id: string; version: number } | null>;
+  updateResultsVersioned(id: string, expectedVersion: number, data: { outcome: string | null; customerFeedback: string | null; nextAction: string | null }, transaction: ActivityTransaction): Promise<{ id: string; version: number } | null>;
+  updateInsightVersioned(id: string, expectedVersion: number, data: { aiSummary: string; actionItems: string | null }, transaction: ActivityTransaction): Promise<{ id: string; version: number } | null>;
   softDeleteVersioned(id: string, expectedVersion: number, actorId: string, transaction: ActivityTransaction): Promise<{ id: string; version: number } | null>;
   actorHasPermission(actorId: string, permission: string, transaction: ActivityTransaction): Promise<boolean>;
   assigneeIsEligible(actorId: string, ownerId: string, context: AuthorizationContext, transaction: ActivityTransaction): Promise<boolean>;
@@ -117,6 +121,52 @@ export class ActivityService {
       }, transaction);
       if (!updated) throw new ActivityConflictError();
       await this.audit.append({ actorId: actor.id, action: "activity.update", targetType: "Activity", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, data: { previousVersion: current.version, customerId, opportunityId, type: parsed.data.type } }, { transaction });
+      return updated;
+    });
+  }
+
+  async updateResults(actor: ActivityActor, id: string, input: unknown, correlationId: string) {
+    assertPermission(actor, PERMISSIONS.recordUpdate, this.permissions);
+    const parsed = resultsSchema.safeParse(input);
+    if (!parsed.success) throw new ActivityValidationError(parsed.error.flatten().fieldErrors as Record<string, string[]>);
+    return this.repository.transaction(async (transaction) => {
+      const current = await this.repository.findAccessible(id, actor.authorization, transaction);
+      if (!current) throw new ActivityAccessError();
+      const values = {
+        outcome: parsed.data.outcome || null,
+        customerFeedback: parsed.data.customerFeedback || null,
+        nextAction: parsed.data.nextAction || null,
+      };
+      const updated = await this.repository.updateResultsVersioned(id, parsed.data.expectedVersion, values, transaction);
+      if (!updated) throw new ActivityConflictError();
+      await this.audit.append({ actorId: actor.id, action: "activity.results.update", targetType: "Activity", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, data: { previousVersion: current.version, hasOutcome: Boolean(values.outcome), hasCustomerFeedback: Boolean(values.customerFeedback), hasNextAction: Boolean(values.nextAction) } }, { transaction });
+      return updated;
+    });
+  }
+
+  async draftMeetingInsight(actor: ActivityActor, id: string) {
+    assertPermission(actor, PERMISSIONS.recordUpdate, this.permissions);
+    return this.repository.transaction(async (transaction) => {
+      const current = await this.repository.findAccessible(id, actor.authorization, transaction);
+      if (!current) throw new ActivityAccessError();
+      if (current.type !== ActivityType.MEETING) throw new ActivityValidationError({ type: ["AI Meeting Insight ใช้ได้เฉพาะ Activity ประเภท Meeting"] });
+      const meetingText = (current.notes ?? current.description ?? "").trim();
+      if (!meetingText) throw new ActivityValidationError({ notes: ["กรุณาบันทึกรายละเอียดการประชุมก่อน Generate Insight"] });
+      return createLegacyMeetingDraft(meetingText);
+    });
+  }
+
+  async confirmMeetingInsight(actor: ActivityActor, id: string, input: unknown, correlationId: string) {
+    assertPermission(actor, PERMISSIONS.recordUpdate, this.permissions);
+    const parsed = insightConfirmationSchema.safeParse(input);
+    if (!parsed.success) throw new ActivityValidationError(parsed.error.flatten().fieldErrors as Record<string, string[]>);
+    return this.repository.transaction(async (transaction) => {
+      const current = await this.repository.findAccessible(id, actor.authorization, transaction);
+      if (!current) throw new ActivityAccessError();
+      if (current.type !== ActivityType.MEETING) throw new ActivityValidationError({ type: ["AI Meeting Insight ใช้ได้เฉพาะ Activity ประเภท Meeting"] });
+      const updated = await this.repository.updateInsightVersioned(id, parsed.data.expectedVersion, { aiSummary: parsed.data.aiSummary, actionItems: parsed.data.actionItems || null }, transaction);
+      if (!updated) throw new ActivityConflictError();
+      await this.audit.append({ actorId: actor.id, action: "activity.meeting-insight.confirm", targetType: "Activity", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, data: { previousVersion: current.version, humanConfirmed: true, source: "USER_ENTERED_MEETING_NOTES" } }, { transaction });
       return updated;
     });
   }

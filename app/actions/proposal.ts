@@ -49,8 +49,11 @@ export async function editProposal(proposalId: string, _: FormState, form: FormD
     });
     await createProposalRuntime().service.edit(await actor(), proposalId, input, crypto.randomUUID(), text(form, "idempotencyKey"));
     revalidatePath(`/proposals/${proposalId}`); revalidatePath("/proposals");
-    return { message: "บันทึก Proposal version ใหม่แล้ว", status: "success" };
-  } catch (error) { return { message: error instanceof Error ? error.message : "ไม่สามารถบันทึก Proposal ได้" }; }
+    redirect(`/proposals/${proposalId}`);
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    return { message: error instanceof Error ? error.message : "ไม่สามารถบันทึก Proposal ได้" };
+  }
 }
 
 export async function transitionProposal(proposalId: string, _: FormState, form: FormData): Promise<FormState> {
