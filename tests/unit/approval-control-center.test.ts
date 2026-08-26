@@ -28,13 +28,13 @@ describe("Approval Control Center contract", () => {
     expect(read("app/(portal)/admin/organization/page.tsx")).not.toContain("AssignOrganizationApproverForm");
   });
 
-  it("enforces server-side gates for every approval-bearing module", () => {
+  it("enforces server-side gates except for the explicitly independent Contract lifecycle", () => {
     const proposal = read("lib/proposal/proposal-service.ts");
     const contract = read("lib/contract/contract-service.ts");
     const presales = read("lib/solution-design/solution-design-service.ts");
     const quote = read("lib/commercial/quote-runtime.ts");
     expect(proposal).toContain("PROPOSAL_APPROVAL");
-    expect(contract).toContain("CONTRACT_APPROVAL");
+    expect(contract).not.toContain("CONTRACT_APPROVAL");
     for (const code of ["SOLUTION_TECHNICAL_REVIEW", "SOLUTION_COMMERCIAL_APPROVAL", "SITE_SURVEY_RESULT_APPROVAL", "BOQ_APPROVAL"]) expect(presales).toContain(code);
     expect(quote).toContain('isApprovalWorkflowEnforced("QUOTE_APPROVAL")');
   });

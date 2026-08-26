@@ -24,6 +24,8 @@ service-order handover.
 3. Contract type, lifecycle statuses, transitions and transition permissions are
    data-configured. Contract owners may execute transitions when they hold the
    configured permission; Contract transitions do not enforce maker-checker.
+   The configured Contract lifecycle, including `PENDING_APPROVAL`, remains
+   available independently of the shared Approval Control runtime mode.
    APIs preserve the existing v1 error, correlation and idempotency conventions.
 4. Important commands write an audit event in the same transaction. Authorization
    is enforced server-side and records remain constrained to the actor's scope.

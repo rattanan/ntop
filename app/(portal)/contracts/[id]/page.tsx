@@ -8,7 +8,6 @@ import { loadAuthorizationContext } from "@/lib/authorization/authorization-cont
 import { assertPermission, PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { createContractRuntime } from "@/lib/contract/contract-runtime";
 import { prisma } from "@/lib/prisma";
-import { isApprovalWorkflowEnforced } from "@/lib/approval/approval-control";
 import type { Prisma } from "@prisma/client";
 
 const money = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 });
@@ -37,12 +36,11 @@ export default async function ContractDetailPage({ params, searchParams }: { par
   const allowed = await runtime.repository.transaction((tx) => runtime.repository.find(id, authorization, tx));
   if (!allowed) notFound();
   const roleCodes = authorization.assignments.map((assignment) => assignment.role);
-  const [contract, transitions, statuses, grants, approvalEnabled] = await Promise.all([
+  const [contract, transitions, statuses, grants] = await Promise.all([
     prisma.contract.findUnique({ where: { id }, include: { status: true, contractType: true, versions: { orderBy: { versionNumber: "desc" }, include: { items: { orderBy: { sortOrder: "asc" } } } }, signatures: { orderBy: { signedAt: "desc" } }, amendments: true, renewals: { include: { reminders: true } }, purchaseOrders: true, serviceOrders: true } }),
     prisma.contractStatusTransition.findMany({ where: { fromStatusCode: allowed.statusCode, active: true }, orderBy: { toStatusCode: "asc" } }),
     prisma.contractStatusDefinition.findMany({ where: { active: true }, select: { code: true, label: true, sortOrder: true } }),
     prisma.rolePermissionGrant.findMany({ where: { roleCode: { in: roleCodes } }, select: { permissionCode: true } }),
-    isApprovalWorkflowEnforced("CONTRACT_APPROVAL"),
   ]);
   if (!contract) notFound();
   const documentWhere: Prisma.ContractDocumentVersionWhereInput = { document: { contractId: id }, ...(documentQuery ? { OR: [{ fileName: { contains: documentQuery } }, { document: { category: { contains: documentQuery } } }] } : {}) };
@@ -66,8 +64,7 @@ export default async function ContractDetailPage({ params, searchParams }: { par
   const hasPermission = (code: string) => permissionPolicy.allows(session, code as never) || permissionCodes.has(code);
   const current = contract.versions[0];
   const statusMap = new Map(statuses.map((item) => [item.code, item]));
-  const enabledTransitions = transitions.filter((edge) => approvalEnabled || (allowed.statusCode !== "PENDING_APPROVAL" && edge.toStatusCode !== "PENDING_APPROVAL"));
-  const permittedTransitions = enabledTransitions.filter((edge) => hasPermission(edge.requiredPermission ?? PERMISSIONS.contractManage));
+  const permittedTransitions = transitions.filter((edge) => hasPermission(edge.requiredPermission ?? PERMISSIONS.contractManage));
   const canManage = hasPermission(PERMISSIONS.contractManage);
   const canCreateServiceOrder = hasPermission(PERMISSIONS.contractServiceOrderCreate)
     && contract.status.reportingCategory === "ACTIVE"
@@ -75,14 +72,11 @@ export default async function ContractDetailPage({ params, searchParams }: { par
     && !contract.serviceOrders.some((order) => order.contractVersionId === current?.id);
   const workflowUnavailableReason = contract.status.terminal
     ? "Contract นี้อยู่ในสถานะสิ้นสุดแล้ว จึงไม่มีสถานะถัดไป"
-    : !approvalEnabled && enabledTransitions.length === 0 && transitions.length > 0
-      ? "Contract Approval ถูกพักไว้ชั่วคราว จึงยังส่งต่อเข้าสู่ขั้นอนุมัติไม่ได้"
-      : transitions.length === 0
+    : transitions.length === 0
           ? "ยังไม่มีเส้นทางสถานะถัดไปที่เปิดใช้งานสำหรับสถานะปัจจุบัน"
           : "คุณดู Contract นี้ได้ แต่ไม่มีสิทธิ์ส่งต่อสถานะ กรุณาให้ผู้รับผิดชอบขั้นตอนถัดไปดำเนินการ";
 
   return <><div className="page-head"><div><p className="eyebrow">{contract.contractNo} · v{contract.version}</p><h1>{contract.name}</h1><p>{contract.contractType.name} · <span className="badge">{contract.status.label}</span></p></div><Link className="secondary" href="/contracts">Back to portfolio</Link></div>
-    {!approvalEnabled&&<p className="notice">Contract Approval ถูกพักไว้ สามารถจัดทำและแก้ไข Draft ได้ แต่ยังส่งหรือบันทึกผลอนุมัติไม่ได้</p>}
     <section className="proposal-kpis"><article><span>TCV</span><strong>{money.format(contract.totalContractValue.toNumber())}</strong><small>{contract.currency}</small></article><article><span>MRR</span><strong>{money.format(contract.monthlyRecurringRevenue.toNumber())}</strong><small>monthly recurring</small></article><article><span>One-time</span><strong>{money.format(contract.oneTimeRevenue.toNumber())}</strong><small>one-time revenue</small></article><article><span>End date</span><strong>{contract.endDate ? date.format(contract.endDate) : "—"}</strong><small>{contract.nextRenewalAt ? `renew ${date.format(contract.nextRenewalAt)}` : "no renewal scheduled"}</small></article></section>
     <ContractWorkflowControls contractId={contract.id} version={contract.version} currentStatusLabel={contract.status.label} workflowUnavailableReason={workflowUnavailableReason} transitions={permittedTransitions.map((item) => ({ code: item.toStatusCode, label: statusMap.get(item.toStatusCode)?.label ?? item.toStatusCode })).sort((a, b) => (statusMap.get(a.code)?.sortOrder ?? 0) - (statusMap.get(b.code)?.sortOrder ?? 0))} canUploadDocument={canManage} canCreateServiceOrder={canCreateServiceOrder} serviceOrders={contract.serviceOrders.map((order) => ({ id: order.id, orderNo: order.orderNo, status: order.status }))} />
     <section className="card" id="contract-documents"><div className="card-header"><div><strong>Contract Documents</strong><small>รายการเอกสารและ version ที่อัปโหลดล่าสุด</small></div><span className="badge muted">{allDocumentTotal} files</span></div>

@@ -7,5 +7,4 @@ import { PrismaContractRepository } from "./prisma-contract-repository";
 import { ContractService } from "./contract-service";
 import { ContractDocumentService } from "./contract-document-service";
 import { createProspectDocumentStorage } from "../prospect/prospect-document-storage";
-import { isApprovalWorkflowEnforced } from "../approval/approval-control";
-export function createContractRuntime(){const repository=new PrismaContractRepository(prisma);const audit=new AppendOnlyAuditWriter<Prisma.TransactionClient>({store:new HashChainedAuditStore({repository:new PrismaAuditLedgerRepository(),maxAttempts:3})});return{repository,audit,service:new ContractService(repository,audit,undefined,undefined,()=>isApprovalWorkflowEnforced("CONTRACT_APPROVAL")),documents:new ContractDocumentService(repository,audit,createProspectDocumentStorage())};}
+export function createContractRuntime(){const repository=new PrismaContractRepository(prisma);const audit=new AppendOnlyAuditWriter<Prisma.TransactionClient>({store:new HashChainedAuditStore({repository:new PrismaAuditLedgerRepository(),maxAttempts:3})});return{repository,audit,service:new ContractService(repository,audit),documents:new ContractDocumentService(repository,audit,createProspectDocumentStorage())};}

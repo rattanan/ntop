@@ -44,6 +44,12 @@ describe("Contract detail workflow and evidence layout", () => {
     expect(page).toContain("ไม่มีสิทธิ์ส่งต่อสถานะ");
   });
 
+  it("keeps Pending Approval available independently of Approval Control mode", () => {
+    expect(page).not.toContain('isApprovalWorkflowEnforced("CONTRACT_APPROVAL")');
+    expect(page).not.toContain("Contract Approval ถูกพักไว้");
+    expect(page).toContain("transitions.filter((edge) => hasPermission");
+  });
+
   it("uses contract-specific responsive layouts instead of the proposal status grid", () => {
     expect(page).toContain('className="contract-overview-grid"');
     expect(page).toContain('className="card-body contract-version-list"');
