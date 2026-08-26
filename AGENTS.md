@@ -83,10 +83,22 @@ Module หนึ่งห้ามเขียนตารางที่อี�
 - ใช้ idempotency สำหรับ command/retry ที่อาจถูกเรียกซ้ำ และ optimistic concurrency/HTTP 409 สำหรับ stale update ตาม contract
 - เงิน, ราคา, discount, margin และยอดรวมต้องใช้ database decimal/Prisma Decimal ห้ามใช้ floating point สำหรับ business calculation
 - เก็บและแปลงวันเวลาโดยคง timezone/offset อย่างถูกต้อง; ห้ามอาศัย timezone ของเครื่องโดยไม่ระบุ
-- ห้ามใช้ unbounded query หรือ client-side filtering กับ dataset หลัก; ใช้ index, bounded filters และ cursor pagination
+- ห้ามใช้ unbounded query หรือ client-side filtering กับ dataset หลัก; ใช้ index, bounded filters และ server-side pagination โดย list table ใช้ numbered UI ตามหัวข้อ 6 และ dataset ขนาดใหญ่ต้องหลีกเลี่ยง large offset scan
 - การเปลี่ยน retention, deletion, external identifier, ownership history หรือ immutable snapshot ต้องอ้างอิง data-governance requirement ที่เกี่ยวข้อง
 
-## 6. Definition of Done
+## 6. มาตรฐาน List Table
+
+เมื่อสร้างหรือปรับหน้า list/table ให้ใช้รูปแบบใน `.codex/skills/table-list-pattern/SKILL.md` เป็นค่าเริ่มต้น เว้นแต่คำสั่งล่าสุดของผู้ใช้กำหนดเป็นอย่างอื่น โดยทุก table ต้องมี:
+
+- Search box ที่ค้นหาฝั่ง server และมี reset/empty state
+- หัวคอลัมน์ข้อมูลที่เกี่ยวข้องกด sort ascending/descending ได้ โดย sort key เป็น allowlist ฝั่ง server
+- เลขหน้าที่กดเลือกได้ พร้อม previous/next และย่อช่วงยาวด้วย ellipsis
+- การคงค่า search/sort ระหว่างเปลี่ยนหน้า, fixed page size และ query ที่ bounded
+- semantic table, keyboard focus, `aria-sort` และ `aria-current="page"` ที่เหมาะสม
+
+ให้ reuse `components/page-number-navigation.tsx`, `components/sortable-table-header.tsx` และ table styles เดิมก่อนสร้าง implementation ใหม่
+
+## 7. Definition of Done
 
 งานถือว่าเสร็จเมื่อครบทุกข้อที่เกี่ยวข้อง:
 
@@ -114,7 +126,7 @@ npm run test:e2e
 
 ถ้าไม่สามารถรันคำสั่งใดได้ ต้องระบุคำสั่งที่ไม่ได้รัน เหตุผล และความเสี่ยงที่เหลือ ห้ามรายงานว่า test ผ่านหากไม่ได้รันจริง
 
-## 7. Database setup สำหรับ local/test
+## 8. Database setup สำหรับ local/test
 
 1. คัดลอก `.env.example` เป็น `.env` และตั้งค่า test MySQL พร้อม `AUTH_SECRET` อย่างน้อย 32 ตัวอักษร
 2. รัน `npm run db:generate`
@@ -123,7 +135,7 @@ npm run test:e2e
 
 MariaDB 5.5 legacy server ใช้ `prisma/legacy-mariadb-5.5.sql` ผ่าน MySQL CLI และใช้ Prisma เป็น application client เท่านั้น ห้ามใช้ Prisma Migrate จัดการ server ดังกล่าว ดูรายละเอียดใน `README.md`
 
-## 8. การส่งต่องาน
+## 9. การส่งต่องาน
 
 เมื่อสรุปงาน ให้แจ้งอย่างน้อย:
 
