@@ -12,7 +12,7 @@ The existing `SalesDocument` service is currently scoped to Prospect/Lead storag
 - Add configured service categories/products and automatically derive survey/BOQ/physical-installation requirements.
 - Override survey requirement only with a reason and audited previous/new values.
 - Add multiple sites with decimal GPS coordinates and server validation for latitude/longitude.
-- Select Installation Site coordinates from an OpenStreetMap dialog by explicit place search, map click, or draggable marker; selected coordinates remain editable before submission.
+- Select Installation Site coordinates from an OpenStreetMap dialog by explicit place search, map click, or draggable marker. A site without coordinates opens at NT Chaeng Watthana, and the dialog returns its draft Latitude/Longitude to the form only after the user presses Submit; selected coordinates remain editable before the site is saved.
 - Create manual survey requests with at least one validated contact and a preferred period.
 - Submit an internal normalized `NTSPSiteSurveyRequestV1` snapshot without an external API call.
 - Assign, schedule, start, enter a structured manual result, submit, return/reject/approve with assigned-record checks and maker-checker.

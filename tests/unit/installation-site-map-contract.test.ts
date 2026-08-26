@@ -22,8 +22,19 @@ describe("Installation Site OpenStreetMap picker", () => {
     expect(picker).toContain('map.on("click"');
     expect(picker).toContain("Search Map");
     expect(picker).toContain("OpenStreetMap contributors");
+    expect(picker).toContain("const NT_CHAENG_WATTHANA = { latitude: 13.88442, longitude: 100.57043 }");
+    expect(picker).toContain("setView([latitude, longitude], 16)");
+    expect(picker).toContain("if (submit) onChangeRef.current(draft)");
+    expect(picker).toContain('onClick={() => close(true)}>Submit</button>');
     expect(picker).not.toContain('<form className="installation-map-search"');
     expect(picker).not.toContain("autocomplete");
+  });
+
+  it("keeps the coordinate inputs and map button aligned without a duplicate required marker", () => {
+    const styles = read("app/globals.css");
+    expect(styles).toContain(".installation-site-coordinates>label { min-width:0;margin-bottom:0; }");
+    expect(styles).toContain(".installation-site-coordinates.field:has(:required)>label:first-child::after { content:none; }");
+    expect(styles).toContain(".installation-site-coordinates .control,.installation-map-button { height:var(--input-height);min-height:var(--input-height); }");
   });
 
   it("proxies authenticated Nominatim searches with bounds, caching and rate limiting", () => {

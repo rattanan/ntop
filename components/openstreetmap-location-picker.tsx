@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type Coordinates = { latitude: string; longitude: string };
 type Place = { id: string; label: string; latitude: number; longitude: number };
 
-const BANGKOK = { latitude: 13.7563, longitude: 100.5018 };
+const NT_CHAENG_WATTHANA = { latitude: 13.88442, longitude: 100.57043 };
 const TILE_URL = process.env.NEXT_PUBLIC_OPENSTREETMAP_TILE_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 function numeric(value: string, fallback: number) {
@@ -38,7 +38,6 @@ export function OpenStreetMapLocationPicker({ coordinates, onCoordinatesChange }
   const updateCoordinates = useCallback((latitude: number, longitude: number) => {
     const next = { latitude: formatted(latitude), longitude: formatted(longitude) };
     setDraft(next);
-    onChangeRef.current(next);
   }, []);
 
   useEffect(() => {
@@ -46,9 +45,9 @@ export function OpenStreetMapLocationPicker({ coordinates, onCoordinatesChange }
     let disposed = false;
     void import("leaflet").then((leaflet) => {
       if (disposed || !containerRef.current) return;
-      const latitude = numeric(originalRef.current.latitude, BANGKOK.latitude);
-      const longitude = numeric(originalRef.current.longitude, BANGKOK.longitude);
-      const map = leaflet.map(containerRef.current, { zoomControl: true }).setView([latitude, longitude], originalRef.current.latitude && originalRef.current.longitude ? 16 : 11);
+      const latitude = numeric(originalRef.current.latitude, NT_CHAENG_WATTHANA.latitude);
+      const longitude = numeric(originalRef.current.longitude, NT_CHAENG_WATTHANA.longitude);
+      const map = leaflet.map(containerRef.current, { zoomControl: true }).setView([latitude, longitude], 16);
       leaflet.tileLayer(TILE_URL, { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>' }).addTo(map);
       const icon = leaflet.divIcon({ className: "installation-map-marker", html: '<span aria-hidden="true"></span>', iconSize: [34, 44], iconAnchor: [17, 42] });
       const marker = leaflet.marker([latitude, longitude], { draggable: true, autoPan: true, keyboard: true, title: "ตำแหน่ง Installation Site", alt: "หมุดตำแหน่ง Installation Site", icon }).addTo(map);
@@ -69,8 +68,8 @@ export function OpenStreetMapLocationPicker({ coordinates, onCoordinatesChange }
   const show = () => {
     originalRef.current = coordinates;
     setDraft({
-      latitude: formatted(numeric(coordinates.latitude, BANGKOK.latitude)),
-      longitude: formatted(numeric(coordinates.longitude, BANGKOK.longitude)),
+      latitude: formatted(numeric(coordinates.latitude, NT_CHAENG_WATTHANA.latitude)),
+      longitude: formatted(numeric(coordinates.longitude, NT_CHAENG_WATTHANA.longitude)),
     });
     setMessage("");
     setSelectedPlace("");
@@ -78,8 +77,8 @@ export function OpenStreetMapLocationPicker({ coordinates, onCoordinatesChange }
     dialogRef.current?.showModal();
   };
 
-  const close = (restore: boolean) => {
-    onChangeRef.current(restore ? originalRef.current : draft);
+  const close = (submit: boolean) => {
+    if (submit) onChangeRef.current(draft);
     dialogRef.current?.close();
     setOpen(false);
   };
@@ -105,17 +104,17 @@ export function OpenStreetMapLocationPicker({ coordinates, onCoordinatesChange }
 
   return <>
     <button type="button" className="secondary installation-map-button" onClick={show}><MapPin aria-hidden="true"/>เปิด Map</button>
-    <dialog ref={dialogRef} className="installation-map-dialog" aria-labelledby="installation-map-title" onCancel={(event) => { event.preventDefault(); close(true); }} onClose={() => setOpen(false)}>
-      <div className="installation-map-head"><div><strong id="installation-map-title">เลือกตำแหน่ง Installation Site</strong><small>ค้นหาสถานที่ คลิกบนแผนที่ หรือลากหมุดเพื่อปรับพิกัด</small></div><button type="button" className="dialog-close" aria-label="ปิดหน้าต่างและยกเลิกการเปลี่ยนพิกัด" onClick={() => close(true)}><X aria-hidden="true"/></button></div>
+    <dialog ref={dialogRef} className="installation-map-dialog" aria-labelledby="installation-map-title" onCancel={(event) => { event.preventDefault(); close(false); }} onClose={() => setOpen(false)}>
+      <div className="installation-map-head"><div><strong id="installation-map-title">เลือกตำแหน่ง Installation Site</strong><small>ค้นหาสถานที่ คลิกบนแผนที่ หรือลากหมุดเพื่อปรับพิกัด</small></div><button type="button" className="dialog-close" aria-label="ปิดหน้าต่างและยกเลิกการเปลี่ยนพิกัด" onClick={() => close(false)}><X aria-hidden="true"/></button></div>
       <div className="installation-map-body">
         <div className="installation-map-search"><label htmlFor="installation-place-search">ชื่อสถานที่สำคัญ</label><div><input id="installation-place-search" className="control" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchPlace(); } }} placeholder="เช่น ศูนย์ราชการแจ้งวัฒนะ" autoComplete="off"/><button type="button" className="primary" disabled={pending} onClick={() => void searchPlace()}>{pending?<LoaderCircle className="spin" aria-hidden="true"/>:<Search aria-hidden="true"/>}{pending?"กำลังค้นหา":"Search Map"}</button></div></div>
         <div ref={containerRef} className="installation-map-canvas" role="application" aria-label="OpenStreetMap สำหรับเลือกพิกัด"/>
-        <div className="installation-map-result" aria-live="polite"><div><span>Latitude</span><strong>{draft.latitude || formatted(BANGKOK.latitude)}</strong></div><div><span>Longitude</span><strong>{draft.longitude || formatted(BANGKOK.longitude)}</strong></div></div>
+        <div className="installation-map-result" aria-live="polite"><div><span>Latitude</span><strong>{draft.latitude || formatted(NT_CHAENG_WATTHANA.latitude)}</strong></div><div><span>Longitude</span><strong>{draft.longitude || formatted(NT_CHAENG_WATTHANA.longitude)}</strong></div></div>
         {selectedPlace&&<p className="installation-map-place"><MapPin aria-hidden="true"/>{selectedPlace}</p>}
         {message&&<p className="notice installation-map-message">{message}</p>}
         <p className="help">ใช้เฉพาะชื่อสถานที่สาธารณะ ห้ามส่งข้อมูลส่วนบุคคลหรือข้อมูลลับไปยังบริการค้นหาภายนอก</p>
       </div>
-      <div className="installation-map-actions"><button type="button" className="secondary" onClick={() => close(true)}>ยกเลิก</button><button type="button" className="primary" onClick={() => close(false)}>ใช้พิกัดนี้</button></div>
+      <div className="installation-map-actions"><button type="button" className="secondary" onClick={() => close(false)}>ยกเลิก</button><button type="button" className="primary" onClick={() => close(true)}>Submit</button></div>
     </dialog>
   </>;
 }

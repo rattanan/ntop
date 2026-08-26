@@ -177,8 +177,10 @@ button, input, select, textarea { font: inherit; } a { color: inherit; text-deco
 
 /* Installation Site OpenStreetMap picker */
 .installation-site-coordinates { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:12px; }
-.installation-site-coordinates>label { min-width:0; }
-.installation-map-button { min-height:38px;border-radius:8px;white-space:nowrap; }
+.installation-site-coordinates>label { min-width:0;margin-bottom:0; }
+.installation-site-coordinates.field:has(:required)>label:first-child::after { content:none; }
+.installation-site-coordinates .control,.installation-map-button { height:var(--input-height);min-height:var(--input-height); }
+.installation-map-button { align-self:end;border-radius:8px;white-space:nowrap; }
 .installation-map-button svg { width:16px;height:16px; }
 .installation-map-dialog { width:min(920px,calc(100vw - 28px));max-height:min(820px,calc(100vh - 28px));padding:0;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--card);color:var(--foreground);box-shadow:0 28px 90px rgb(0 0 0 / .34); }
 .installation-map-dialog::backdrop { background:rgb(6 10 16 / .68);backdrop-filter:blur(3px); }
