@@ -39,6 +39,17 @@ describe("Lead experience alignment",()=>{
     expect(css).toContain("@media (max-width:1100px){.lead-overview-row{grid-template-columns:1fr}}");
   });
 
+  it("renders a readable, chronological Lead activity timeline without a collapsed text column",()=>{
+    const detail=read("app/(portal)/leads/[id]/page.tsx"),css=read("app/globals.css");
+    expect(detail).toContain('className="card lead-timeline-card"');
+    expect(detail).toContain('className="card-body lead-timeline"');
+    expect(detail).toContain("].sort((left,right)=>right.at.getTime()-left.at.getTime())");
+    expect(detail).toContain('className={`lead-timeline-item ${item.kind}`}');
+    expect(detail).not.toContain('className="card-body timeline"');
+    expect(css).toContain(".lead-timeline-item { position:relative;min-width:0;display:grid;grid-template-columns:24px minmax(0,1fr)");
+    expect(css).toContain(".lead-timeline-content { min-width:0;");
+  });
+
   it("uses dialogs for assignment, activity and both conversion actions",()=>{
     const detail=read("app/(portal)/leads/[id]/page.tsx"),actions=read("components/lead-detail-actions.tsx");
     expect(detail).toContain("<LeadAssignDialog");expect(detail).toContain("<LeadActivityDialog");expect(detail).toContain("<LeadConversionActions");

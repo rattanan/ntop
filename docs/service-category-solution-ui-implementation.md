@@ -13,6 +13,12 @@ optimistic versions and append audit evidence. Renaming a category updates the
 denormalized Product label/code in the same transaction; historical Solution
 Service rows remain linked by category ID.
 
+Product and Service Category list rows link to dedicated detail pages. Product
+detail is available to authorized catalog viewers, while Product edit/delete and
+all Service Category detail mutations require `product.catalog.manage`. Edit and
+soft-delete commands retain optimistic version checking and append audit evidence;
+Service Category deletion remains blocked while a non-deleted Product references it.
+
 The Product Catalog supports bounded server-side search across code, name,
 category and description with numbered pagination and allowlisted column
 sorting. Service Category administration uses a numbered, sortable table.

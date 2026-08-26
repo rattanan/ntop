@@ -21,6 +21,13 @@ async function selectOptionContaining(select: ReturnType<Page["locator"]>, text:
   await select.selectOption(optionValue!);
 }
 
+async function setSolutionStatus(page: Page, target: string) {
+  await page.getByRole("link", { name: "แก้ไข" }).click();
+  await page.getByLabel("สถานะ").selectOption(target);
+  await page.getByRole("button", { name: "บันทึกการแก้ไข" }).click();
+  await expect(page.locator("span.badge").getByText(target)).toBeVisible();
+}
+
 async function transitionContract(page: Page, target: string, reason: string) {
   const form = page.locator("form").filter({ hasText: "Contract Workflow" });
   await form.locator('[data-testid="contract-next-status"]').selectOption(target);
@@ -191,15 +198,8 @@ test.describe("Enterprise Sales authenticated workflow", () => {
     await mappingForm.getByRole("button", { name: "บันทึก" }).click();
     await expect(presalesPage.getByText("1 mappings")).toBeVisible();
 
-    const advanceSolution = () => presalesPage.locator("form").filter({ hasText: "Advance Solution Design" });
-    await advanceSolution().getByLabel("Next status").selectOption("REQUIREMENTS_REVIEW");
-    await advanceSolution().getByLabel("Reason").fill("Requirements, services and traceability are complete.");
-    await advanceSolution().getByRole("button", { name: "บันทึก" }).click();
-    await expect(presalesPage.locator("span.badge").getByText("REQUIREMENTS_REVIEW")).toBeVisible();
-    await advanceSolution().getByLabel("Next status").selectOption("SITE_SURVEY_REQUIRED");
-    await advanceSolution().getByLabel("Reason").fill("Physical installation requires an on-site feasibility survey.");
-    await advanceSolution().getByRole("button", { name: "บันทึก" }).click();
-    await expect(presalesPage.locator("span.badge").getByText("SITE_SURVEY_REQUIRED")).toBeVisible();
+    await setSolutionStatus(presalesPage, "REQUIREMENTS_REVIEW");
+    await setSolutionStatus(presalesPage, "SITE_SURVEY_REQUIRED");
 
     const surveyForm = presalesPage.locator("form").filter({ hasText: "สร้าง Site Survey Request" });
     await surveyForm.getByLabel("Site").selectOption({ label: "Enterprise Headquarters" });
@@ -218,10 +218,7 @@ test.describe("Enterprise Sales authenticated workflow", () => {
     const surveyHref = await surveyLink.getAttribute("href");
     expect(surveyHref).toMatch(/^\/site-surveys\//);
 
-    await advanceSolution().getByLabel("Next status").selectOption("SITE_SURVEY_REQUESTED");
-    await advanceSolution().getByLabel("Reason").fill("Manual site survey request has been created.");
-    await advanceSolution().getByRole("button", { name: "บันทึก" }).click();
-    await expect(presalesPage.locator("span.badge").getByText("SITE_SURVEY_REQUESTED")).toBeVisible();
+    await setSolutionStatus(presalesPage, "SITE_SURVEY_REQUESTED");
 
     await presalesPage.goto(surveyHref!);
     const submitSurvey = presalesPage.locator("form").filter({ hasText: "Submit internally" });
@@ -296,13 +293,7 @@ test.describe("Enterprise Sales authenticated workflow", () => {
     await boqPage.goto(`/solution-designs/${designId}`);
     await expect(boqPage.locator("#boqs").getByRole("link").first()).toBeVisible();
     await expect(boqPage.locator("span.badge").getByText("SITE_SURVEY_COMPLETED")).toBeVisible();
-    const advanceReviewedSolution = () => boqPage.locator("form").filter({ hasText: "Advance Solution Design" });
-    for (const [target, reason] of [["SOLUTION_IN_DESIGN", "Approved survey incorporated into the design."], ["BOQ_PREPARATION", "Components and survey BOQ evidence are ready."], ["TECHNICAL_REVIEW", "Submit complete technical design for architecture review."]] as const) {
-      await advanceReviewedSolution().getByLabel("Next status").selectOption(target);
-      await advanceReviewedSolution().getByLabel("Reason").fill(reason);
-      await advanceReviewedSolution().getByRole("button", { name: "บันทึก" }).click();
-      await expect(boqPage.locator("span.badge").getByText(target)).toBeVisible();
-    }
+    for (const target of ["SOLUTION_IN_DESIGN", "BOQ_PREPARATION", "TECHNICAL_REVIEW"] as const) await setSolutionStatus(boqPage, target);
 
     const solutionReviewContext = await browser.newContext();
     const solutionReviewPage = await solutionReviewContext.newPage();
@@ -316,16 +307,7 @@ test.describe("Enterprise Sales authenticated workflow", () => {
     await solutionReviewContext.close();
 
     await boqPage.reload();
-    await advanceReviewedSolution().getByLabel("Next status").selectOption("SOLUTION_IN_DESIGN");
-    await advanceReviewedSolution().getByLabel("Reason").fill("Failover validation and acceptance evidence added.");
-    await advanceReviewedSolution().getByRole("button", { name: "บันทึก" }).click();
-    await expect(boqPage.locator("span.badge").getByText("SOLUTION_IN_DESIGN")).toBeVisible();
-    for (const target of ["BOQ_PREPARATION", "TECHNICAL_REVIEW"] as const) {
-      await advanceReviewedSolution().getByLabel("Next status").selectOption(target);
-      await advanceReviewedSolution().getByLabel("Reason").fill(`Resubmit corrected solution to ${target}.`);
-      await advanceReviewedSolution().getByRole("button", { name: "บันทึก" }).click();
-      await expect(boqPage.locator("span.badge").getByText(target)).toBeVisible();
-    }
+    for (const target of ["SOLUTION_IN_DESIGN", "BOQ_PREPARATION", "TECHNICAL_REVIEW"] as const) await setSolutionStatus(boqPage, target);
     await boqContext.close();
 
     const technicalApprovalContext = await browser.newContext();
@@ -349,6 +331,18 @@ test.describe("Enterprise Sales authenticated workflow", () => {
     await commercialReview.getByRole("button", { name: "บันทึก" }).click();
     await expect(commercialApprovalPage.locator("span.badge").getByText("APPROVED")).toBeVisible();
     await commercialApprovalContext.close();
+
+    const approvedServiceContext = await browser.newContext();
+    const approvedServicePage = await approvedServiceContext.newPage();
+    await login(approvedServicePage, "presales@example.test");
+    await approvedServicePage.goto(`/solution-designs/${designId}`);
+    const approvedServiceForm = approvedServicePage.locator("form").filter({ hasText: "เพิ่ม Product / Service" });
+    await selectOptionContaining(approvedServiceForm.getByLabel("Service category"), "Broadband Internet");
+    await approvedServiceForm.getByLabel("Catalog item").fill("NT-BB-1000");
+    await approvedServiceForm.getByLabel("Quantity").fill("1");
+    await approvedServiceForm.getByRole("button", { name: "บันทึก" }).click();
+    await expect(approvedServicePage.getByText("Service 2 · ไม่ระบุ bandwidth")).toBeVisible();
+    await approvedServiceContext.close();
 
     await page.goto("/quotes/new");
     const quoteForm = page.locator("form.quote-editor");

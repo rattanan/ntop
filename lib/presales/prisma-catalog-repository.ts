@@ -39,7 +39,7 @@ export class PrismaCatalogRepository implements CatalogRepository {
     return { items: page.map(productRecord), nextCursor: hasMore ? page.at(-1)?.id ?? null : null };
   }
   async findProduct(id: string, transaction: CatalogTransaction) { const row = await transaction.product.findFirst({ where: { id, deletedAt: null } }); return row ? productRecord(row) : null; }
-  async serviceCategoryExists(code: string, transaction: CatalogTransaction) { return Boolean(await transaction.serviceCategoryConfig.findFirst({ where: { code, active: true }, select: { id: true } })); }
+  async serviceCategoryExists(code: string, transaction: CatalogTransaction) { return Boolean(await transaction.serviceCategoryConfig.findFirst({ where: { code, active: true, deletedAt: null }, select: { id: true } })); }
   async createProduct(input: Omit<ProductRecord, "id" | "version" | "standardCost" | "costConfirmedAt" | "createdAt" | "updatedAt">, transaction: CatalogTransaction) {
     return productRecord(await transaction.product.create({ data: input }));
   }

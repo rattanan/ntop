@@ -78,20 +78,21 @@ export async function updateSolutionDesign(actor:Actor,id:string,input:unknown,c
   return prisma.$transaction(async tx=>{
     await requirePermission(actor,PERMISSIONS.solutionDesignManage,tx);
     const current=await accessibleDesign(actor,id,tx);
-    if(["APPROVED","REJECTED","CANCELLED","SUPERSEDED"].includes(current.statusCode))throw new PresalesImmutableError();
     if(parsed.data.solutionCategory&&!await tx.solutionReferenceOption.findFirst({where:{groupCode:"SOLUTION_CATEGORY",code:parsed.data.solutionCategory,active:true}}))throw new PresalesValidationError(["solutionCategory"]);
-    const result=await tx.solutionDesign.updateMany({where:{id,version:parsed.data.expectedVersion},data:{solutionDesignName:parsed.data.solutionDesignName,solutionCategory:parsed.data.solutionCategory||null,description:parsed.data.description||null,objective:parsed.data.objective||null,targetDesignDate:parsed.data.targetDesignDate,updatedById:actor.id,version:{increment:1}}});
+    const statusCode=parsed.data.statusCode??current.statusCode;
+    if(statusCode!==current.statusCode&&!await tx.solutionStatusDefinition.findFirst({where:{entityType:"SOLUTION_DESIGN",code:statusCode,active:true}}))throw new PresalesValidationError(["statusCode"]);
+    const result=await tx.solutionDesign.updateMany({where:{id,version:parsed.data.expectedVersion},data:{statusCode,solutionDesignName:parsed.data.solutionDesignName,solutionCategory:parsed.data.solutionCategory||null,description:parsed.data.description||null,objective:parsed.data.objective||null,targetDesignDate:parsed.data.targetDesignDate,approvedDate:statusCode==="APPROVED"?(current.approvedDate??new Date()):null,updatedById:actor.id,version:{increment:1}}});
     if(!result.count)throw new PresalesTransitionError(["expectedVersion"]);
     const updated=await tx.solutionDesign.findUniqueOrThrow({where:{id}});
-    await tx.solutionDesignVersion.create({data:{solutionDesignId:id,version:updated.version,revisionNumber:updated.revisionNumber,statusCode:updated.statusCode,snapshot:{solutionDesignName:updated.solutionDesignName,solutionCategory:updated.solutionCategory,description:updated.description,objective:updated.objective,targetDesignDate:updated.targetDesignDate?.toISOString()??null},changeReason:"แก้ไขข้อมูล Solution Design",createdById:actor.id}});
-    await audit.append({actorId:actor.id,action:"solution-design.update",targetType:"SolutionDesign",targetId:id,targetVersion:String(updated.version),outcome:"SUCCESS",correlationId,data:{previousVersion:current.version,newVersion:updated.version,fields:["solutionDesignName","solutionCategory","description","objective","targetDesignDate"]}},{transaction:tx});
+    await tx.solutionDesignVersion.create({data:{solutionDesignId:id,version:updated.version,revisionNumber:updated.revisionNumber,statusCode:updated.statusCode,snapshot:{statusCode:updated.statusCode,solutionDesignName:updated.solutionDesignName,solutionCategory:updated.solutionCategory,description:updated.description,objective:updated.objective,targetDesignDate:updated.targetDesignDate?.toISOString()??null},changeReason:"แก้ไขข้อมูล Solution Design",createdById:actor.id}});
+    await audit.append({actorId:actor.id,action:"solution-design.update",targetType:"SolutionDesign",targetId:id,targetVersion:String(updated.version),outcome:"SUCCESS",correlationId,data:{previousVersion:current.version,newVersion:updated.version,previousStatus:current.statusCode,newStatus:updated.statusCode,fields:["statusCode","solutionDesignName","solutionCategory","description","objective","targetDesignDate"]}},{transaction:tx});
     return updated;
   });
 }
 
 export async function addSolutionService(actor:Actor,designId:string,input:unknown,correlationId:string) {
   const parsed=serviceItemSchema.safeParse(input);if(!parsed.success)throw new PresalesValidationError(parsed.error.issues.map(i=>i.path.join(".")));
-  return prisma.$transaction(async tx=>{await requirePermission(actor,PERMISSIONS.solutionDesignManage,tx);const design=await accessibleDesign(actor,designId,tx);if(["APPROVED","REJECTED","CANCELLED","SUPERSEDED"].includes(design.statusCode))throw new PresalesImmutableError();
+  return prisma.$transaction(async tx=>{await requirePermission(actor,PERMISSIONS.solutionDesignManage,tx);const design=await accessibleDesign(actor,designId,tx);
     const category=await tx.serviceCategoryConfig.findFirst({where:{id:parsed.data.serviceCategoryId,active:true},select:{id:true,code:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}});if(!category)throw new PresalesValidationError(["serviceCategoryId"]);
     if(parsed.data.productId){const product=await tx.product.findFirst({where:{id:parsed.data.productId,active:true,deletedAt:null,serviceCategoryCode:category.code}});if(!product)throw new PresalesValidationError(["productId"]);}
     const item=await tx.solutionServiceItem.create({data:{...parsed.data,solutionDesignId:design.id,surveyRequired:category.requiresSiteSurvey,boqRequired:category.requiresBoq,physicalInstallationRequired:category.requiresPhysicalInstallation}});

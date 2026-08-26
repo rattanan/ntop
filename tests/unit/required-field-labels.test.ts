@@ -46,6 +46,12 @@ describe("required field labels", () => {
     expect(requiredOverride).toBeGreaterThan(fieldLabelRule);
   });
 
+  it("does not let the dark-theme label rule override required markers", () => {
+    expect(styles).toContain(".field>span:first-child:not(.required):not(.sr-only)");
+    expect(styles).toContain(".field>label>span:first-child:not(.required):not(.sr-only)");
+    expect(styles).toContain('[data-theme="dark"] .required { color:var(--destructive); }');
+  });
+
   it("marks Prospect schema-required fields as required in the rendered form", () => {
     const prospectForm = readFileSync(join(root, "components/prospect-form.tsx"), "utf8");
     expect(prospectForm).toContain('field("companyName", "ชื่อบริษัท/หน่วยงาน", "text", true)');

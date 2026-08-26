@@ -21,7 +21,7 @@ export type TransitionCommand =
 
 export type OpportunityTransitionInput = {
   targetStage: OpportunityStage;
-  command: TransitionCommand;
+  command?: TransitionCommand;
   reason?: string;
   expectedVersion: number;
   lostReason?: string;
@@ -81,12 +81,6 @@ export type OpportunityTransitionRecord = {
   quoteAccepted: boolean;
 };
 
-export type TransitionPolicyRecord = {
-  id: string;
-  requiredFields: readonly string[];
-  requiredPermission: string;
-};
-
 export interface OpportunityRepository<TTransaction> {
   transaction<T>(work: (transaction: TTransaction) => Promise<T>): Promise<T>;
   findAccessible(
@@ -133,13 +127,6 @@ export interface OpportunityRepository<TTransaction> {
     input: OpportunityProfileInput,
     transaction: TTransaction,
   ): Promise<OpportunityProfileRecord | null>;
-  findPolicy(
-    from: OpportunityStage,
-    to: OpportunityStage,
-    command: TransitionCommand,
-    at: Date,
-    transaction: TTransaction,
-  ): Promise<TransitionPolicyRecord | null>;
   hasGrantedPermission(
     roleCodes: readonly string[],
     permission: string,
@@ -233,34 +220,32 @@ export class OpportunityProbabilityOverrideDeniedError extends Error {
   }
 }
 
-function fieldValue(
-  field: string,
-  current: OpportunityTransitionRecord,
-  input: OpportunityTransitionInput,
-) {
-  const values: Record<string, unknown> = {
-    requirements: current.requirements,
-    qualificationResult: current.qualificationResult,
-    stakeholderSummary: current.stakeholderSummary,
-    nextAction: current.nextAction,
-    expectedCloseAt: input.expectedCloseAt ?? current.expectedCloseAt,
-    coverageConfirmed: current.coverageConfirmed,
-    solutionComplete: current.solutionComplete,
-    quoteSubmitted: current.quoteSubmitted,
-    quoteApproved: current.quoteApproved,
-    quoteAccepted: current.quoteAccepted,
-    reason: input.reason,
-    lostReason: input.lostReason,
-    lostCategory: input.lostCategory,
-    cancelledReason: input.cancelledReason,
-  };
-  return values[field];
+export const UNRESTRICTED_STAGE_POLICY_VERSION_ID = "UNRESTRICTED_STAGE_SELECTION_V1";
+
+const activeStages: readonly OpportunityStage[] = ["QUALIFY", "DISCOVER", "SOLUTION", "PROPOSAL", "NEGOTIATION"];
+const opportunityStages: readonly OpportunityStage[] = [...activeStages, "WON", "LOST", "CANCELLED", "EXPIRED"];
+
+export function opportunityTransitionCommand(fromStage: OpportunityStage, toStage: OpportunityStage): TransitionCommand {
+  if (toStage === "WON") return "WON";
+  if (toStage === "LOST") return "LOST";
+  if (toStage === "CANCELLED") return "CANCEL";
+  if (toStage === "EXPIRED") return "EXPIRE";
+  if (!activeStages.includes(fromStage)) return "REOPEN";
+  return activeStages.indexOf(toStage) > activeStages.indexOf(fromStage) ? "FORWARD" : "RETURN";
 }
 
-function isPresent(value: unknown) {
-  return value === true || value instanceof Date ||
-    (typeof value === "string" && value.trim().length > 0) ||
-    (typeof value === "number" && Number.isFinite(value));
+function transitionMissingFields(current: OpportunityTransitionRecord, input: OpportunityTransitionInput) {
+  const missingFields: string[] = [];
+  if (!opportunityStages.includes(input.targetStage) || current.stage === input.targetStage) missingFields.push("targetStage");
+  if (!input.reason?.trim() || input.reason.trim().length > 1000) missingFields.push("reason");
+  if (input.targetStage === "LOST") {
+    if (!input.lostReason?.trim() || input.lostReason.trim().length > 1000) missingFields.push("lostReason");
+    if (!input.lostCategory?.trim() || input.lostCategory.trim().length > 100) missingFields.push("lostCategory");
+  }
+  if (input.targetStage === "CANCELLED" && (!input.cancelledReason?.trim() || input.cancelledReason.trim().length > 1000)) {
+    missingFields.push("cancelledReason");
+  }
+  return missingFields;
 }
 
 export class OpportunityService<TTransaction> {
@@ -397,48 +382,35 @@ export class OpportunityService<TTransaction> {
       if (current.version !== input.expectedVersion) {
         throw new OpportunityVersionConflictError();
       }
-      const policy = await this.repository.findPolicy(
-        current.stage,
-        input.targetStage,
-        input.command,
-        at,
-        transaction,
-      );
-      if (!policy) throw new OpportunityTransitionDeniedError();
-      const roleCodes = actor.authorization.assignments.map((item) => item.role);
-      const specificallyGranted = await this.repository.hasGrantedPermission(
-        roleCodes,
-        policy.requiredPermission,
-        transaction,
-      );
-      if (!specificallyGranted && policy.requiredPermission !== PERMISSIONS.opportunityTransition) {
-        throw new OpportunityTransitionDeniedError();
-      }
-      const missingFields = policy.requiredFields.filter(
-        (field) => !isPresent(fieldValue(field, current, input)),
-      );
+      const missingFields = transitionMissingFields(current, input);
       if (missingFields.length) {
         throw new OpportunityTransitionDeniedError(missingFields);
       }
+      const command = opportunityTransitionCommand(current.stage, input.targetStage);
+      const transitionInput = { ...input, command };
       const updated = await this.repository.transitionVersioned(
         current,
-        input,
+        transitionInput,
         at,
         transaction,
       );
       if (!updated) throw new OpportunityVersionConflictError();
-      const evidenceSnapshot = Object.fromEntries(
-        policy.requiredFields.map((field) => [field, fieldValue(field, current, input)]),
-      );
+      const evidenceSnapshot = {
+        mode: "UNRESTRICTED_STAGE_SELECTION",
+        reason: input.reason?.trim(),
+        ...(input.lostReason ? { lostReason: input.lostReason.trim() } : {}),
+        ...(input.lostCategory ? { lostCategory: input.lostCategory.trim() } : {}),
+        ...(input.cancelledReason ? { cancelledReason: input.cancelledReason.trim() } : {}),
+      };
       await this.repository.appendHistory(
         {
           opportunityId,
           fromStage: current.stage,
           toStage: input.targetStage,
-          command: input.command,
-          reason: input.reason?.trim() || null,
+          command,
+          reason: input.reason!.trim(),
           actorId: actor.id,
-          policyVersionId: policy.id,
+          policyVersionId: UNRESTRICTED_STAGE_POLICY_VERSION_ID,
           evidenceSnapshot,
           aggregateVersion: updated.version,
           correlationId,
@@ -459,8 +431,9 @@ export class OpportunityService<TTransaction> {
           data: {
             fromStage: current.stage,
             toStage: input.targetStage,
-            command: input.command,
-            policyVersionId: policy.id,
+            command,
+            policyVersionId: UNRESTRICTED_STAGE_POLICY_VERSION_ID,
+            transitionMode: "UNRESTRICTED_STAGE_SELECTION",
           },
         },
         { transaction },

@@ -30,22 +30,23 @@ describe("Opportunity edit stage contract", () => {
     expect(edit).toContain("stakeholderSummary: opportunity.stakeholderSummary");
   });
 
-  it("offers only active configured routes and explains missing evidence in Thai", () => {
-    expect(detail).toContain("opportunityTransitionPolicyVersion.findMany");
-    expect(detail).toContain("effectiveFrom:{lte:policyAt}");
-    expect(workflowForms).toContain("แสดงเฉพาะ Transition Policy ที่เปิดใช้งาน");
-    expect(workflowForms).not.toContain('name="targetStage" required><select');
+  it("offers every distinct target stage without a configured route lookup", () => {
+    expect(detail).toContain("STAGES.filter(([stage]) => stage !== opportunity.stage)");
+    expect(detail).not.toContain("opportunityTransitionPolicyVersion.findMany");
+    expect(workflowForms).toContain("เลือกเปลี่ยนไปยังขั้นตอนใดก็ได้ โดยไม่จำกัดเส้นทาง");
+    expect(workflowForms).toContain('name="targetStage" value={targetStage}');
+    expect(workflowForms).not.toContain("Transition Policy ที่เปิดใช้งาน");
     expect(action).toContain("error.missingFields.map");
     expect(action).toContain("ยังเปลี่ยนขั้นตอนขายไม่ได้");
   });
 
-  it("prefers the forward route and shows the structured requirements used by its gate", () => {
-    expect(workflowForms).toContain('transition.command==="FORWARD"');
-    expect(detail).toContain("requirements={opportunity.structuredRequirements.map");
-    expect(workflowForms).toContain('selected.requiredFields.includes("requirements")');
-    expect(workflowForms).toContain("Requirement ที่ใช้เป็นหลักฐาน");
-    expect(workflowForms).toContain("requirement.requirementNumber");
-    expect(workflowForms).toContain("ยังไม่มี structured requirement");
+  it("derives the command on the server and retains terminal details plus audit guidance", () => {
+    const service = readFileSync("lib/opportunity/opportunity-service.ts", "utf8");
+    expect(service).toContain("opportunityTransitionCommand(current.stage, input.targetStage)");
+    expect(service).toContain('transitionMode: "UNRESTRICTED_STAGE_SELECTION"');
+    expect(workflowForms).toContain('targetStage==="LOST"');
+    expect(workflowForms).toContain('targetStage==="CANCELLED"');
+    expect(workflowForms).toContain("บันทึกประวัติพร้อม Audit ทุกครั้ง");
     expect(relatedRoute).toContain("revalidatePath(`/opportunities/${id}`)");
   });
 });

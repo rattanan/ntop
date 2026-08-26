@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const tx = {
   serviceCategoryConfig: {
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
     updateMany: vi.fn(),
     findUniqueOrThrow: vi.fn(),
   },
@@ -18,6 +19,7 @@ vi.mock("../../lib/audit/audit-writer", () => ({
 
 import {
   deleteServiceCategory,
+  getServiceCategory,
   ServiceCategoryAccessError,
   ServiceCategoryInUseError,
 } from "../../lib/presales/service-category-service";
@@ -54,5 +56,18 @@ describe("Service Category deletion", () => {
     expect(tx.serviceCategoryConfig.updateMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: category.id, version: 1, deletedAt: null },
     }));
+  });
+
+  it("loads detail with bounded linked Product count", async () => {
+    tx.serviceCategoryConfig.findUnique.mockResolvedValue(category);
+    tx.product.count.mockResolvedValue(3);
+    await expect(getServiceCategory(actor, category.id)).resolves.toMatchObject({ id: category.id, productCount: 3 });
+    expect(tx.product.count).toHaveBeenCalledWith({ where: { serviceCategoryCode: category.code, deletedAt: null } });
+  });
+
+  it("denies Service Category detail to an unauthorized actor", async () => {
+    const viewer = { id: "viewer", role: "VIEWER", authorization: { actorId: "viewer", assignments: [] } } as never;
+    await expect(getServiceCategory(viewer, category.id)).rejects.toBeInstanceOf(ServiceCategoryAccessError);
+    expect(tx.serviceCategoryConfig.findUnique).not.toHaveBeenCalled();
   });
 });

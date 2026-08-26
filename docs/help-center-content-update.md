@@ -34,3 +34,10 @@
 - แจกแจง Required Fields สำหรับ FORWARD/WON/RETURN/LOST/CANCEL/EXPIRE/REOPEN พร้อมสิทธิ์พิเศษของ WON และ REOPEN
 - อธิบายการตรวจ scope, active/effective policy version, optimistic version, idempotency, history/evidence และ audit ฝั่ง server
 - เพิ่ม search contract สำหรับคำว่า `Transition Policy` และ `26 เส้นทาง` รวมถึงตรวจเนื้อหาของ gate หลักทุกกลุ่ม
+
+## Addendum — Unrestricted Opportunity Stage (2026-08-26)
+
+- เปลี่ยนหน้า Opportunity ให้เลือก canonical target stage อื่นได้ทุกค่า โดยไม่จำกัด configured route หรือ stage-gate fields
+- Server derive command จาก from/to stage และยังตรวจ permission, organization/ownership scope, expected version, idempotency และ reason
+- `LOST` ยังคงต้องมี Lost Reason/Category และ `CANCELLED` ต้องมี Cancelled Reason เพื่อคุณภาพข้อมูลรายงาน
+- Stage History/Audit ใช้ marker `UNRESTRICTED_STAGE_SELECTION_V1` เพื่อแยกจาก policy-based transition เดิม

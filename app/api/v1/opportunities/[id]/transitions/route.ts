@@ -8,8 +8,8 @@ import { createOpportunityRuntime } from "@/lib/opportunity/opportunity-runtime"
 import { requireIdempotencyKey, workflowApiError, workflowCorrelationId, workflowUnauthenticated } from "../../../workflow-api-response";
 
 const schema = z.strictObject({
-  targetStage: z.enum(["QUALIFY", "DISCOVER", "SOLUTION", "PROPOSAL", "NEGOTIATION", "WON", "LOST", "CANCELLED"]),
-  command: z.enum(["FORWARD", "RETURN", "LOST", "REOPEN", "CANCEL", "WON"]),
+  targetStage: z.enum(["QUALIFY", "DISCOVER", "SOLUTION", "PROPOSAL", "NEGOTIATION", "WON", "LOST", "CANCELLED", "EXPIRED"]),
+  command: z.enum(["FORWARD", "RETURN", "LOST", "REOPEN", "CANCEL", "EXPIRE", "WON"]).optional(),
   reason: z.string().trim().max(1000).optional(),
   expectedVersion: z.number().int().positive(),
   lostReason: z.string().trim().max(1000).optional(),

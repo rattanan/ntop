@@ -32,7 +32,7 @@
 ## 3. Critical scenarios
 
 - Customer duplicate/merge, hierarchy cycle, ownership history และ scoped search
-- Lead conversion retry; Opportunity allowed/denied transitions and stale version
+- Lead conversion retry; Opportunity unrestricted target-stage transitions, unauthorized scope และ stale version
 - Coverage/solution prerequisites; deterministic quote totals/versioning
 - Maker-checker, authority/delegation expiry, return/resubmit/supersede
 - Won→Internal Order handoff, acknowledgement, return/rework และ manual fallback

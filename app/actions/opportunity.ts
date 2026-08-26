@@ -24,6 +24,8 @@ const transitionFieldLabels: Record<string, string> = {
   quoteSubmitted: "Quotation ที่ส่งแล้ว",
   quoteApproved: "Quotation ที่อนุมัติแล้ว",
   quoteAccepted: "Quotation ที่ลูกค้ายอมรับ",
+  targetStage: "ขั้นตอนปลายทาง (ต้องต่างจากขั้นตอนปัจจุบัน)",
+  idempotencyKey: "รหัสป้องกันการทำรายการซ้ำ",
   reason: "เหตุผล",
   lostReason: "เหตุผลที่ Lost",
   lostCategory: "หมวดหมู่ Lost",
@@ -81,7 +83,6 @@ export async function transitionOpportunity(id: string, _: FormState, form: Form
       id,
       {
         targetStage: text(form, "targetStage") as "QUALIFY" | "DISCOVER" | "SOLUTION" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" | "CANCELLED" | "EXPIRED",
-        command: text(form, "command") as "FORWARD" | "RETURN" | "LOST" | "REOPEN" | "CANCEL" | "EXPIRE" | "WON",
         reason: text(form, "reason") || undefined,
         expectedVersion: Number(text(form, "expectedVersion")),
         lostReason: text(form, "lostReason") || undefined,
@@ -101,7 +102,7 @@ export async function transitionOpportunity(id: string, _: FormState, form: Form
         const missing = error.missingFields.map((field) => transitionFieldLabels[field] ?? field).join(", ");
         return { message: `ยังเปลี่ยนขั้นตอนขายไม่ได้ กรุณากรอกหรือดำเนินการให้ครบ: ${missing}` };
       }
-      return { message: "Transition นี้ไม่มี Policy ที่เปิดใช้งาน หรือบัญชีของคุณไม่มีสิทธิ์ดำเนินการ" };
+      return { message: "ยังเปลี่ยนขั้นตอนขายไม่ได้ กรุณาตรวจข้อมูลแล้วลองอีกครั้ง" };
     }
     if (error instanceof OpportunityVersionConflictError) {
       return { message: "ข้อมูล Opportunity มีการเปลี่ยนแปลง กรุณาโหลดหน้าใหม่แล้วลองอีกครั้ง" };

@@ -19,6 +19,11 @@ describe("global form-field assistance contract", () => {
     expect(assistance).not.toContain("label.append(helpElement");
   });
 
+  it("associates sibling selects when FormField htmlFor has no matching control id", () => {
+    expect(assistance).toContain('label.closest(".field")?.querySelector<FormControl>');
+    expect(assistance).toContain("if (associated) return associated");
+  });
+
   it("repairs previously misplaced help and renders the label group inline", () => {
     expect(assistance).toContain(":scope > .field-help[data-field-help='true']");
     expect(assistance).toContain("placeHelpAfterLabelText(label, labelText, misplacedHelp)");

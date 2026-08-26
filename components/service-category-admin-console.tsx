@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useActionState, useState } from "react";
+import Link from "next/link";
 
 import type { FormState } from "@/app/action-types";
 import {
@@ -13,7 +14,7 @@ import { FormNotice } from "./notice";
 import { SortableTableHeader } from "./sortable-table-header";
 import { Input } from "./form-field";
 
-type Category = {
+export type ServiceCategoryView = {
   id: string;
   version: number;
   code: string;
@@ -36,7 +37,7 @@ type Pagination = {
 };
 const initial: FormState = {};
 
-function CategoryFields({ category }: { category?: Category }) {
+export function ServiceCategoryFields({ category }: { category?: ServiceCategoryView }) {
   return <div className="form-grid">
     <label className="field"><span>รหัสหมวดหมู่</span><input className="control" name="code" required maxLength={100} defaultValue={category?.code} placeholder="เช่น CLOUD_CONNECTIVITY"/></label>
     <label className="field"><span>ชื่อหมวดหมู่</span><input className="control" name="name" required maxLength={255} defaultValue={category?.name}/></label>
@@ -52,11 +53,11 @@ function CreateCategoryForm() {
   const [state, action, pending] = useActionState(createServiceCategoryAction, initial);
   return <form action={action} className="card form-card service-category-create">
     <div className="card-header"><div><strong>เพิ่ม Service Category</strong><small>หมวดนี้จะใช้ร่วมกันใน Product Catalog และ Solution Design</small></div></div>
-    <div className="card-body"><CategoryFields/><FormNotice state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending ? "กำลังเพิ่ม…" : "เพิ่มหมวดหมู่"}</button></div></div>
+    <div className="card-body"><ServiceCategoryFields/><FormNotice state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending ? "กำลังเพิ่ม…" : "เพิ่มหมวดหมู่"}</button></div></div>
   </form>;
 }
 
-function CategoryRow({ category }: { category: Category }) {
+function CategoryRow({ category }: { category: ServiceCategoryView }) {
   const [editing, setEditing] = useState(false);
   const [updateState, updateAction, updating] = useActionState(updateServiceCategoryAction.bind(null, category.id), initial);
   const [deleteState, deleteAction, deleting] = useActionState(deleteServiceCategoryAction.bind(null, category.id), initial);
@@ -71,6 +72,7 @@ function CategoryRow({ category }: { category: Category }) {
       <td>{category.productCount.toLocaleString("th-TH")}</td>
       <td><span className={`badge ${category.active && !category.deletedAt ? "success" : "muted"}`}>{category.deletedAt ? "ลบแล้ว" : category.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></td>
       <td>
+        <Link className="secondary" href={`/admin/service-categories/${category.id}`}>ดู</Link>
         {!category.deletedAt && <div className="service-category-row-actions">
           <button type="button" className="secondary" aria-expanded={editing} aria-controls={editorId} onClick={() => setEditing((value) => !value)}>{editing ? "ปิด" : "แก้ไข"}</button>
           <form action={deleteAction} onSubmit={(event) => { if (!window.confirm(`ยืนยันลบหมวด ${category.name}? ระบบจะลบได้เมื่อไม่มี Product อ้างอิงอยู่เท่านั้น`)) event.preventDefault(); }}>
@@ -85,14 +87,14 @@ function CategoryRow({ category }: { category: Category }) {
     {editing && !category.deletedAt && <tr id={editorId} className="service-category-edit-row"><td colSpan={7}>
       <form action={updateAction}>
         <input type="hidden" name="expectedVersion" value={category.version}/>
-        <CategoryFields category={category}/><FormNotice state={updateState}/>
+        <ServiceCategoryFields category={category}/><FormNotice state={updateState}/>
         <div className="actions"><button className="primary" disabled={updating}>{updating ? "กำลังบันทึก…" : "บันทึกการแก้ไข"}</button><button type="button" className="secondary" onClick={() => setEditing(false)}>ยกเลิก</button></div>
       </form>
     </td></tr>}
   </Fragment>;
 }
 
-export function ServiceCategoryAdminConsole({ categories, pagination }: { categories: Category[]; pagination: Pagination }) {
+export function ServiceCategoryAdminConsole({ categories, pagination }: { categories: ServiceCategoryView[]; pagination: Pagination }) {
   return <div className="service-category-admin"><CreateCategoryForm/><section className="card" aria-labelledby="service-category-list-title">
     <div className="card-header section-heading"><div><strong id="service-category-list-title">Service Categories</strong><small>แก้ไขกฎกลางที่ควบคุม Product, Site Survey และ BOQ</small></div><span>{pagination.total.toLocaleString("th-TH")} หมวด</span></div>
     <div className="table-wrap"><table className="table service-category-table"><thead><tr>

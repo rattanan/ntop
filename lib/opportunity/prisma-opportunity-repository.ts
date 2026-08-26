@@ -9,7 +9,6 @@ import type {
   OpportunityTransitionRecord,
   OpportunityProfileInput,
   OpportunityProfileRecord,
-  TransitionCommand,
 } from "./opportunity-service";
 
 type Transaction = Prisma.TransactionClient;
@@ -31,12 +30,6 @@ function toProfile(record: ProfilePayload): OpportunityProfileRecord {
     estimatedValue: record.estimatedValue.toString(),
     assessment: vendorAssessment ?? { approach: "DIRECT", confidence: 0 },
   };
-}
-
-function requiredFields(value: Prisma.JsonValue): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
 }
 
 function toRecord(record: {
@@ -166,30 +159,6 @@ export class PrismaOpportunityRepository
     if (result.count !== 1) return null;
     await transaction.vendorAssessment.upsert({ where: { opportunityId: id }, create: { opportunityId: id, ...assessment }, update: assessment });
     return toProfile(await transaction.opportunity.findUniqueOrThrow({ where: { id }, select: profileSelect }));
-  }
-
-  async findPolicy(
-    from: OpportunityTransitionRecord["stage"],
-    to: OpportunityTransitionRecord["stage"],
-    command: TransitionCommand,
-    at: Date,
-    transaction: Transaction,
-  ) {
-    const result = await transaction.opportunityTransitionPolicyVersion.findFirst({
-      where: {
-        fromStage: from,
-        toStage: to,
-        command,
-        active: true,
-        effectiveFrom: { lte: at },
-        OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }],
-      },
-      orderBy: { version: "desc" },
-      select: { id: true, requiredFields: true, requiredPermission: true },
-    });
-    return result
-      ? { ...result, requiredFields: requiredFields(result.requiredFields) }
-      : null;
   }
 
   async hasGrantedPermission(

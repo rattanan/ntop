@@ -8,8 +8,13 @@ type FormControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 let assistanceId = 0;
 
 function controlForLabel(label: HTMLLabelElement) {
-  if (label.htmlFor) return document.getElementById(label.htmlFor) as FormControl | null;
-  return label.querySelector<FormControl>("input:not([type=hidden]), select, textarea");
+  if (label.htmlFor) {
+    const associated = document.getElementById(label.htmlFor) as FormControl | null;
+    if (associated) return associated;
+  }
+  return label.querySelector<FormControl>("input:not([type=hidden]), select, textarea")
+    ?? label.closest(".field")?.querySelector<FormControl>("input:not([type=hidden]), select, textarea")
+    ?? null;
 }
 
 function helpElement(control: FormControl, labelText: string, standalone = false) {

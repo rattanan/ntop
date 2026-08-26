@@ -1,5 +1,5 @@
 import { describe,expect,it } from "vitest";
-import { contactSchema,gpsSchema,surveyRequestSchema,surveyResultSchema } from "../../lib/solution-design/validation";
+import { contactSchema,gpsSchema,surveyRequestSchema,surveyResultSchema,updateSolutionDesignSchema } from "../../lib/solution-design/validation";
 
 describe("Solution Design survey validation",()=>{
   it("accepts boundary GPS values and rejects out-of-range coordinates",()=>{
@@ -20,5 +20,9 @@ describe("Solution Design survey validation",()=>{
   it("supports optional structured findings while requiring feasibility and summary",()=>{
     const parsed=surveyResultSchema.parse({surveyDate:"2026-07-20T01:00:00Z",feasibilityStatus:"FEASIBLE_WITH_CONDITIONS",technicalSummary:"Feasible after customer provides rack power"});
     expect(parsed.measurements).toEqual([]);expect(parsed.customerActions).toEqual([]);expect(parsed.estimatedItems).toEqual([]);
+  });
+  it("accepts a directly selected Solution Design status in the versioned edit payload",()=>{
+    expect(updateSolutionDesignSchema.safeParse({expectedVersion:3,statusCode:"APPROVED",solutionDesignName:"Managed Network"}).success).toBe(true);
+    expect(updateSolutionDesignSchema.safeParse({expectedVersion:3,statusCode:"",solutionDesignName:"Managed Network"}).success).toBe(false);
   });
 });

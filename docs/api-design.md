@@ -85,10 +85,10 @@
 `POST /api/v1/opportunities/{id}/transitions`
 
 ```json
-{"targetStage":"PROPOSAL","reason":"Solution and coverage confirmed","expectedVersion":12}
+{"targetStage":"PROPOSAL","reason":"ย้ายไปจัดทำข้อเสนอ","expectedVersion":12}
 ```
 
-ตรวจ [opportunity-workflow.md](opportunity-workflow.md), permission และ required fields แล้ว append stage history/audit ใน transaction เดียว
+ผู้มีสิทธิ์เลือก canonical target stage อื่นได้โดยไม่ตรวจ transition matrix หรือ stage-gate fields ระบบ derive command จาก from/to stage แล้วตรวจ permission, scope, expected version, idempotency และเหตุผล ก่อน append stage history/audit ใน transaction เดียว กรณี `LOST` ยังต้องส่ง `lostReason`/`lostCategory` และ `CANCELLED` ต้องส่ง `cancelledReason` ตาม [opportunity-workflow.md](opportunity-workflow.md)
 
 ### Submit quote / approval decision
 

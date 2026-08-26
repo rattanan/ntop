@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { PageNumberNavigation } from "@/components/page-number-navigation";
 import { SortableTableHeader } from "@/components/sortable-table-header";
@@ -37,10 +38,13 @@ export default async function Products({ searchParams }: { searchParams: Promise
       { description: { contains: q } },
     ] } : {}),
   };
-  const [total, configuredManage] = await Promise.all([
-    prisma.product.count({ where: baseWhere }),
+  const [configuredManage, configuredView] = await Promise.all([
     roles.length ? prisma.rolePermissionGrant.count({ where: { roleCode: { in: roles }, permissionCode: PERMISSIONS.productCatalogManage } }) : Promise.resolve(0),
+    roles.length ? prisma.rolePermissionGrant.count({ where: { roleCode: { in: roles }, permissionCode: PERMISSIONS.productCatalogView } }) : Promise.resolve(0),
   ]);
+  const canView = permissionPolicy.allows(session, PERMISSIONS.productCatalogView) || configuredView > 0 || configuredManage > 0;
+  if (!canView) notFound();
+  const total = await prisma.product.count({ where: baseWhere });
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(totalPages, Math.max(1, Number.parseInt(query.page ?? "1", 10) || 1));
   const products = await prisma.product.findMany({
@@ -76,7 +80,8 @@ export default async function Products({ searchParams }: { searchParams: Promise
         <SortableTableHeader basePath="/products" column="floorPrice" currentSort={sort} currentOrder={order} label="Floor Price" params={sortParams}/>
         <SortableTableHeader basePath="/products" column="standardCost" currentSort={sort} currentOrder={order} label="Confirmed Cost" params={sortParams}/>
         <SortableTableHeader basePath="/products" column="active" currentSort={sort} currentOrder={order} label="สถานะ" params={sortParams}/>
-      </tr></thead><tbody>{products.map((product) => <tr key={product.id}><td>{product.code}</td><td><strong>{product.name}</strong><br/><small>{product.description || "—"}</small></td><td><span className="badge">{product.serviceCategoryCode ? categoryNames.get(product.serviceCategoryCode) ?? product.category : product.category}</span>{product.serviceCategoryCode && <><br/><small>{product.serviceCategoryCode}</small></>}</td><td>{money.format(Number(product.listPrice))}</td><td>{product.floorPrice ? money.format(Number(product.floorPrice)) : <span className="badge muted">ยังไม่กำหนด</span>}</td><td>{product.costConfirmedAt && product.standardCost ? money.format(Number(product.standardCost)) : <span className="badge muted">ยังไม่ยืนยัน</span>}</td><td>{product.active ? "ใช้งาน" : "ปิดใช้งาน"}</td></tr>)}</tbody></table>{!products.length && <div className="empty">{q ? "ไม่พบ Product ที่ตรงกับคำค้นหา" : "ยังไม่มีบริการใน Catalog — ผู้ดูแลระบบสามารถเพิ่มบริการใหม่ได้"}</div>}</div>
+        <th>การทำงาน</th>
+      </tr></thead><tbody>{products.map((product) => <tr key={product.id}><td>{product.code}</td><td><strong>{product.name}</strong><br/><small>{product.description || "—"}</small></td><td><span className="badge">{product.serviceCategoryCode ? categoryNames.get(product.serviceCategoryCode) ?? product.category : product.category}</span>{product.serviceCategoryCode && <><br/><small>{product.serviceCategoryCode}</small></>}</td><td>{money.format(Number(product.listPrice))}</td><td>{product.floorPrice ? money.format(Number(product.floorPrice)) : <span className="badge muted">ยังไม่กำหนด</span>}</td><td>{product.costConfirmedAt && product.standardCost ? money.format(Number(product.standardCost)) : <span className="badge muted">ยังไม่ยืนยัน</span>}</td><td>{product.active ? "ใช้งาน" : "ปิดใช้งาน"}</td><td><Link className="secondary" href={`/products/${product.id}`}>ดู</Link></td></tr>)}</tbody></table>{!products.length && <div className="empty">{q ? "ไม่พบ Product ที่ตรงกับคำค้นหา" : "ยังไม่มีบริการใน Catalog — ผู้ดูแลระบบสามารถเพิ่มบริการใหม่ได้"}</div>}</div>
       <PageNumberNavigation ariaLabel="แบ่งหน้า Product" basePath="/products" itemCount={products.length} page={page} params={listParams} total={total} totalPages={totalPages} unit="รายการ"/>
     </section>
   </>;

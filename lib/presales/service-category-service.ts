@@ -119,6 +119,18 @@ export async function listServiceCategories(actor: Actor, input: { page?: number
   });
 }
 
+export async function getServiceCategory(actor: Actor, id: string) {
+  return prisma.$transaction(async (tx) => {
+    await requireManage(actor, tx);
+    const category = await tx.serviceCategoryConfig.findUnique({ where: { id } });
+    if (!category) throw new ServiceCategoryAccessError();
+    const productCount = await tx.product.count({
+      where: { serviceCategoryCode: category.code, deletedAt: null },
+    });
+    return { ...category, productCount };
+  });
+}
+
 export async function createServiceCategory(actor: Actor, input: unknown, correlationId: string) {
   const parsed = categoryInput.safeParse(input);
   if (!parsed.success) throw validation(parsed.error);

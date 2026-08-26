@@ -3,13 +3,13 @@
 | Metadata | Value |
 |---|---|
 | Status | Approved Baseline |
-| Version | 1.1 |
+| Version | 1.2 |
 | Owner | Sales Director / Sales Operations |
 | Reviewers | KAM, Team Manager, Presales, Coverage, Pricing, Order Operations, Audit, QA |
 | Last Updated | 2026-08-26 |
 | Related Documents | [Requirements](product-requirements.md), [Domain](domain-model.md), [Permissions](roles-and-permissions.md), [Approval](approval-workflow.md), [Forecast](sales-forecast-design.md) |
-| Assumptions | Canonical stages ใช้ชื่อด้านล่าง; transition enforce server-side |
-| Open Decisions | Stage probability defaults; stale-day thresholds by segment; reopen authority; mandatory document checklist |
+| Assumptions | Canonical stages ใช้ชื่อด้านล่าง; transition enforce server-side และเลือก target stage ได้อิสระ |
+| Open Decisions | Stage probability defaults; stale-day thresholds by segment; mandatory document checklist |
 
 ## 1. Entry prerequisites
 
@@ -17,52 +17,24 @@ Opportunity สร้างจาก qualified Lead หรือโดย KAM/Ma
 
 ## 2. State model
 
-```mermaid
-stateDiagram-v2
-  [*] --> QUALIFICATION
-  QUALIFICATION --> NEED_ANALYSIS: qualify
-  NEED_ANALYSIS --> SOLUTION_DESIGN: needs confirmed
-  SOLUTION_DESIGN --> PROPOSAL: coverage/solution gate passed
-  PROPOSAL --> NEGOTIATION: valid quote submitted/sent
-  NEGOTIATION --> WON: accepted approved quote
-  QUALIFICATION --> LOST
-  NEED_ANALYSIS --> LOST
-  SOLUTION_DESIGN --> LOST
-  PROPOSAL --> LOST
-  NEGOTIATION --> LOST
-  LOST --> QUALIFICATION: approved reopen
-  WON --> NEGOTIATION: exceptional reopen
-  WON --> [*]
-```
+Canonical stages คือ `QUALIFY`, `DISCOVER`, `SOLUTION`, `PROPOSAL`, `NEGOTIATION`, `WON`, `LOST`, `CANCELLED` และ `EXPIRED` หน้า Workflow แสดงลำดับการขายมาตรฐานเพื่อให้เข้าใจบริบท แต่ผู้ใช้ที่มีสิทธิ์ Transition สามารถเลือก target stage อื่นใดก็ได้ ไม่จำกัดว่าต้องเดินหน้า ย้อนกลับ ปิด หรือ reopen ตามลำดับเดิม
 
-`CANCELLED` เป็น terminal administrative status แยกจาก `LOST` และใช้เมื่อ duplicate/invalid/created-in-error เท่านั้น พร้อม reason; ไม่รวมใน win-rate denominator ตาม forecast policy
+`CANCELLED` เป็นสถานะ administrative แยกจาก `LOST` และใช้เมื่อ duplicate/invalid/created-in-error พร้อม reason และ cancelled reason; `LOST` ต้องมี reason, lost reason และ lost category เพื่อรักษาคุณภาพข้อมูลรายงาน
 
-## 3. Transition matrix
+## 3. Unrestricted stage selection
 
-| From → To | Minimum exit/entry criteria | Actor | Audit/event |
-|---|---|---|---|
-| New → Qualification | required entry fields, owner active | KAM/Manager | OpportunityCreated |
-| Qualification → Need Analysis | next action; qualification result เป็นข้อมูลเสริมและไม่ block transition | owner/Manager | StageChanged |
-| Need Analysis → Solution Design | requirements, stakeholders, value/close date reviewed | owner/Manager | StageChanged |
-| Solution Design → Proposal | coverage result where required; solution version; cost/risk complete | owner with Presales/Coverage evidence | StageChanged |
-| Proposal → Negotiation | valid quote version submitted/sent; approval complete when required | owner/Manager | StageChanged |
-| Negotiation → Won | accepted quote, required approval, PO/acceptance evidence or exception | Manager/Sales Director policy | OpportunityWon |
-| Active → Lost | lost reason/category, competitor where known, close date | owner/Manager | OpportunityLost |
-| Lost → Qualification | reopen reason, new close date, approval | Manager/Sales Director | OpportunityReopened |
-| Won → Negotiation | exceptional correction, no completed order conflict, approval | Sales Director + Audit notification | OpportunityReopened |
-| Active → Cancelled | duplicate/invalid reason and authority | Manager | OpportunityCancelled |
-
-ย้อน stage ปกติอนุญาตผ่าน `return` command พร้อม reason และ invalidate downstream draft assumptions; ห้ามแก้ stage field โดยตรง (FR-004, COMP-001)
-
-หน้า Opportunity ต้องแสดง canonical path `QUALIFY → DISCOVER → SOLUTION → PROPOSAL → NEGOTIATION → WON` โดยเน้นขั้นปัจจุบันและแสดงขั้นที่ยังไม่ถึงไว้ล่วงหน้า Route ใน UI ต้องอ่านจาก `OpportunityTransitionPolicyVersion` เท่านั้น โดย reference data ต้องมี version ที่ active สำหรับ `SOLUTION → PROPOSAL` และยังคงบังคับ `coverageConfirmed` กับ `solutionComplete` ฝั่ง server
+- UI แสดง canonical stage อื่นทุกค่า ยกเว้น stage ปัจจุบัน โดยไม่ query `OpportunityTransitionPolicyVersion`
+- Server ไม่ตรวจ from/to route, active/effective policy, stage-gate fields หรือ required permission ราย route
+- Server derive command เพื่อใช้ใน history: target `WON/LOST/CANCELLED/EXPIRED` เป็น `WON/LOST/CANCEL/EXPIRE`; จากสถานะปลายทางกลับ active เป็น `REOPEN`; active stage ที่ลำดับสูงขึ้น/ต่ำลงเป็น `FORWARD/RETURN`
+- ทุก transition ต้องมี reason; `LOST` ต้องมี lost reason/category และ `CANCELLED` ต้องมี cancelled reason
+- ห้ามแก้ stage field โดยตรงจาก profile update; ต้องใช้ Transition command เพื่อรักษา optimistic version, idempotency, history และ audit (FR-004, COMP-001)
 
 ## 4. Gates and dependencies
 
-- Coverage required เมื่อ product/site policy ระบุ; result ต้องไม่ expired
-- Solution version ต้องอ้าง coverage/cost assumptions ที่ใช้
+- Coverage และ Solution data ยังคงเป็นข้อมูลประกอบงานขาย แต่ไม่ block การเปลี่ยน Opportunity stage
 - Quote version ต้องอ้าง solution/coverage versions; change หลัง submit สร้าง quote version ใหม่
 - Proposal/Negotiation ไม่เท่ากับ approval; commercial gate ใช้ [approval-workflow.md](approval-workflow.md)
-- Won ต้องสร้าง Internal Order จาก accepted approved quote เท่านั้น เว้น policy exception ที่มี authority/audit (FR-005–FR-008)
+- Quote submission, approval และ Internal Order ยังคงใช้ gate ของ module เจ้าของข้อมูลเอง การปลด route ของ Opportunity ไม่ bypass commercial controls (FR-005–FR-008)
 
 ## 5. Ownership, dates and exceptions
 
@@ -74,14 +46,14 @@ stateDiagram-v2
 
 ## 6. Required audit
 
-ทุก transition เก็บ from/to, aggregate version, actor/role/scope, timestamp, reason, required evidence IDs, policy version, correlation ID และ before/after key fields Event publish หลัง commit ผ่าน outbox
+ทุก transition เก็บ from/to, derived command, aggregate version, actor/role/scope, timestamp, reason, correlation ID และ before/after key fields โดย `policyVersionId` ใช้ค่า `UNRESTRICTED_STAGE_SELECTION_V1` และ evidence snapshot ระบุ unrestricted mode Event publish หลัง commit ผ่าน outbox
 
 ## 7. Acceptance scenarios
 
-- KAM ข้าม Need Analysis ไป Proposal ถูก deny
-- Proposal ถูก deny เมื่อ mandatory coverage/solution ไม่ complete
+- ผู้มีสิทธิ์เปลี่ยนจาก QUALIFY ไป PROPOSAL หรือย้อนจาก NEGOTIATION ไป DISCOVER ได้โดยตรง
+- การไม่มี Requirements, Coverage, Solution หรือ Quote ไม่ block Opportunity transition
 - Stale version transition คืน 409 และไม่ append history
 - Unauthorized cross-team transition ไม่เปิดเผย record
-- Won ถูก deny เมื่อ quote ยังไม่ accepted/approved
-- Lost→reopen เก็บ snapshot/history เดิมและ risk signal ถูกคำนวณใหม่
+- Transition ที่ไม่มี reason หรือขาด lost/cancelled detail ถูก deny
+- Lost/Won/Cancelled/Expired สามารถเปลี่ยนไป stage อื่นได้และเก็บ snapshot/history เดิม
 - Duplicate retry ด้วย idempotency key สร้าง transition ครั้งเดียว

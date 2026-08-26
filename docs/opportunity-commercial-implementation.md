@@ -6,7 +6,7 @@ Milestone นี้เพิ่ม governed workflow แบบ additive ต่�
 
 ## Acceptance criteria
 
-- Opportunity stage เปลี่ยนผ่าน configured transition command เท่านั้น; missing gate, unauthorized scope และ stale version ถูกปฏิเสธ โดย history, receipt และ hash-chained audit อยู่ transaction เดียวกัน
+- ผู้มีสิทธิ์เปลี่ยน Opportunity ไปยัง canonical stage อื่นได้อิสระโดยไม่อิง configured route หรือ stage-gate fields; unauthorized scope, missing reason/terminal detail และ stale version ยังถูกปฏิเสธ โดย history, receipt และ hash-chained audit อยู่ transaction เดียวกัน
 - Pipeline ใช้ authorization scope เดียวกับ Opportunity, จำกัดผล drill-down 200 รายการ และคำนวณ amount/weighted amount ด้วย Decimal
 - Forecast snapshot มี idempotent snapshot key, source version, amount source, scope/formula/timezone/quality snapshots และ item facts ที่ immutable
 - Quote ใหม่ต้องอ้าง Opportunity; Customer สืบทอดจาก Opportunity; calculation ใช้ Decimal 19,4; submitted version แก้ไม่ได้ และการแก้ approved quote สร้าง version ใหม่พร้อม supersede approval เดิม

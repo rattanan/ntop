@@ -45,10 +45,9 @@ function setup() {
     updateProfileVersioned: vi.fn().mockResolvedValue({ ...profile, version: 2 }),
     overrideProbabilityVersioned: vi.fn().mockResolvedValue({ ...profile, probability: 65, probabilitySource: "MANUAL_OVERRIDE", version: 2 }),
     appendProbabilityHistory: vi.fn().mockResolvedValue(undefined),
-    findPolicy: vi.fn().mockResolvedValue({ id: "policy-1", requiredFields: ["nextAction"], requiredPermission: "opportunity.transition" }),
     hasGrantedPermission: vi.fn().mockResolvedValue(false),
     findReceipt: vi.fn().mockResolvedValue(null),
-    transitionVersioned: vi.fn().mockResolvedValue({ ...current, stage: "DISCOVER", version: 2 }),
+    transitionVersioned: vi.fn(async (_current, input) => ({ ...current, stage: input.targetStage, version: 2 })),
     appendHistory: vi.fn().mockResolvedValue(undefined),
     saveReceipt: vi.fn().mockResolvedValue(undefined),
   };
@@ -74,17 +73,18 @@ describe("OpportunityService", () => {
 
   it("transitions QUALIFY to DISCOVER without a qualification result when next action is present", async () => {
     const { service, repository, audit } = setup();
-    await expect(service.transition(actor, "opp-1", { targetStage: "DISCOVER", command: "FORWARD", expectedVersion: 1 }, "corr-1", "idem-1")).resolves.toMatchObject({ stage: "DISCOVER", version: 2 });
-    expect(repository.appendHistory).toHaveBeenCalledWith(expect.objectContaining({ fromStage: "QUALIFY", toStage: "DISCOVER", aggregateVersion: 2 }), tx);
+    await expect(service.transition(actor, "opp-1", { targetStage: "DISCOVER", command: "RETURN", reason: "Move to discovery", expectedVersion: 1 }, "corr-1", "idem-1")).resolves.toMatchObject({ stage: "DISCOVER", version: 2 });
+    expect(repository.transitionVersioned).toHaveBeenCalledWith(current, expect.objectContaining({ targetStage: "DISCOVER", command: "FORWARD" }), expect.any(Date), tx);
+    expect(repository.appendHistory).toHaveBeenCalledWith(expect.objectContaining({ fromStage: "QUALIFY", toStage: "DISCOVER", command: "FORWARD", policyVersionId: "UNRESTRICTED_STAGE_SELECTION_V1", aggregateVersion: 2 }), tx);
     expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "opportunity.transition" }), { transaction: tx });
     expect(repository.saveReceipt).toHaveBeenCalled();
   });
 
-  it("denies a transition missing required configured evidence", async () => {
+  it("allows any distinct target stage without configured route or stage-gate evidence", async () => {
     const { service, repository } = setup();
     vi.mocked(repository.findAccessible).mockResolvedValue({ ...current, nextAction: null });
-    await expect(service.transition(actor, "opp-1", { targetStage: "DISCOVER", command: "FORWARD", expectedVersion: 1 }, "corr", "idem")).rejects.toMatchObject({ missingFields: ["nextAction"] } satisfies Partial<OpportunityTransitionDeniedError>);
-    expect(repository.transitionVersioned).not.toHaveBeenCalled();
+    await expect(service.transition(actor, "opp-1", { targetStage: "PROPOSAL", reason: "Move directly to proposal", expectedVersion: 1 }, "corr", "idem")).resolves.toMatchObject({ stage: "PROPOSAL" });
+    expect(repository.transitionVersioned).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ targetStage: "PROPOSAL", command: "FORWARD" }), expect.any(Date), tx);
   });
 
   it("returns conflict without history when aggregate version is stale", async () => {
@@ -93,10 +93,17 @@ describe("OpportunityService", () => {
     expect(repository.appendHistory).not.toHaveBeenCalled();
   });
 
-  it("denies matrix entries absent from configured policy", async () => {
+  it("keeps the universal reason and terminal-stage details required", async () => {
     const { service, repository } = setup();
-    vi.mocked(repository.findPolicy).mockResolvedValue(null);
-    await expect(service.transition(actor, "opp-1", { targetStage: "PROPOSAL", command: "FORWARD", expectedVersion: 1 }, "corr", "idem")).rejects.toBeInstanceOf(OpportunityTransitionDeniedError);
+    await expect(service.transition(actor, "opp-1", { targetStage: "LOST", expectedVersion: 1 }, "corr", "idem")).rejects.toMatchObject({ missingFields: ["reason", "lostReason", "lostCategory"] } satisfies Partial<OpportunityTransitionDeniedError>);
+    expect(repository.transitionVersioned).not.toHaveBeenCalled();
+  });
+
+  it("denies transition before repository access when the actor lacks permission", async () => {
+    const { service, repository } = setup();
+    const viewer = { id: "viewer-1", role: "VIEWER" as const, authorization: { actorId: "viewer-1", assignments: [] } };
+    await expect(service.transition(viewer, "opp-1", { targetStage: "PROPOSAL", reason: "No transition permission", expectedVersion: 1 }, "corr", "idem")).rejects.toMatchObject({ name: "PermissionDeniedError" });
+    expect(repository.findAccessible).not.toHaveBeenCalled();
   });
 
   it("overrides probability with permission, history, audit and idempotency in one transaction", async () => {

@@ -15,15 +15,15 @@ describe("Service Category administration and Solution Design UX contract", () =
     expect(action).toContain("requiresSiteSurvey:category.requiresSiteSurvey");
   });
 
-  it("keeps public Product and Solution paths compatible while the additive migration rolls out", () => {
+  it("keeps Product category selection on active, non-deleted reference data", () => {
     const productPage = read("app/(portal)/products/new/page.tsx");
     const solutionPage = read("app/(portal)/solution-designs/[id]/page.tsx");
     const action = read("app/actions.ts");
     const solutionService = read("lib/solution-design/solution-design-service.ts");
 
-    expect(productPage).not.toContain("serviceCategoryConfig.findMany({where:{active:true,deletedAt:null}");
+    expect(productPage).toContain("serviceCategoryConfig.findMany({where:{active:true,deletedAt:null}");
     expect(solutionPage).not.toContain("serviceCategoryConfig.findMany({ where: { active: true, deletedAt: null }");
-    expect(action).not.toContain("serviceCategoryConfig.findFirst({where:{code:p.data.serviceCategoryCode,active:true,deletedAt:null}");
+    expect(action).toContain("serviceCategoryConfig.findFirst({where:{code:p.data.serviceCategoryCode,active:true,deletedAt:null}");
     expect(productPage).toContain("select:{code:true,name:true,requiresSiteSurvey:true,requiresBoq:true}");
     expect(solutionPage).toContain("select: { id: true, code: true, name: true, requiresSiteSurvey: true }");
     expect(action).toContain("select:{code:true,name:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}");
@@ -75,6 +75,24 @@ describe("Service Category administration and Solution Design UX contract", () =
     expect(sortableHeader).toContain("aria-sort");
     expect(sortableHeader).toContain('search.delete("page")');
     expect(action).not.toContain('reason: text(form, "reason")');
+  });
+
+  it("opens Product and Service Category detail pages with edit and soft-delete controls", () => {
+    const products = read("app/(portal)/products/page.tsx");
+    const productDetail = read("app/(portal)/products/[id]/page.tsx");
+    const productEdit = read("components/product-detail-actions.tsx");
+    const categories = read("components/service-category-admin-console.tsx");
+    const categoryDetail = read("app/(portal)/admin/service-categories/[id]/page.tsx");
+    const categoryActions = read("components/service-category-detail-actions.tsx");
+    expect(products).toContain('href={`/products/${product.id}`}');
+    expect(categories).toContain('href={`/admin/service-categories/${category.id}`}');
+    expect(productDetail).toContain('href={`/products/${id}/edit`}');
+    expect(productEdit).toContain('method: "PATCH"');
+    expect(productEdit).toContain('method: "DELETE"');
+    expect(productEdit).toContain("expectedVersion: product.version");
+    expect(categoryDetail).toContain('href={`/admin/service-categories/${id}/edit`}');
+    expect(categoryActions).toContain("updateServiceCategoryAction");
+    expect(categoryActions).toContain("deleteServiceCategoryAction");
   });
 
   it("filters Catalog Item by selected Service Category in UI and server", () => {

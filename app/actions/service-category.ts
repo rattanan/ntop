@@ -59,6 +59,8 @@ export async function updateServiceCategoryAction(id: string, _: FormState, form
   try {
     await updateServiceCategory(await actor(), id, { ...input(form), expectedVersion: Number(text(form, "expectedVersion")) }, crypto.randomUUID());
     revalidatePath("/admin/service-categories");
+    revalidatePath(`/admin/service-categories/${id}`);
+    revalidatePath(`/admin/service-categories/${id}/edit`);
     revalidatePath("/products");
     revalidatePath("/products/new");
     revalidatePath("/solution-designs");
@@ -72,6 +74,7 @@ export async function deleteServiceCategoryAction(id: string, _: FormState, form
       expectedVersion: Number(text(form, "expectedVersion")),
     }, crypto.randomUUID());
     revalidatePath("/admin/service-categories");
+    revalidatePath(`/admin/service-categories/${id}`);
     revalidatePath("/products/new");
     revalidatePath("/solution-designs");
     return { message: "ปิดใช้งานและลบ Service Category แล้ว", status: "success" };

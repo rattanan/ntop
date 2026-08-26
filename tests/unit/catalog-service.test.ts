@@ -55,4 +55,31 @@ describe("CatalogService", () => {
     expect(repository.removeCoverage).toHaveBeenCalledWith("coverage-1", 1, "admin-1", tx);
     expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "coverage.delete", reason: "Duplicate coverage request" }), { transaction: tx });
   });
+
+  it("updates and soft-deletes Product with manage permission, version and audit evidence", async () => {
+    const { service, repository, audit, tx } = setup();
+    await expect(service.updateProduct(admin as never, "product-1", { expectedVersion: 1, reason: "Refresh catalog", name: "Dedicated Internet Plus" }, "corr-product-update"))
+      .resolves.toMatchObject({ id: "product-1", version: 2 });
+    expect(repository.updateProduct).toHaveBeenCalledWith("product-1", 1, expect.objectContaining({ name: "Dedicated Internet Plus" }), tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "product.update", reason: "Refresh catalog" }), { transaction: tx });
+
+    await expect(service.removeProduct(admin as never, "product-1", { expectedVersion: 1, reason: "Retired service" }, "corr-product-delete"))
+      .resolves.toMatchObject({ id: "product-1", active: false });
+    expect(repository.removeProduct).toHaveBeenCalledWith("product-1", 1, "admin-1", tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "product.delete", reason: "Retired service" }), { transaction: tx });
+  });
+
+  it("denies Product update for a read-only catalog user", async () => {
+    const { service, repository } = setup();
+    await expect(service.updateProduct(viewer as never, "product-1", { expectedVersion: 1, reason: "Unauthorized", name: "Changed" }, "corr-denied"))
+      .rejects.toThrow("Permission denied");
+    expect(repository.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it("returns a version conflict when Product edit is stale", async () => {
+    const { service, repository } = setup();
+    repository.updateProduct.mockResolvedValueOnce(null as never);
+    await expect(service.updateProduct(admin as never, "product-1", { expectedVersion: 1, reason: "Stale edit", name: "Changed" }, "corr-stale"))
+      .rejects.toThrow("ข้อมูลถูกแก้ไขโดยผู้ใช้อื่น");
+  });
 });

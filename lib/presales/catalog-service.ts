@@ -38,6 +38,7 @@ const removeSchema = z.strictObject({ expectedVersion: z.number().int().positive
 export type ProductRecord = {
   id: string; version: number; code: string; name: string; category: string; description: string | null; listPrice: string; floorPrice: string | null; standardCost: string | null; costConfirmedAt: Date | null; serviceCategoryCode: string | null; requiresSiteSurvey: boolean; requiresBoq: boolean; requiresPhysicalInstallation: boolean; active: boolean; createdAt: Date; updatedAt: Date;
 };
+export type ProductOutput = Omit<ProductRecord, "floorPrice" | "standardCost" | "costConfirmedAt"> & Partial<Pick<ProductRecord, "floorPrice" | "standardCost" | "costConfirmedAt">>;
 export type CoverageRecord = {
   id: string; version: number; opportunityId: string; siteAddress: string; circuitCount: number; status: CoverageStatus; fiberAvailable: boolean | null; olt: string | null; distanceKm: string | null; capacityMbps: number | null; availablePorts: number | null; expectedInstallDate: Date | null; confirmedCost: string | null; responderNotes: string | null; createdAt: Date; updatedAt: Date; opportunity?: { id: string; name: string; customer: { id: string; name: string } };
 };
@@ -70,9 +71,9 @@ export class ProductCodeConflictError extends Error { constructor() { super("ร
 
 function hash(value: unknown) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
 function validation(error: z.ZodError) { return new CatalogValidationError(error.flatten().fieldErrors as Record<string, string[]>); }
-function productOutput(record: ProductRecord, canManage: boolean) {
+function productOutput(record: ProductRecord, canManage: boolean): ProductOutput {
   if (canManage) return record;
-  const safe: Partial<ProductRecord> = { ...record };
+  const safe: ProductOutput = { ...record };
   delete safe.floorPrice;
   delete safe.standardCost;
   delete safe.costConfirmedAt;

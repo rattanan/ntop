@@ -9,7 +9,7 @@ import {
   CreateBoqDraftForm,
   CreateSurveyForm,
   MapRequirementForm,
-  SolutionWorkflowForm,
+  SolutionReviewForm,
 } from "@/components/presales-forms";
 import { SolutionDesignTabs } from "@/components/solution-design-tabs";
 import { requireSession } from "@/lib/auth";
@@ -81,7 +81,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
             {design.version}.{design.revisionNumber}
           </p>
         </div>
-        <div className="actions">{canManageSolution&&!["APPROVED","REJECTED","CANCELLED","SUPERSEDED"].includes(design.statusCode)&&<Link className="secondary" href={`/solution-designs/${id}/edit`}>แก้ไข</Link>}<span className="badge">{design.statusCode}</span></div>
+        <div className="actions">{canManageSolution&&<Link className="secondary" href={`/solution-designs/${id}/edit`}>แก้ไข</Link>}<span className="badge">{design.statusCode}</span></div>
       </div>
       <section className="presales-kpis">
         <article className="card"><span>Overall readiness</span><strong>{design.overallReadiness}%</strong></article>
@@ -89,7 +89,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
         <article className="card"><span>Survey</span><strong>{design.surveyRequired ? "Required" : "Not required"}</strong></article>
       </section>
       {(!technicalApprovalEnabled||!commercialApprovalEnabled)&&<p className="notice">Solution Approval ถูกพักไว้ คุณยังจัดทำข้อมูล Design, Survey และ BOQ Draft ได้ตามปกติ</p>}
-      <SolutionWorkflowForm designId={id} status={design.statusCode} technicalApprovalEnabled={technicalApprovalEnabled} commercialApprovalEnabled={commercialApprovalEnabled} />
+      <SolutionReviewForm designId={id} status={design.statusCode} technicalApprovalEnabled={technicalApprovalEnabled} commercialApprovalEnabled={commercialApprovalEnabled} />
       <SolutionDesignTabs panels={{
         services: <><section className="card"><div className="card-header"><div><strong>Products &amp; Services</strong><small>บริการที่เลือกจะกำหนดกฎ Survey และ BOQ จาก Service Category</small></div><span>{design.services.length}</span></div><div className="card-body related-list">{design.services.map((service, index) => <article key={service.id}><strong>Service {index + 1} · {service.requestedBandwidth ?? "ไม่ระบุ bandwidth"}</strong><p>{service.accessTechnology ?? "Any access technology"}</p><small>{service.surveyRequired ? "Survey required" : "No survey"} · {service.boqRequired ? "BOQ required" : "No BOQ"}</small></article>)}{!design.services.length&&<div className="compact-empty">ยังไม่มี Product หรือ Service ใน Solution นี้</div>}</div></section><AddServiceForm designId={id} categories={categories} products={products}/></>,
         sites: <><section className="card"><div className="card-header"><div><strong>Installation Sites</strong><small>สถานที่ติดตั้งและพิกัดสำหรับ Coverage / Site Survey</small></div><span>{design.sites.length}</span></div><div className="card-body related-list">{design.sites.map(site=><article key={site.id}><strong>{site.siteCode?`${site.siteCode} · `:""}{site.siteName}</strong><p>{site.addressLine1}, {site.district}, {site.province}</p><small>{site.latitude.toString()}, {site.longitude.toString()}</small></article>)}{!design.sites.length&&<div className="compact-empty">ยังไม่มี Installation Site</div>}</div></section><AddSiteForm designId={id}/></>,

@@ -51,7 +51,7 @@ Priority ใช้ Must/Should/Could; Source `Roadmap` หมายถึง [hi
 | FR-001 | จัดการ customer hierarchy, external IDs, contacts, segmentation และ ownership history | Must | Customer Data Owner | CRUD/merge/ownership scenarios ผ่านตาม permission และ audit | DATA-001 | Roadmap | Customer |
 | FR-002 | รับ คัดกรอง แปลง และ disqualify Lead พร้อม duplicate checks | Must | Sales Operations | state transitions และ conversion ไม่สร้าง customer ซ้ำโดยไม่เตือน | FR-001 | Roadmap | Lead |
 | FR-003 | จัดการ Activity, next action, meeting note และ reminders | Must | Team Manager | activities ผูก customer/opportunity และ overdue query ได้ | FR-001 | Roadmap | Activity |
-| FR-004 | ควบคุม Opportunity stages, required fields, owner และ reopen/lost rules | Must | Sales Director | transition matrix ใน workflow ผ่านทุก allowed/denied case | FR-001–FR-003 | Roadmap | Opportunity |
+| FR-004 | จัดการ Opportunity stages, owner และข้อมูลประกอบการปิดงาน | Must | Sales Director | ผู้มีสิทธิ์เลือกเปลี่ยนไปยัง canonical stage อื่นได้อิสระ โดยยังตรวจ scope/version และเก็บ history/audit | FR-001–FR-003 | Roadmap | Opportunity |
 | FR-005 | จัดการ Product, Coverage และ Solution พร้อม confirmed cost/risk | Must | Presales/Coverage | quote submission ถูก block เมื่อ mandatory gate ไม่ครบ | FR-004 | Roadmap | Presales |
 | FR-006 | สร้าง versioned Quote พร้อม items, discount, margin และ validity | Must | Commercial Owner | totals reproducible และ accepted version immutable | FR-005 | Roadmap | Quote |
 | FR-007 | Routing approval ตาม policy และ authority | Must | Pricing Owner | approve/reject/return/delegate/escalate มี SoD และ audit | FR-006 | Risk | Approval |

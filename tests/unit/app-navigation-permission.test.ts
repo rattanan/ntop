@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MAIN_NAV_ITEMS,
+  navigationLabel,
+  visibleMainNavigation,
   visibleNavigation,
   visibleQuickCreate,
 } from "../../components/app-navigation";
@@ -15,11 +18,26 @@ describe("permission-driven application navigation", () => {
       NAVIGATION_PERMISSIONS.contracts,
       NAVIGATION_PERMISSIONS.approvals,
     ]);
-    const routes = groups.flatMap((group) => group.items.map((item) => item.href));
+    const mainItems = visibleMainNavigation([
+      NAVIGATION_PERMISSIONS.contracts,
+      NAVIGATION_PERMISSIONS.approvals,
+    ]);
+    const routes = [
+      ...mainItems.map((item) => item.href),
+      ...groups.flatMap((group) => group.items.map((item) => item.href)),
+    ];
 
     expect(routes).toEqual(["/contracts", "/approvals"]);
     expect(routes).not.toContain("/prospects");
     expect(routes).not.toContain("/admin/users");
+  });
+
+  it("promotes Contract to the permission-protected main menu", () => {
+    expect(MAIN_NAV_ITEMS.map((item) => item.href)).toEqual(["/contracts"]);
+    expect(visibleMainNavigation([NAVIGATION_PERMISSIONS.contracts]).map((item) => item.href)).toEqual(["/contracts"]);
+    expect(visibleMainNavigation([])).toEqual([]);
+    expect(visibleNavigation([NAVIGATION_PERMISSIONS.contracts])).toEqual([]);
+    expect(navigationLabel("/contracts/contract-1")).toBe("สัญญา");
   });
 
   it("allows audit navigation without exposing administration mutations", () => {
@@ -63,6 +81,7 @@ describe("permission-driven application navigation", () => {
   });
 
   it("returns no protected modules when no permission was granted", () => {
+    expect(visibleMainNavigation([])).toEqual([]);
     expect(visibleNavigation([])).toEqual([]);
     expect(visibleQuickCreate([])).toEqual([]);
   });

@@ -23,7 +23,8 @@ The existing `SalesDocument` service is currently scoped to Prospect/Lead storag
 - Enforce Opportunity/team scope, assigned survey scope, explicit permissions, restricted cost serialization and audit critical mutations in the same transaction.
 - Show Solution Design, Site Survey and BOQ work queues, KPI summaries, detail pages and assigned-survey notifications.
 - Carry an authorized Opportunity into Solution Design creation through `opportunityId` and expose searchable Opportunity selectors in Solution Design, Proposal and Quotation creation.
-- Edit non-terminal Solution Design name, category, description, objective and target date with optimistic version checking, immutable version evidence and audit in the same transaction.
+- Edit Solution Design name, category, description, objective, target date and any active configured status from every current status, without a sequential transition gate, while retaining optimistic version checking, version evidence and audit in the same transaction.
+- Add Product / Service rows in every Solution Design status without waiting for Survey progress or another workflow status.
 - Configure Solution Category, Component Type and risk Category/Probability/Impact/Severity through administrator-managed `SolutionReferenceOption` records instead of accepting arbitrary free text.
 
 ## Routes and APIs

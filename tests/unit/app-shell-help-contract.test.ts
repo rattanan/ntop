@@ -28,7 +28,7 @@ describe("App shell and Help Center", () => {
   it("searches NTOP help articles and resolves article routes", () => {
     expect(searchHelpArticles("floor price", "SALES").map((item) => item.slug)).toContain("quotation-and-approval");
     expect(searchHelpArticles("Transition Policy", "SALES").map((item) => item.slug)).toContain("opportunity-transition-policy");
-    expect(searchHelpArticles("26 เส้นทาง", "ADMIN").map((item) => item.slug)).toContain("opportunity-transition-policy");
+    expect(searchHelpArticles("ขั้นตอนใดก็ได้", "ADMIN").map((item) => item.slug)).toContain("opportunity-transition-policy");
     expect(getHelpArticle("customer-to-opportunity")?.category).toBe("Customer & Opportunity");
     expect(getHelpArticle("ai-page-assistant")?.audience).toContain("ALL");
     expect(getRelevantHelpArticles("opportunity", 3).map((item) => item.slug)).toContain("customer-to-opportunity");
@@ -42,24 +42,20 @@ describe("App shell and Help Center", () => {
       "contract-to-service-order", "ai-assistance-and-safety", "workflow-administration",
     ]));
     expect(helpArticles.filter((article) => article.slug !== "opportunity-transition-policy").every((article) => article.updatedAt === "2026-08-24")).toBe(true);
-    expect(getHelpArticle("opportunity-transition-policy")?.updatedAt).toBe("2026-08-25");
+    expect(getHelpArticle("opportunity-transition-policy")?.updatedAt).toBe("2026-08-26");
     expect(helpArticles.every((article) => article.sections.length >= 4 && article.faqs.length >= 2)).toBe(true);
   });
 
-  it("documents the complete Opportunity transition-policy baseline", () => {
+  it("documents unrestricted Opportunity stage selection and retained controls", () => {
     const article = getHelpArticle("opportunity-transition-policy");
     const content = article?.sections.flatMap((section) => section.body).join(" ") ?? "";
-    expect(article?.title).toContain("5 ขั้นหลักและ 26 เส้นทาง");
-    expect(content).toContain("เดินหน้า 4, ปิดชนะ 1, ย้อนขั้น 4, ปิดแพ้ 5, ยกเลิก 5, หมดอายุ 5 และเปิดใหม่ 2");
-    expect(content).toContain("Next Action เท่านั้น");
-    expect(content).toContain("Qualification Result เป็นข้อมูลเสริมและไม่ block Transition");
-    expect(content).toContain("Requirements, Stakeholder Summary และ Expected Close Date");
-    expect(content).toContain("Coverage และ Solution Complete");
-    expect(content).toContain("Quote Submitted และ Quote Approved");
-    expect(content).toContain("Quote Approved, ลูกค้ายอมรับ Quote และเหตุผล");
+    expect(article?.title).toContain("แบบอิสระ");
+    expect(content).toContain("Stage อื่นทุกค่าให้เลือก");
+    expect(content).toContain("ไม่บังคับเดินตามลำดับ");
+    expect(content).toContain("Requirements, Coverage, Solution และ Quote ไม่ block");
     expect(content).toContain("Lost Reason และ Lost Category");
-    expect(content).toContain("เหตุผลและ Cancelled Reason");
-    expect(content).toContain("Active และ Effective");
+    expect(content).toContain("Cancelled Reason");
+    expect(content).toContain("permission opportunity.transition");
     expect(content).toContain("Expected Version");
     expect(content).toContain("Idempotency Key");
   });
