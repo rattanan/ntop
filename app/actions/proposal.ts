@@ -42,6 +42,7 @@ export async function editProposal(proposalId: string, _: FormState, form: FormD
     const input = proposalEditSchema.parse({
       expectedVersion: Number(text(form, "expectedVersion")),
       name: text(form, "name"),
+      statusCode: text(form, "statusCode"),
       description: text(form, "description") || null,
       expireDate: bangkokEndOfDate(text(form, "expireDate")),
       tags: tags(form),

@@ -15,7 +15,7 @@ export default async function EditProposalPage({ params }: { params: Promise<{ i
   if (!permissionPolicy.allows(session, PERMISSIONS.proposalManage)) notFound();
   const context = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
   const { id } = await params;
-  const [proposal, products, proposalAiAvailable] = await Promise.all([
+  const [proposal, products, statuses, proposalAiAvailable] = await Promise.all([
     prisma.proposal.findFirst({
       where: { id, deletedAt: null, opportunity: buildOpportunityScopeWhere(context) },
       include: {
@@ -30,9 +30,15 @@ export default async function EditProposalPage({ params }: { params: Promise<{ i
       orderBy: { code: "asc" },
       take: 500,
     }),
+    prisma.proposalStatusDefinition.findMany({
+      where: { active: true },
+      select: { code: true, label: true, terminal: true },
+      orderBy: { sortOrder: "asc" },
+      take: 200,
+    }),
     isProposalAiGenerationAvailable(),
   ]);
-  if (!proposal || proposal.status.terminal || !proposal.versions[0]) notFound();
+  if (!proposal || !proposal.versions[0]) notFound();
 
   const latest = proposal.versions[0];
   const sections = latest.sections.map((section) => ({
@@ -56,8 +62,8 @@ export default async function EditProposalPage({ params }: { params: Promise<{ i
       <h1>แก้ไข {proposal.name}</h1>
     </div></div>
     <div className="proposal-workspace">
-      <main><ProposalEditor key={`editor-${proposal.version}`} proposalId={proposal.id} version={proposal.version} name={latest.name} description={latest.description} expireDate={latest.expireDate?.toISOString()??null} tags={tags} sections={sections} terminal={false}/></main>
-      <aside><ProposalAiGenerator key={`ai-${proposal.version}`} proposalId={proposal.id} version={proposal.version} products={products} disabled={!proposalAiAvailable} availabilityMessage={proposalAiAvailable ? undefined : "AI Proposal ยังไม่พร้อมใช้งาน กรุณาแก้ไขเนื้อหาด้วยตนเอง หรือติดต่อผู้ดูแลระบบให้เปิด Feature Flag และตั้งค่า Active Provider"}/></aside>
+      <main><ProposalEditor key={`editor-${proposal.version}`} proposalId={proposal.id} version={proposal.version} name={latest.name} description={latest.description} expireDate={latest.expireDate?.toISOString()??null} tags={tags} statusCode={proposal.statusCode} statuses={statuses} sections={sections} terminal={false}/></main>
+      <aside><ProposalAiGenerator key={`ai-${proposal.version}`} proposalId={proposal.id} version={proposal.version} products={products} disabled={proposal.status.terminal||!proposalAiAvailable} availabilityMessage={proposal.status.terminal?"เปลี่ยน Proposal ออกจากสถานะสิ้นสุดและบันทึกก่อนใช้ AI":proposalAiAvailable ? undefined : "AI Proposal ยังไม่พร้อมใช้งาน กรุณาแก้ไขเนื้อหาด้วยตนเอง หรือติดต่อผู้ดูแลระบบให้เปิด Feature Flag และตั้งค่า Active Provider"}/></aside>
     </div>
   </>;
 }

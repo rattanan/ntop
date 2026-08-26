@@ -49,4 +49,10 @@ describe("Opportunity edit stage contract", () => {
     expect(workflowForms).toContain("บันทึกประวัติพร้อม Audit ทุกครั้ง");
     expect(relatedRoute).toContain("revalidatePath(`/opportunities/${id}`)");
   });
+
+  it("collects one visible reason for Lost while retaining the domain transition contract", () => {
+    expect(workflowForms).toContain('label={targetStage==="LOST"?"เหตุผลที่ Lost":"เหตุผล"}');
+    expect(workflowForms).not.toContain('name="lostReason"');
+    expect(action).toContain('lostReason: targetStage === "LOST" ? reason : undefined');
+  });
 });

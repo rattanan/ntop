@@ -36,10 +36,6 @@ export type NavGroup = {
   items: NavItem[];
 };
 
-export const MAIN_NAV_ITEMS: NavItem[] = [
-  { label: "สัญญา", href: "/contracts", icon: FileCheck2, keywords: "contract agreement renewal", requiredPermission: NAVIGATION_PERMISSIONS.contracts },
-];
-
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "งานขาย",
@@ -63,6 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "BOQ", href: "/boqs", icon: ListTree, keywords: "bill of quantities", requiredPermission: NAVIGATION_PERMISSIONS.boqs },
       { label: "บริการและราคา", href: "/products", icon: Boxes, keywords: "product service", requiredPermission: NAVIGATION_PERMISSIONS.products },
       { label: "Proposal", href: "/proposals", icon: FileCheck2, keywords: "proposal quotation ai", requiredPermission: NAVIGATION_PERMISSIONS.proposals },
+      { label: "สัญญา", href: "/contracts", icon: FileCheck2, keywords: "contract agreement renewal", requiredPermission: NAVIGATION_PERMISSIONS.contracts },
       { label: "Quotation", href: "/quotes", icon: FileText, keywords: "quote quotation ใบเสนอราคา", requiredPermission: NAVIGATION_PERMISSIONS.quotes },
       { label: "การอนุมัติ", href: "/approvals", icon: ShieldCheck, keywords: "approval", requiredPermission: NAVIGATION_PERMISSIONS.approvals },
     ],
@@ -104,18 +101,13 @@ export function visibleNavigation(grantedPermissions: readonly string[]) {
   })).filter((group) => group.items.length > 0);
 }
 
-export function visibleMainNavigation(grantedPermissions: readonly string[]) {
-  const granted = new Set(grantedPermissions);
-  return MAIN_NAV_ITEMS.filter((item) => !item.requiredPermission || granted.has(item.requiredPermission));
-}
-
 export function visibleQuickCreate(grantedPermissions: readonly string[]) {
   const granted = new Set(grantedPermissions);
   return QUICK_CREATE_ITEMS.filter((item) => granted.has(item.requiredPermission));
 }
 
 export function navigationLabel(pathname: string) {
-  const candidates = [...MAIN_NAV_ITEMS, ...NAV_GROUPS.flatMap((group) => group.items)]
+  const candidates = NAV_GROUPS.flatMap((group) => group.items)
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length);
   return candidates[0]?.label ?? "หน้าหลัก";

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuditWriter } from "../../lib/audit/audit-writer";
-import { QuoteApprovalDeferredError, QuoteFloorPriceError, QuoteService, QuoteSubmissionGateError, type QuoteRepository, type QuoteVersionRecord } from "../../lib/commercial/quote-service";
+import { QuoteApprovalDeferredError, QuoteFloorPriceError, QuoteService, QuoteSubmissionGateError, QuoteTransitionError, type QuoteRepository, type QuoteVersionRecord } from "../../lib/commercial/quote-service";
 
 type Tx = { id: string }; const tx = { id: "tx" };
 const actor = { id: "admin", role: "ADMIN" as const, authorization: { actorId: "admin", assignments: [{ role: "ADMIN" as const, scope: "ENTERPRISE" as const, organizationUnitId: null }] } };
@@ -50,6 +50,19 @@ describe("QuoteService", () => {
     vi.mocked(repository.findQuote).mockResolvedValue({ id: "q", opportunityId: "opp", proposalId: null, makerId: "admin", latestVersion: 1 });
     await service.createVersion(actor, { quoteId: "q", opportunityId: "opp", currency: "THB", items: [{ productId: "product", quantity: "1" }] }, "corr", "revision");
     expect(repository.createVersion).toHaveBeenCalledWith(expect.objectContaining({ versionNumber: 2, draft: expect.objectContaining({ quoteId: "q" }) }), tx);
+  });
+
+  it("allows an audited manual Status on a new version only while approval is disabled", async () => {
+    const { service, repository, audit } = setup({ approvalEnabled: false });
+    vi.mocked(repository.findQuote).mockResolvedValue({ id: "q", opportunityId: "opp", proposalId: null, makerId: "admin", latestVersion: 1 });
+    vi.mocked(repository.createVersion).mockResolvedValue({ ...version, versionNumber: 2, status: "ACCEPTED" });
+    await service.createVersion(actor, { quoteId: "q", opportunityId: "opp", currency: "THB", status: "ACCEPTED", items: [{ productId: "product", quantity: "1" }] }, "corr", "manual-status");
+    expect(repository.createVersion).toHaveBeenCalledWith(expect.objectContaining({ draft: expect.objectContaining({ status: "ACCEPTED" }) }), tx);
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "ACCEPTED" }) }), { transaction: tx });
+
+    const enabled = setup({ approvalEnabled: true });
+    await expect(enabled.service.createVersion(actor, { quoteId: "q", opportunityId: "opp", currency: "THB", status: "ACCEPTED", items: [{ productId: "product", quantity: "1" }] }, "corr", "blocked-status")).rejects.toBeInstanceOf(QuoteTransitionError);
+    expect(enabled.repository.transaction).not.toHaveBeenCalled();
   });
 
   it("links a Proposal only when it belongs to the same Opportunity and Customer", async () => {

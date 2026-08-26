@@ -10,8 +10,8 @@ function openPrintDialog(fileName:string){
 }
 
 export function QuoteDocumentActions({quoteNo}:{quoteNo:string}){
-  return <div className="actions quote-document-actions">
+  return <>
     <button type="button" className="secondary" onClick={()=>openPrintDialog(quoteNo)}><Printer aria-hidden="true"/>Print</button>
     <button type="button" className="primary" onClick={()=>openPrintDialog(quoteNo)} title="เลือก Save as PDF ในหน้าต่างพิมพ์"><Download aria-hidden="true"/>ดาวน์โหลด PDF</button>
-  </div>;
+  </>;
 }

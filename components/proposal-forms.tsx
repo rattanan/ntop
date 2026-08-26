@@ -4,7 +4,7 @@ import { useActionState, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { FormState } from "@/app/action-types";
-import { createProposal, editProposal, restoreProposal, transitionProposal } from "@/app/actions/proposal";
+import { createProposal, editProposal, restoreProposal } from "@/app/actions/proposal";
 import { filterProductOptions } from "@/lib/presales/product-option-search";
 import type { ProposalSectionInput } from "@/lib/proposal/contracts";
 import { FormNotice } from "./notice";
@@ -26,22 +26,16 @@ export function ProposalCreateForm({ opportunities, templates, initialOpportunit
   </div><FormNotice state={state}/><div className="actions"><button className="primary" disabled={pending||!opportunities.length}>{pending?"กำลังสร้าง…":"Create Proposal"}</button></div></div></form>;
 }
 
-export function ProposalEditor({ proposalId, version, name, description, expireDate, tags, sections, terminal }: { proposalId: string; version: number; name: string; description: string | null; expireDate: string | null; tags: string[]; sections: ProposalSectionInput[]; terminal: boolean }) {
+export function ProposalEditor({ proposalId, version, name, description, expireDate, tags, statusCode, statuses, sections, terminal }: { proposalId: string; version: number; name: string; description: string | null; expireDate: string | null; tags: string[]; statusCode: string; statuses: Array<{ code: string; label: string; terminal: boolean }>; sections: ProposalSectionInput[]; terminal: boolean }) {
   const [state, action, pending] = useActionState(editProposal.bind(null, proposalId), initial);
   const [idempotencyKey] = useState(key);
   const [draft, setDraft] = useState(sections);
   const update = (code: string, content: string) => setDraft((current)=>current.map((section)=>section.sectionCode===code?{...section,content}:section));
   return <form action={action} className="proposal-editor"><input type="hidden" name="idempotencyKey" value={idempotencyKey}/><input type="hidden" name="expectedVersion" value={version}/><input type="hidden" name="sectionsJson" value={JSON.stringify(draft)}/>
-    <section className="card"><div className="card-header"><div><strong>Proposal Content</strong><small>การบันทึกแต่ละครั้งสร้าง immutable version ใหม่</small></div><span className="badge">v{version}</span></div><div className="card-body"><div className="form-grid"><label className="field full"><span>Proposal Name</span><input className="control" name="name" defaultValue={name} required maxLength={255} disabled={terminal}/></label><label className="field"><span>Expire Date</span><input className="control" name="expireDate" type="date" defaultValue={expireDate?.slice(0,10)} disabled={terminal}/></label><label className="field"><span>Tags</span><input className="control" name="tags" defaultValue={tags.join(", ")} disabled={terminal}/></label><label className="field full"><span>Description</span><textarea className="control" name="description" rows={3} defaultValue={description??""} disabled={terminal}/></label></div></div></section>
+    <section className="card"><div className="card-header"><div><strong>Proposal Content</strong><small>การบันทึกแต่ละครั้งสร้าง immutable version ใหม่</small></div><span className="badge">v{version}</span></div><div className="card-body"><div className="form-grid"><label className="field full"><span>Proposal Name</span><input className="control" name="name" defaultValue={name} required maxLength={255} disabled={terminal}/></label><label className="field"><span>Expire Date</span><input className="control" name="expireDate" type="date" defaultValue={expireDate?.slice(0,10)} disabled={terminal}/></label><label className="field"><span>Tags</span><input className="control" name="tags" defaultValue={tags.join(", ")} disabled={terminal}/></label><label className="field"><span>Status</span><select className="control" name="statusCode" defaultValue={statusCode} required disabled={terminal}>{statuses.map((status)=><option key={status.code} value={status.code}>{status.label}{status.terminal?" · จบ workflow":""}</option>)}</select><small className="help">เลือกสถานะ active ใดก็ได้โดยไม่ต้องไล่ตามลำดับ workflow</small></label><label className="field full"><span>Description</span><textarea className="control" name="description" rows={3} defaultValue={description??""} disabled={terminal}/></label></div></div></section>
     <div className="proposal-sections">{draft.map((section)=><section className="card proposal-section" key={section.sectionCode}><div className="card-header"><div><span className="proposal-section-index">{String(section.sortOrder+1).padStart(2,"0")}</span><strong>{section.title}</strong></div><span className="badge muted">{section.sectionCode}</span></div><div className="card-body"><textarea className="control proposal-content" aria-label={section.title} value={section.content} onChange={(event)=>update(section.sectionCode,event.target.value)} rows={7} disabled={terminal}/></div></section>)}</div>
     <FormNotice state={state}/>{!terminal&&<div className="proposal-sticky-actions"><span>Draft changes become version {version+1}</span><button className="primary" disabled={pending}>{pending?"Saving…":"Save New Version"}</button></div>}
   </form>;
-}
-
-export function ProposalStatusForm({ proposalId, version, transitions }: { proposalId: string; version: number; transitions: Array<{ code: string; label: string }> }) {
-  const [state, action, pending] = useActionState(transitionProposal.bind(null, proposalId), initial); const [idempotencyKey] = useState(key);
-  if (!transitions.length) return null;
-  return <form action={action} className="card"><div className="card-header"><strong>Workflow</strong></div><div className="card-body"><input type="hidden" name="expectedVersion" value={version}/><input type="hidden" name="idempotencyKey" value={idempotencyKey}/><div className="form-grid"><label className="field"><span>Next Status</span><select className="control" name="toStatusCode">{transitions.map((item)=><option key={item.code} value={item.code}>{item.label}</option>)}</select></label><label className="field"><span>Comment</span><input className="control" name="comment" minLength={1} maxLength={1000} required/></label></div><FormNotice state={state}/><button className="secondary" disabled={pending}>{pending?"Updating…":"Update Status"}</button></div></form>;
 }
 
 export function ProposalRestoreButton({ proposalId, expectedVersion, sourceVersionNumber, disabled }: { proposalId: string; expectedVersion: number; sourceVersionNumber: number; disabled: boolean }) {

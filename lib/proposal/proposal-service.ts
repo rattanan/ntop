@@ -184,24 +184,26 @@ export class ProposalService<TTransaction> {
     });
   }
 
-  private async createContentVersion(actor: ProposalActor, proposalId: string, input: { expectedVersion: number; name?: string; description?: string | null; expireDate?: Date | null; tags?: string[]; sections: ProposalSectionInput[]; ai?: { providerConfigurationVersionId: string; providerModel: string; promptTemplateVersion: string; inputSourceReferences: Array<{ type: string; id: string }> } }, command: string, correlationId: string, idempotencyKey: string) {
+  private async createContentVersion(actor: ProposalActor, proposalId: string, input: { expectedVersion: number; name?: string; statusCode?: string; description?: string | null; expireDate?: Date | null; tags?: string[]; sections: ProposalSectionInput[]; ai?: { providerConfigurationVersionId: string; providerModel: string; promptTemplateVersion: string; inputSourceReferences: Array<{ type: string; id: string }> } }, command: string, correlationId: string, idempotencyKey: string) {
     assertPermission(actor, PERMISSIONS.proposalManage, this.permissions);
     return this.repository.transaction(async (transaction) => {
       const replay = await this.replay(actor, proposalId, idempotencyKey, command, transaction);
       if (replay) return replay;
       const proposal = await this.repository.find({ id: proposalId, actorId: actor.id, context: actor.authorization }, transaction);
       if (!proposal) throw new ProposalAccessError();
-      this.assertMutable(proposal, input.expectedVersion);
-      const created = await this.repository.createVersion({ proposal, expectedVersion: input.expectedVersion, actorId: actor.id, name: input.name ?? proposal.name, description: input.description === undefined ? proposal.description : input.description, expireDate: input.expireDate === undefined ? proposal.expireDate : input.expireDate, tags: input.tags ?? proposal.tags, statusCode: proposal.statusCode, templateVersionId: proposal.templateVersionId, sections: input.sections, ai: input.ai }, transaction);
+      this.assertMutable(proposal, input.expectedVersion, command === "proposal.edit");
+      const targetStatusCode = input.statusCode ?? proposal.statusCode;
+      if (input.statusCode && !await this.repository.findStatus(input.statusCode, transaction)) throw new ProposalConfigurationError();
+      const created = await this.repository.createVersion({ proposal, expectedVersion: input.expectedVersion, actorId: actor.id, name: input.name ?? proposal.name, description: input.description === undefined ? proposal.description : input.description, expireDate: input.expireDate === undefined ? proposal.expireDate : input.expireDate, tags: input.tags ?? proposal.tags, statusCode: targetStatusCode, templateVersionId: proposal.templateVersionId, sections: input.sections, ai: input.ai }, transaction);
       if (!created) throw new ProposalVersionConflictError();
-      await this.record(actor.id, command, created, correlationId, input.ai ? { providerModel: input.ai.providerModel } : {}, idempotencyKey, transaction);
+      await this.record(actor.id, command, created, correlationId, input.ai ? { providerModel: input.ai.providerModel } : input.statusCode ? { fromStatusCode: proposal.statusCode, toStatusCode: targetStatusCode } : {}, idempotencyKey, transaction);
       return created;
     });
   }
 
-  private assertMutable(proposal: ProposalRecord, expectedVersion: number) {
+  private assertMutable(proposal: ProposalRecord, expectedVersion: number, allowTerminal = false) {
     if (proposal.version !== expectedVersion) throw new ProposalVersionConflictError();
-    if (proposal.terminal) throw new ProposalTerminalError();
+    if (proposal.terminal && !allowTerminal) throw new ProposalTerminalError();
   }
 
   private async replay(actor: ProposalActor, proposalId: string, key: string, command: string, transaction: TTransaction) {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, type QuoteStatus, type QuoteVersionStatus } from "@prisma/client";
 
 import type { AuthorizationContext } from "../authorization/authorization-context";
 import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
@@ -12,6 +12,13 @@ import type {
 import type { ApprovalPolicyDefinition } from "./approval-policy-evaluator";
 
 type Transaction = Prisma.TransactionClient;
+
+function aggregateStatus(status: QuoteVersionStatus): QuoteStatus {
+  if (status === "SUBMITTED") return "PENDING_APPROVAL";
+  if (status === "RETURNED") return "REJECTED";
+  if (status === "SUPERSEDED") return "EXPIRED";
+  return status;
+}
 
 function object(value: Prisma.JsonValue): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -142,6 +149,8 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
   }
 
   async createVersion(input: Parameters<QuoteRepository<Transaction>["createVersion"]>[0], transaction: Transaction) {
+    const versionStatus: QuoteVersionStatus = input.draft.status ?? "DRAFT";
+    const quoteStatus = aggregateStatus(versionStatus);
     const policyInputSnapshot = {
       productCategories: [...new Set(input.products.map((item) => item.category))],
       costConfirmed: input.products.every((item) => item.costConfirmed),
@@ -150,7 +159,7 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
     const quote = input.draft.quoteId
       ? await transaction.quote.update({
           where: { id: input.draft.quoteId },
-          data: { version: { increment: 1 }, status: "DRAFT", ...(input.draft.proposalId ? { proposalId: input.draft.proposalId } : {}), updatedAt: new Date() },
+          data: { version: { increment: 1 }, status: quoteStatus, ...(input.draft.proposalId ? { proposalId: input.draft.proposalId } : {}), updatedAt: new Date() },
         })
       : await transaction.quote.create({
           data: {
@@ -159,7 +168,7 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
             opportunityId: input.opportunity.id,
             proposalId: input.draft.proposalId,
             makerId: input.actorId,
-            status: "DRAFT",
+            status: quoteStatus,
             discountPct: input.calculations.subtotal.isZero()
               ? 0
               : Number(input.calculations.discountAmount.div(input.calculations.subtotal).mul(100).toDecimalPlaces(0).toString()),
@@ -196,6 +205,7 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
       data: {
         quoteId: quote.id,
         versionNumber: input.versionNumber,
+        status: versionStatus,
         currency: input.draft.currency,
         subtotal: input.calculations.subtotal,
         discountAmount: input.calculations.discountAmount,
@@ -208,6 +218,7 @@ export class PrismaQuoteRepository implements QuoteRepository<Transaction> {
         solutionSnapshot: { capturedAt: new Date().toISOString() },
         validUntil: input.draft.validUntil ?? null,
         notes: input.draft.notes ?? null,
+        acceptedAt: versionStatus === "ACCEPTED" ? new Date() : null,
         items: {
           create: input.calculations.lines.map((line) => ({
             productId: line.productId,

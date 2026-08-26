@@ -62,6 +62,7 @@ export const proposalCreateSchema = z.strictObject({
 export const proposalEditSchema = z.strictObject({
   expectedVersion: z.number().int().positive(),
   name: z.string().trim().min(1).max(255),
+  statusCode: z.string().trim().min(1).max(32).optional(),
   description: z.string().max(10_000).nullable().optional(),
   expireDate: z.string().datetime({ offset: true }).nullable().optional(),
   tags: tagsSchema,

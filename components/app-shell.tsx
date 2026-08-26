@@ -9,7 +9,7 @@ import { Bell, ChevronDown, ChevronRight, CircleHelp, Home, LogOut, Menu, Moon, 
 import { logout } from "@/app/actions";
 import { EnterpriseCommandPalette } from "@/components/enterprise-command-palette";
 import { AiChatBalloon } from "@/components/ai-chat-balloon";
-import { NAV_GROUPS, navigationLabel, visibleMainNavigation, visibleNavigation, visibleQuickCreate } from "@/components/app-navigation";
+import { NAV_GROUPS, navigationLabel, visibleNavigation, visibleQuickCreate } from "@/components/app-navigation";
 import type { HeaderNotification } from "@/lib/notifications/header-notifications";
 
 // Static route contracts are implemented by the navigation configuration in app-navigation.ts.
@@ -31,14 +31,12 @@ export function AppShell({ children, user, notifications, version }: { children:
   const toggleTheme = () => setDarkMode((value) => { const next=!value; document.documentElement.dataset.theme=next?"dark":"light"; document.documentElement.style.colorScheme=next?"dark":"light"; localStorage.setItem("ntop-theme",next?"dark":"light"); return next; });
   const setCommandVisibility = useCallback((open: boolean) => setCommandOpen(open), []);
   const visibleGroups = visibleNavigation(user.grantedPermissions);
-  const visibleMainItems = visibleMainNavigation(user.grantedPermissions);
   const quickCreateItems = visibleQuickCreate(user.grantedPermissions);
   const currentLabel = navigationLabel(pathname);
   const roleLabel = user.roles.map((role) => role.replaceAll("_", " ")).join(" · ");
 
   const navigation = <>
     <Link href="/dashboard" onClick={() => setMobileOpen(false)} className={`sidebar-link ${isActive(pathname, "/dashboard") ? "active" : ""}`} title="หน้าแรก"><Home className="sidebar-icon"/><span>หน้าแรก</span></Link>
-    {visibleMainItems.map((item) => { const Icon = item.icon; return <Link href={item.href} onClick={() => setMobileOpen(false)} key={item.href} className={`sidebar-link ${isActive(pathname, item.href) ? "active" : ""}`} title={item.label}><Icon className="sidebar-icon"/><span>{item.label}</span></Link>; })}
     {visibleGroups.map((group) => {
       const GroupIcon = group.icon; const open = openGroups[group.label] || group.items.some((item) => isActive(pathname, item.href));
       return <div className="sidebar-group" key={group.label}>

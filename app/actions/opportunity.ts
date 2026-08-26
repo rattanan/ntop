@@ -78,14 +78,16 @@ export async function transitionOpportunity(id: string, _: FormState, form: Form
   const session = await requireSession();
   try {
     const authorization = await loadAuthorizationContext({ actorId: session.id, legacyRole: session.role });
+    const targetStage = text(form, "targetStage") as "QUALIFY" | "DISCOVER" | "SOLUTION" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" | "CANCELLED" | "EXPIRED";
+    const reason = text(form, "reason") || undefined;
     await createOpportunityRuntime().transition(
       { ...session, authorization },
       id,
       {
-        targetStage: text(form, "targetStage") as "QUALIFY" | "DISCOVER" | "SOLUTION" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" | "CANCELLED" | "EXPIRED",
-        reason: text(form, "reason") || undefined,
+        targetStage,
+        reason,
         expectedVersion: Number(text(form, "expectedVersion")),
-        lostReason: text(form, "lostReason") || undefined,
+        lostReason: targetStage === "LOST" ? reason : undefined,
         lostCategory: text(form, "lostCategory") || undefined,
         cancelledReason: text(form, "cancelledReason") || undefined,
         expectedCloseAt: text(form, "expectedCloseAt") ? new Date(text(form, "expectedCloseAt")) : undefined,

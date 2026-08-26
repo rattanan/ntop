@@ -19,6 +19,9 @@ import {
 import { calculateQuote } from "./quote-calculator";
 import { decimal, money } from "./decimal-money";
 
+export const EDITABLE_QUOTE_STATUSES = ["DRAFT", "APPROVED", "REJECTED", "RETURNED", "SENT", "ACCEPTED"] as const;
+export type EditableQuoteStatus = (typeof EDITABLE_QUOTE_STATUSES)[number];
+
 export type QuoteDraftInput = {
   quoteId?: string;
   proposalId?: string;
@@ -26,6 +29,7 @@ export type QuoteDraftInput = {
   currency: string;
   validUntil?: Date | null;
   notes?: string;
+  status?: EditableQuoteStatus;
   items: Array<{
     productId: string;
     quantity: string;
@@ -137,6 +141,10 @@ export class QuoteService<TTransaction> {
 
   async createVersion(actor: Actor, draft: QuoteDraftInput, correlationId: string, idempotencyKey: string) {
     assertPermission(actor, PERMISSIONS.quoteManage, this.permissions);
+    const requestedStatus = draft.status ?? "DRAFT";
+    if (!EDITABLE_QUOTE_STATUSES.includes(requestedStatus)) throw new QuoteTransitionError();
+    if (!draft.quoteId && requestedStatus !== "DRAFT") throw new QuoteTransitionError();
+    if (requestedStatus !== "DRAFT" && !await this.manualStatusOverrideAllowed()) throw new QuoteTransitionError();
     return this.repository.transaction(async (transaction) => {
       const receipt = await this.repository.findReceipt(actor.id, idempotencyKey, "quote.version.create", transaction);
       if (receipt) {
@@ -199,7 +207,7 @@ export class QuoteService<TTransaction> {
         targetVersion: String(created.versionNumber),
         outcome: "SUCCESS",
         correlationId,
-        data: { quoteId: created.quoteId, opportunityId: created.opportunityId, proposalId: draft.proposalId ?? quote?.proposalId ?? null },
+        data: { quoteId: created.quoteId, opportunityId: created.opportunityId, proposalId: draft.proposalId ?? quote?.proposalId ?? null, status: created.status },
       }, { transaction });
       await this.repository.saveReceipt({ actorId: actor.id, idempotencyKey, command: "quote.version.create", targetId: created.id, resultVersion: created.versionNumber }, transaction);
       return created;
@@ -284,5 +292,9 @@ export class QuoteService<TTransaction> {
       await this.repository.saveReceipt({ actorId: actor.id, idempotencyKey, command, targetId: quoteVersionId, resultVersion: version.versionNumber }, transaction);
       return transitioned;
     });
+  }
+
+  private async manualStatusOverrideAllowed() {
+    return !await this.approvalEnabled();
   }
 }

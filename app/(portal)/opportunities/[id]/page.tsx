@@ -12,15 +12,16 @@ import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-po
 import { getOpportunityHealth } from "@/lib/opportunity/opportunity-health-query";
 import { getOpportunity } from "@/lib/opportunity/opportunity-query-service";
 import { OpportunityAccessError } from "@/lib/opportunity/opportunity-service";
+import { getOpportunityWorkflowPathStages } from "@/lib/opportunity/opportunity-workflow-path";
 import { prisma } from "@/lib/prisma";
 import { STAGES } from "@/lib/constants";
 
 function jsonObject(value: unknown): Record<string, unknown> { return value!==null&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{}; }
 const healthLabels = { HEALTHY:"Healthy",WATCH:"Watch",AT_RISK:"At Risk",CRITICAL:"Critical" } as const;
-const workflowStages = STAGES.filter(([value]) => !["LOST", "CANCELLED", "EXPIRED"].includes(value));
-const terminalStageLabels: Record<string,string> = { LOST:"ไม่ชนะ",CANCELLED:"ยกเลิก",EXPIRED:"หมดอายุ" };
+const terminalStageLabels: Record<string,string> = { CANCELLED:"ยกเลิก",EXPIRED:"หมดอายุ" };
 
 function OpportunityWorkflowPath({stage}:{stage:string}) {
+  const workflowStages=getOpportunityWorkflowPathStages(stage);
   const currentIndex=workflowStages.findIndex(([value])=>value===stage);
   return <div className="opportunity-workflow-path" role="list" aria-label="เส้นทางการขาย">
     {workflowStages.map(([value,label],index)=><div className={`workflow-path-step ${index<currentIndex?"complete":index===currentIndex?"current":"future"}`} role="listitem" aria-current={index===currentIndex?"step":undefined} key={value}><span>{index+1}</span><div><strong>{value}</strong><small>{label}</small></div></div>)}

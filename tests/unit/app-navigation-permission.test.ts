@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  MAIN_NAV_ITEMS,
+  NAV_GROUPS,
   navigationLabel,
-  visibleMainNavigation,
   visibleNavigation,
   visibleQuickCreate,
 } from "../../components/app-navigation";
@@ -18,25 +17,20 @@ describe("permission-driven application navigation", () => {
       NAVIGATION_PERMISSIONS.contracts,
       NAVIGATION_PERMISSIONS.approvals,
     ]);
-    const mainItems = visibleMainNavigation([
-      NAVIGATION_PERMISSIONS.contracts,
-      NAVIGATION_PERMISSIONS.approvals,
-    ]);
-    const routes = [
-      ...mainItems.map((item) => item.href),
-      ...groups.flatMap((group) => group.items.map((item) => item.href)),
-    ];
+    const routes = groups.flatMap((group) => group.items.map((item) => item.href));
 
     expect(routes).toEqual(["/contracts", "/approvals"]);
     expect(routes).not.toContain("/prospects");
     expect(routes).not.toContain("/admin/users");
   });
 
-  it("promotes Contract to the permission-protected main menu", () => {
-    expect(MAIN_NAV_ITEMS.map((item) => item.href)).toEqual(["/contracts"]);
-    expect(visibleMainNavigation([NAVIGATION_PERMISSIONS.contracts]).map((item) => item.href)).toEqual(["/contracts"]);
-    expect(visibleMainNavigation([])).toEqual([]);
-    expect(visibleNavigation([NAVIGATION_PERMISSIONS.contracts])).toEqual([]);
+  it("keeps Contract directly below Proposal in the Commercial menu", () => {
+    const commercial = NAV_GROUPS.find((group) => group.label === "Commercial");
+    const routes = commercial?.items.map((item) => item.href) ?? [];
+    const proposalIndex = routes.indexOf("/proposals");
+
+    expect(routes[proposalIndex + 1]).toBe("/contracts");
+    expect(visibleNavigation([NAVIGATION_PERMISSIONS.contracts]).flatMap((group) => group.items.map((item) => item.href))).toEqual(["/contracts"]);
     expect(navigationLabel("/contracts/contract-1")).toBe("สัญญา");
   });
 
@@ -81,7 +75,6 @@ describe("permission-driven application navigation", () => {
   });
 
   it("returns no protected modules when no permission was granted", () => {
-    expect(visibleMainNavigation([])).toEqual([]);
     expect(visibleNavigation([])).toEqual([]);
     expect(visibleQuickCreate([])).toEqual([]);
   });

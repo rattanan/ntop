@@ -7,8 +7,15 @@ import type { FormState } from "@/app/action-types";
 import { requireSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { createQuoteRuntime } from "@/lib/commercial/quote-runtime";
+import { EDITABLE_QUOTE_STATUSES, type EditableQuoteStatus } from "@/lib/commercial/quote-service";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
+
+function quoteStatus(form: FormData): EditableQuoteStatus {
+  const value = text(form, "status") || "DRAFT";
+  if (!EDITABLE_QUOTE_STATUSES.some((status) => status === value)) throw new Error("Status ของ Quotation ไม่ถูกต้อง");
+  return value as EditableQuoteStatus;
+}
 
 function quoteItems(form: FormData) {
   const value: unknown = JSON.parse(text(form, "itemsJson") || "[]");
@@ -35,6 +42,7 @@ export async function createGovernedQuote(_: FormState, form: FormData): Promise
         currency: "THB",
         validUntil: text(form, "validUntil") ? new Date(`${text(form, "validUntil")}T16:59:59.999Z`) : null,
         notes: text(form, "notes") || undefined,
+        status: quoteStatus(form),
         items: quoteItems(form),
       },
       crypto.randomUUID(),

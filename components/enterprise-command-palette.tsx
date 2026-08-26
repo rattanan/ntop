@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, Search, Star, X } from "lucide-react";
 
-import { visibleMainNavigation, visibleNavigation } from "@/components/app-navigation";
+import { visibleNavigation } from "@/components/app-navigation";
 
 const FAVORITES_KEY = "ntop-favorite-routes";
 const RECENTS_KEY = "ntop-recent-routes";
@@ -37,10 +37,7 @@ export function EnterpriseCommandPalette({
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
   const items = useMemo(
-    () => [
-      ...visibleMainNavigation(grantedPermissions).map((item) => ({ ...item, group: "เมนูหลัก" })),
-      ...visibleNavigation(grantedPermissions).flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))),
-    ],
+    () => visibleNavigation(grantedPermissions).flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))),
     [grantedPermissions],
   );
 

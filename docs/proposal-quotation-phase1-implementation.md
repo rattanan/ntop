@@ -33,12 +33,17 @@ new editable draft version is persisted.
   business mutation.
 - Each edit or restore creates a new immutable version; a previous version is
   never overwritten and a restored version records its source version.
-- Status codes, labels, terminal flags, and allowed transitions are configuration
-  data. Invalid transitions and edits to terminal Proposals are rejected by the
-  service, not merely hidden by the UI.
-- Proposal review is sequential and policy-driven: submission routes to Manager
-  review, then Director approval. Required permissions are RolePermissionGrant
-  data and maker-checker is enforced by the server for both review decisions.
+- Status codes, labels, and terminal flags are configuration data. The View page
+  does not expose a separate Workflow/Next Status panel. An actor with
+  `proposal.manage` selects any active configured Status in the Edit form; the
+  service validates that Status, creates an immutable version, and audits the
+  previous and target values. This direct edit may also move an already-terminal
+  Proposal back to another active configured Status; other terminal-state
+  commands remain rejected.
+- The versioned status-transition API remains sequential and policy-driven for
+  clients that use it: Manager and Director review permissions and maker-checker
+  are enforced by the server. The interactive Edit flow is an explicit direct
+  status-selection command and does not require following transition edges.
 - A reusable active Template version provides ordered default sections. Template
   data is copied to a Proposal version so later Template edits do not rewrite
   Proposal history.
@@ -61,8 +66,12 @@ new editable draft version is persisted.
 - Quotation detail renders the latest version as a customer-facing document with
   line items, totals, validity, notes and signature placeholders. Internal cost
   and margin remain outside the printable document.
-- Editing a Draft/Rejected/Returned Quotation creates a new Draft version and
-  supersedes the previous Draft instead of mutating historical line items.
+- Editing a Quotation creates a new immutable version instead of mutating
+  historical line items. While the Approval Control Center is disabled, an actor
+  with `quote.manage` may select a business-facing Status for the new version;
+  the status is validated server-side and included in the transactional audit
+  event. When Approval is enabled, the new version remains Draft and governed
+  submit/approval/commercial transitions continue to apply.
 - All dates are stored as timezone-aware instants and rendered using the current
   application timezone conventions. Monetary values remain in existing Decimal
   Quote fields; Proposal content does not introduce floating-point money.
