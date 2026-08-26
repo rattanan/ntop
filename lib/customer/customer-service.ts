@@ -29,7 +29,7 @@ export type CustomerContactCommand = z.infer<typeof customerContactCommandSchema
 
 export const customerCommandSchema = z.strictObject({
   name: z.string().trim().min(2).max(255),
-  taxId: z.string().trim().regex(/^\d{13}$/),
+  taxId: z.string().trim().min(1).max(191),
   type: z.enum(["B2G", "B2B"]),
   segment: z.string().trim().min(1).max(100),
   subIndustry: z.string().trim().max(50).optional(),

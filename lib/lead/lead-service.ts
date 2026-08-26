@@ -256,7 +256,13 @@ export class LeadService<TTransaction> {
       }
       if (lead.status === LeadStatus.CONVERTED || lead.status === LeadStatus.ARCHIVED) throw new LeadConversionError();
       const conversionLead = { ...lead, contactName: parsed.data.contactName || lead.contactName, contactEmail: parsed.data.contactEmail || lead.contactEmail, contactPhone: parsed.data.contactPhone || lead.contactPhone };
-      if (!conversionLead.contactName || (!conversionLead.contactEmail && !conversionLead.contactPhone)) throw new LeadValidationError({ contactName: ["กรุณาระบุชื่อผู้ติดต่อ"], contactEmail: ["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"], contactPhone: ["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"] });
+      const contactIssues: Record<string, string[]> = {};
+      if (!conversionLead.contactName) contactIssues.contactName = ["กรุณาระบุชื่อผู้ติดต่อ"];
+      if (!conversionLead.contactEmail && !conversionLead.contactPhone) {
+        contactIssues.contactEmail = ["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"];
+        contactIssues.contactPhone = ["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"];
+      }
+      if (Object.keys(contactIssues).length) throw new LeadValidationError(contactIssues);
 
       let customerId: string;
       let duplicateCount = 0;

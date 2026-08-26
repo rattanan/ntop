@@ -38,6 +38,9 @@ describe("sales conversion usability contract", () => {
     expect(actions).toContain('defaultValue={lead.estimatedBudget??""}');
     expect(actions).toContain("requirementSummary:string|null");
     expect(actions).toContain("router.push(state.redirectTo!)");
+    expect(actions).toContain("event.preventDefault()");
+    expect(actions).toContain("startTransition(()=>action(formData))");
+    expect(actions).not.toContain('<form action={action} className="dialog-form"><input type="hidden" name="idempotencyKey" value={key}/><input type="hidden" name="conversionMode"');
   });
 
   it("carries the qualified requirement summary into the Opportunity", () => {

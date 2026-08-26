@@ -7,7 +7,7 @@ export type FormFieldMetadata = {
 const metadata: Record<string, FormFieldMetadata> = {
   companyName: { description: "ชื่อบริษัทหรือหน่วยงานตามเอกสารทางการ", example: "บริษัท เอ็นที จำกัด (มหาชน)" },
   name: { description: "ชื่อของรายการที่กำลังสร้างหรือแก้ไข", example: "โครงการเชื่อมโยงเครือข่ายสำนักงานใหญ่" },
-  taxId: { description: "เลขประจำตัวผู้เสียภาษีของนิติบุคคล 13 หลัก", example: "0105559999999" },
+  taxId: { description: "เลขนิติบุคคลหรือเลขประจำตัวผู้เสียภาษีที่องค์กรใช้", example: "0105559999999" },
   type: { description: "ประเภท Customer เพื่อแยกหน่วยงานภาครัฐและภาคธุรกิจ", example: "B2G - ภาครัฐ" },
   customerType: { description: "ประเภท Customer เพื่อแยกหน่วยงานภาครัฐและภาคธุรกิจ", example: "B2B - ภาคเอกชน" },
   segment: { description: "กลุ่มลูกค้าตามโครงสร้างการขาย ใช้กำหนดอุตสาหกรรมย่อยที่เลือกได้", example: "B1 - องค์กรธุรกิจขนาดใหญ่" },

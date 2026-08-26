@@ -20,9 +20,9 @@ describe("Prospect page UI contract", () => {
     expect(page).toContain("columns.map((column) => <th key={column}>{column}</th>)");
   });
 
-  it("only offers workflow-valid status transitions while editing", () => {
-    expect(form).toContain('import { PROSPECT_TRANSITIONS } from "@/lib/prospect/prospect-rules"');
-    expect(form).toContain("[prospect.status, ...PROSPECT_TRANSITIONS[prospect.status]]");
+  it("offers every mutable status without locking the transition order", () => {
+    expect(form).toContain("mutableStatuses.map((value)");
+    expect(form).not.toContain("PROSPECT_TRANSITIONS");
     expect(form).toContain('value !== "CONVERTED" && value !== "ARCHIVED"');
   });
 });

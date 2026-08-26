@@ -5,7 +5,7 @@
 - Prospect is a separate Sales Engagement aggregate and does not change existing Lead workflow semantics.
 - Mutable commands use server validation, scoped authorization, optimistic version and idempotency receipts.
 - Permission checks use `prospect.*` permission grants; list and detail use the same ownership/organization predicate.
-- Status transitions use an allowlist. `CONVERTED` is conversion-command-only and conversion cannot be repeated.
+- Authorized users may move a non-terminal Prospect directly between any active business statuses without a transition-order lock. `CONVERTED` is conversion-command-only, `ARCHIVED` remains archive-command-only, and conversion cannot be repeated.
 - Contacts support one transactionally enforced primary contact. Activities update contact/follow-up facts and timeline.
 - Authorized users can create, edit, and soft-delete Contacts from the Prospect detail page. Contact mutations enforce Prospect scope and permission on the server, use the parent Prospect version for optimistic concurrency, promote a replacement when the primary Contact is removed, and append audit evidence in the same transaction.
 - Existing environments receive the approved `prospect.*` role grants through a forward data migration, so edit and document-upload actions do not depend on reseeding.
@@ -46,10 +46,13 @@ The forward-only migration is `20260714220000_add_prospect_management/migration.
 
 - Prospect และ Customer ใช้ชุดข้อมูลอ้างอิง `CustomerSegment` และ `SubIndustryReference` เดียวกัน โดยตัวเลือกแสดง `รหัส — ชื่อ` และอุตสาหกรรมย่อยขึ้นกับ Segment
 - `companySize` รับเฉพาะ `SMALL`, `MEDIUM`, `LARGE`; UI แสดง `รหัส — เล็ก/กลาง/ใหญ่`
+- `taxId` เป็นเลขนิติบุคคลแบบ optional ที่ไม่บังคับรูปแบบหรือความยาว 13 หลัก; server trim และจำกัดตามคอลัมน์ `VARCHAR(32)` เท่านั้น
 - หน้า Prospect แสดงชื่อ `Target Close Date` แต่ยังส่ง field REST v1 เดิม `currentContractEndDate` เพื่อรักษา backward compatibility จนกว่าจะมี API version ใหม่
 - ฟอร์มใน Portal แสดงคำอธิบายภาษาไทยและตัวอย่างจาก field metadata กลาง และ numeric input ที่รู้จักแสดงหน่วยท้ายช่อง
 - Prospect detail ย้าย Assign Owner ไปที่ปุ่มดินสอข้าง Owner และใช้ dialog; card เดิมด้านล่างไม่ถูก render แล้ว
 - Convert to Lead ใช้ dialog ด้านบน ถ้าไม่มี Contact จะต้องกรอกชื่อและช่องทางอย่างน้อยหนึ่งรายการก่อน ระบบจะเก็บ dialog และค่าที่กรอกไว้เมื่อ validation ไม่ผ่าน
+- Prospect → Lead conversion เลือกเบอร์มือถือเมื่อมีค่า มิฉะนั้นใช้เบอร์โทรศัพท์ และต้องไม่ให้ช่องมือถือว่างทับเบอร์โทรศัพท์ที่ผู้ใช้กรอก
+- Convert to Lead แสดงสำหรับทุก active Prospect ที่ผู้ใช้มี `prospect.convert` และไม่บังคับให้ Prospect อยู่สถานะ `QUALIFIED`; server ยังคงตรวจสิทธิ์, scope, Contact, version, idempotency และป้องกันการ Convert ซ้ำ
 - การสร้าง Contact ก่อน Convert เพิ่ม Prospect version แล้วใช้ version ใหม่นั้นกับ convert command เพื่อรักษา optimistic concurrency
 - Migration เพิ่มข้อมูลอ้างอิงและ Customer classification แบบ forward-only ที่ `20260826100000_add_customer_classification_reference`; ยังไม่ได้รันกับ production
 - Prospect → Lead conversion ส่งต่อ classification, address, provider, Target Close Date และ Estimated Opportunity Value พร้อม link Contact/Activity/SalesDocument เดิม โดยไม่ duplicate เอกสาร
@@ -63,8 +66,8 @@ The forward-only migration is `20260714220000_add_prospect_management/migration.
 1. Sign in as `sales1@example.test`, open `/prospects`, and create a Prospect with a primary contact.
 2. Confirm duplicate warning by trying the same tax ID or contact email.
 3. Add an Activity and verify last-contact/next-follow-up and timeline.
-4. Sign in as manager, assign the Prospect and move it through qualifying states.
-5. Convert a QUALIFIED Prospect and verify the Lead link, shared activity/contact references, histories and audit.
+4. Sign in as manager, assign the Prospect and verify it can move directly between active statuses in either direction.
+5. Convert a non-terminal Prospect from any active status and verify the Lead link, shared activity/contact references, histories and audit.
 6. Repeat conversion with another key and verify it is rejected without a second Lead.
 7. Upload CSV/XLSX at `/prospects/import`, preview errors and confirm accepted rows.
 8. Upload a text-bearing Prospect document, add a Contact and Activity, request AI Insight, verify the draft provenance lists all source records, then confirm before checking the saved AI fields.

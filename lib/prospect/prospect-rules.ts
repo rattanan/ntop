@@ -1,15 +1,12 @@
 import { ProspectHeatLevel, ProspectSource, ProspectStatus } from "@prisma/client";
 
-export const PROSPECT_TRANSITIONS: Record<ProspectStatus, readonly ProspectStatus[]> = {
-  NEW: ["ASSIGNED", "CONTACTED", "ARCHIVED"], ASSIGNED: ["CONTACTED", "INTERESTED", "UNREACHABLE", "LOST", "ARCHIVED"],
-  CONTACTED: ["INTERESTED", "QUALIFYING", "NOT_INTERESTED", "UNREACHABLE", "LOST", "ARCHIVED"], INTERESTED: ["QUALIFYING", "NOT_INTERESTED", "LOST", "ARCHIVED"],
-  QUALIFYING: ["QUALIFIED", "INTERESTED", "NOT_INTERESTED", "LOST", "ARCHIVED"], QUALIFIED: ["CONVERTED", "LOST", "ARCHIVED"],
-  NOT_INTERESTED: ["INTERESTED", "LOST", "ARCHIVED"], UNREACHABLE: ["CONTACTED", "LOST", "ARCHIVED"], LOST: ["INTERESTED", "ARCHIVED"], CONVERTED: [], ARCHIVED: [],
-};
-
-export function canTransitionProspect(from: ProspectStatus, to: ProspectStatus) { return from === to || PROSPECT_TRANSITIONS[from].includes(to); }
+export function canTransitionProspect(from: ProspectStatus, to: ProspectStatus) {
+  if (from === "CONVERTED" || from === "ARCHIVED") return false;
+  return to !== "CONVERTED" && to !== "ARCHIVED";
+}
 export function normalizeProspectText(value: string) { return value.replace(/บริษัท|จำกัด|มหาชน|co\.?|ltd\.?|plc\.?/gi, "").normalize("NFKC").toLocaleLowerCase("th-TH").replace(/[^\p{L}\p{M}\p{N}]/gu, ""); }
 export function normalizeWebsiteDomain(value?: string | null) { if (!value) return null; try { return new URL(value.includes("://") ? value : `https://${value}`).hostname.replace(/^www\./, "").toLowerCase(); } catch { return null; } }
+export function selectProspectLeadPhone(contact: { mobile?: string | null; phone?: string | null }) { return contact.mobile?.trim() || contact.phone?.trim() || null; }
 export function formatProspectCode(sequence: number, now = new Date()) { const year = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "Asia/Bangkok" }).format(now); return `PR-${year}-${String(sequence).padStart(7, "0")}`; }
 
 export const DEFAULT_PROSPECT_WEIGHTS = { estimatedValue: 15, companySize: 8, branches: 7, industryFit: 8, contractTiming: 8, contactFrequency: 8, interest: 10, budget: 8, purchasePeriod: 7, sourceQuality: 6, aiScore: 8, recency: 4, completeness: 3 } as const;

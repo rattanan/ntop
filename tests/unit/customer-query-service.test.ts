@@ -21,8 +21,8 @@ describe("Customer query policy", () => {
   });
 
   it("uses bounded indexed-style filters instead of unbounded contains", () => {
-    expect(buildCustomerFilterWhere({query:"0123456789012"})).toEqual({AND:[{OR:[{taxId:"0123456789012"}]}]});
-    expect(buildCustomerFilterWhere({query:"Acme",segment:"Enterprise"})).toEqual({AND:[{OR:[{name:{startsWith:"Acme"}},{province:"Acme"},{externalIds:{some:{externalId:"Acme"}}}]},{segment:"Enterprise"}]});
+    expect(buildCustomerFilterWhere({query:"REG-7"})).toEqual({AND:[{OR:[{taxId:"REG-7"},{name:{startsWith:"REG-7"}},{province:"REG-7"},{externalIds:{some:{externalId:"REG-7"}}}]}]});
+    expect(buildCustomerFilterWhere({query:"Acme",segment:"Enterprise"})).toEqual({AND:[{OR:[{taxId:"Acme"},{name:{startsWith:"Acme"}},{province:"Acme"},{externalIds:{some:{externalId:"Acme"}}}]},{segment:"Enterprise"}]});
   });
 
   it("rejects oversized query and produces opaque cursor text", () => {

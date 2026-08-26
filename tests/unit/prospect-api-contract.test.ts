@@ -19,6 +19,7 @@ const prospectList = readFileSync("app/(portal)/prospects/page.tsx", "utf8");
 const prospectActions = readFileSync("components/prospect-action-forms.tsx", "utf8");
 const prospectRepository = readFileSync("lib/prospect/prospect-repository.ts", "utf8");
 const enrichmentContext = readFileSync("lib/prospect/prospect-enrichment-context.ts", "utf8");
+const prospectService = readFileSync("lib/prospect/prospect-service.ts", "utf8");
 
 describe("Prospect API contract", () => {
   it("uses session, permission codes, scoped queries and idempotency", () => {
@@ -97,6 +98,14 @@ describe("Prospect API contract", () => {
     expect(prospectActions).toContain("เพิ่ม Contact");
     expect(prospectActions).toContain('"PATCH"');
     expect(prospectActions).toContain('"DELETE"');
+  });
+
+  it("shows and executes Convert without requiring QUALIFIED status", () => {
+    expect(prospectDetail).toContain("canConvert && !prospect.convertedLead");
+    expect(prospectDetail).not.toContain('prospect.status === "QUALIFIED"');
+    expect(prospectService).not.toContain('prospect.status !== "QUALIFIED"');
+    expect(prospectService).toContain("fromStatus: prospect.status");
+    expect(prospectService).toContain("convertedLeadId: null, deletedAt: null");
   });
 
   it("keeps Activity creation inside the timeline panel behind an accessible toggle", () => {

@@ -8,6 +8,7 @@
 
 ## Acceptance criteria
 
+- เลขนิติบุคคลยังเป็นข้อมูลบังคับและ unique สำหรับ Customer แต่ไม่บังคับรูปแบบหรือความยาว 13 หลัก; server trim และจำกัดความยาวตามคอลัมน์เท่านั้น
 - Customer 360 แบ่งเป็นแท็บ Overview, Contacts, Hierarchy & Duplicate และ Sales & Activity แบบ server-rendered; Hierarchy, unresolved duplicate candidates และ authorized merge workflow อยู่ใน governance tab เดียวกันโดยไม่ลด server authorization
 - Customer 360 สร้างและแก้ไข Contact ได้หลายรายการ พร้อมชื่อ ตำแหน่ง โทรศัพท์ อีเมล ความสัมพันธ์ วัตถุประสงค์ และ Primary flag
 - Contact mutation ตรวจ Customer authorization scope ฝั่ง server, ใช้ optimistic Customer version, idempotency receipt และเขียน hash-chained audit ใน transaction เดียวกัน

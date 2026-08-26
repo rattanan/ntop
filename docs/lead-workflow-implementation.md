@@ -2,6 +2,7 @@
 
 ## Acceptance criteria
 
+- เลขนิติบุคคลไม่บังคับรูปแบบหรือความยาว 13 หลักในหน้า Create/Edit/Convert; server trim และจำกัดความยาวตามคอลัมน์เท่านั้น
 - Lead list แสดงข้อมูลตาม authorization scope แบบ bounded ไม่เกิน 200 รายการ และทุกแถวเปิดหน้า detail ได้
 - ผู้มี `record.update` แก้ไข Lead ที่อยู่ใน scope ได้ โดยใช้ optimistic version; stale update ต้องไม่ overwrite
 - สถานะ `CONVERTED` เปลี่ยนผ่าน Convert command เท่านั้น และ Lead ที่ Convert แล้วแก้ไขซ้ำไม่ได้
@@ -10,6 +11,7 @@
 - หากสร้าง Customer ใหม่แล้วพบ deterministic duplicate ต้องระบุเหตุผล override หรือเลือก Customer เดิม
 - Customer, ownership/contact, Lead conversion, receipt และ hash-chained audit ต้องอยู่ transaction เดียวกัน
 - Convert ซ้ำด้วย idempotency key เดิมไม่สร้าง Customer หรือ audit ซ้ำ
+- เมื่อ Convert validation ไม่ผ่าน dialog ต้องคงค่าที่ผู้ใช้กรอกไว้ และแสดง error เฉพาะชื่อหรือช่องทาง Contact ที่ขาดจริง
 - API/UI เดิมสำหรับสร้างและอ่าน Lead ยังใช้งานต่อได้ และ schema expansion ไม่มี destructive migration
 
 ## Migration policy

@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { Notice } from "@/components/notice";
 import { FormField, Input, Textarea } from "@/components/form-field";
 import { COMPANY_SIZE_OPTIONS, omitBlankLegacySubIndustry, type CustomerClassificationOption } from "@/lib/customer/customer-classification-options";
-import { PROSPECT_TRANSITIONS } from "@/lib/prospect/prospect-rules";
 import { prospectCommandSchema, type ProspectCommand } from "@/lib/prospect/prospect-validation";
 
 const sources = Object.values(ProspectSource);
@@ -125,11 +124,6 @@ export function ProspectForm({
 
   const selectedSegment = watch("organizationType") ?? "";
   const subIndustries = classifications.find((item) => item.code === selectedSegment)?.subIndustries ?? [];
-  const statuses = prospect?.status
-    ? [prospect.status, ...PROSPECT_TRANSITIONS[prospect.status]].filter(
-        (value) => value !== "CONVERTED" && value !== "ARCHIVED",
-      )
-    : mutableStatuses;
 
   const field = (
     name: keyof ProspectCommand,
@@ -150,7 +144,7 @@ export function ProspectForm({
           <div className="form-grid">
             {field("companyName", "ชื่อบริษัท/หน่วยงาน", "text", true)}
             {field("companyNameEnglish", "ชื่อภาษาอังกฤษ")}
-            {field("taxId", "เลขผู้เสียภาษี 13 หลัก")}
+            {field("taxId", "เลขนิติบุคคล")}
             {field("branchNumber", "เลขสาขา")}
             <FormField label="ประเภท Customer" name="customerType"><select className="control" {...register("customerType")}><option value="">ไม่ระบุ</option><option value="B2G">B2G — ภาครัฐ</option><option value="B2B">B2B — ภาคเอกชน</option></select></FormField>
             <FormField label="Segment" name="organizationType"><select className="control" {...register("organizationType", { onChange: () => setValue("subIndustry", "", { shouldDirty: true }) })}><option value="">เลือก Segment</option>{classifications.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
@@ -209,7 +203,7 @@ export function ProspectForm({
           <h2>7–9. Source, Ownership and Notes</h2>
           <div className="form-grid">
             <label className="field"><span>Source</span><select className="control" required {...register("source")}>{sources.map((value) => <option key={value}>{value}</option>)}</select></label>
-            <label className="field"><span>Status</span><select className="control" required {...register("status")}>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
+            <label className="field"><span>Status</span><select className="control" required {...register("status")}>{mutableStatuses.map((value) => <option key={value}>{value}</option>)}</select></label>
             {field("sourceName", "ชื่อแหล่งที่มา")}
             {field("referralName", "ผู้แนะนำ")}
             <label className="field full"><span>Notes</span><textarea className="control" {...register("notes")} /></label>

@@ -38,6 +38,14 @@ describe("required field labels", () => {
     expect(styles).toContain("color:var(--destructive)");
   });
 
+  it("keeps shared required markers red after the later field-label color rule", () => {
+    const fieldLabelRule = styles.indexOf(".field label,.field>span:first-child,.field>label>span:first-child");
+    const requiredOverride = styles.indexOf(".field .required { color:var(--destructive); }", fieldLabelRule);
+
+    expect(fieldLabelRule).toBeGreaterThan(-1);
+    expect(requiredOverride).toBeGreaterThan(fieldLabelRule);
+  });
+
   it("marks Prospect schema-required fields as required in the rendered form", () => {
     const prospectForm = readFileSync(join(root, "components/prospect-form.tsx"), "utf8");
     expect(prospectForm).toContain('field("companyName", "ชื่อบริษัท/หน่วยงาน", "text", true)');

@@ -50,17 +50,16 @@ export function buildCustomerFilterWhere(input: {
   const filters: Prisma.CustomerWhereInput[] = [];
   if (query) {
     filters.push({
-      OR: /^\d{13}$/.test(query)
-        ? [{ taxId: query }]
-        : [
-            { name: { startsWith: query } },
-            { province: query },
-            {
-              externalIds: {
-                some: { externalId: query },
-              },
-            },
-          ],
+      OR: [
+        { taxId: query },
+        { name: { startsWith: query } },
+        { province: query },
+        {
+          externalIds: {
+            some: { externalId: query },
+          },
+        },
+      ],
     });
   }
   if (input.segment?.trim()) filters.push({ segment: input.segment.trim() });

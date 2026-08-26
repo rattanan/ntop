@@ -18,7 +18,7 @@ export function LeadFormFields({ value = {}, classifications, provinces, custome
     <section className="form-section"><h2>1. Company Information</h2><div className="form-grid">
       <FormField label="ชื่อบริษัท/หน่วยงาน" name="company" required error={error("company")}><Input name="company" defaultValue={value.company} required /></FormField>
       <FormField label="ชื่อภาษาอังกฤษ" name="companyNameEnglish"><Input name="companyNameEnglish" defaultValue={value.companyNameEnglish ?? ""} /></FormField>
-      <FormField label="เลขผู้เสียภาษี" name="taxId"><Input name="taxId" defaultValue={value.taxId ?? ""} inputMode="numeric" /></FormField>
+      <FormField label="เลขนิติบุคคล" name="taxId"><Input name="taxId" defaultValue={value.taxId ?? ""} /></FormField>
       <FormField label="เลขสาขา" name="branchNumber"><Input name="branchNumber" defaultValue={value.branchNumber ?? ""} /></FormField>
       <FormField label="ประเภท Customer" name="customerType"><select className="control" name="customerType" defaultValue={value.customerType ?? ""}><option value="">ไม่ระบุ</option><option value="B2G">B2G — ภาครัฐ</option><option value="B2B">B2B — ภาคเอกชน</option></select></FormField>
       <FormField label="Segment" name="segment" error={error("segment")}><select className="control" name="segment" value={segment} onChange={event => setSegment(event.target.value)}><option value="">ไม่ระบุ</option>{classifications.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>

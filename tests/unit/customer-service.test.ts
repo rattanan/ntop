@@ -7,6 +7,7 @@ import {
   CustomerRelationshipError,
   CustomerService,
   CustomerVersionConflictError,
+  customerCommandSchema,
   type CustomerRecord,
   type CustomerRepository,
 } from "../../lib/customer/customer-service";
@@ -89,6 +90,11 @@ function setup() {
 }
 
 describe("CustomerService", () => {
+  it("accepts a non-13-digit juristic identifier and still bounds its length", () => {
+    expect(customerCommandSchema.safeParse({ ...input, taxId: "REG-7" }).success).toBe(true);
+    expect(customerCommandSchema.safeParse({ ...input, taxId: "x".repeat(192) }).success).toBe(false);
+  });
+
   it("creates customer, duplicate evidence, receipt and audit atomically", async () => {
     const { service, repository, auditWriter } = setup();
     vi.mocked(repository.findDeterministicDuplicates).mockResolvedValue([

@@ -575,6 +575,7 @@ kbd { padding:2px 6px;border:1px solid var(--nt-gray-300);border-bottom-width:2p
 .form-section>h2::before { content:"";width:4px;height:18px;border-radius:99px;background:var(--nt-yellow-500); }
 .form-grid { gap:18px 22px; }
 .field label,.field>span:first-child,.field>label>span:first-child { color:var(--nt-ink-800);font-size:13px;font-weight:700; }
+.field .required { color:var(--destructive); }
 .field-help { position:relative;display:inline-flex;vertical-align:middle;margin-left:6px; }
 .field-label-content { width:max-content;max-width:100%;min-width:0;display:inline-flex;align-items:center;line-height:1.35; }
 .field-label-content .field-help { flex:none; }

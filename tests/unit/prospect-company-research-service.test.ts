@@ -8,7 +8,7 @@ import {
 
 const fields = {
   companyNameEnglish: "Example Public Company Limited",
-  taxId: "0105555000001",
+  taxId: "REG-7",
   branchNumber: null,
   customerType: "นิติบุคคล",
   organizationType: "บริษัทมหาชนจำกัด",
@@ -58,7 +58,7 @@ describe("ProspectCompanyResearchService", () => {
     );
 
     expect(dependency.research).toHaveBeenCalledWith("บริษัท ตัวอย่าง");
-    expect(result.fields.taxId).toBe("0105555000001");
+    expect(result.fields.taxId).toBe("REG-7");
     expect(result.sources).toEqual([
       { title: "ทะเบียน", url: "https://registry.example/company" },
     ]);

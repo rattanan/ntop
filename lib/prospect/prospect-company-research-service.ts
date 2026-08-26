@@ -15,7 +15,7 @@ export const prospectCompanyResearchSchema = z.strictObject({
   matchConfidence: z.number().int().min(0).max(100),
   fields: z.strictObject({
     companyNameEnglish: optionalString(255),
-    taxId: z.string().regex(/^\d{13}$/).nullable(),
+    taxId: optionalString(32),
     branchNumber: optionalString(20),
     customerType: optionalString(100),
     organizationType: optionalString(100),
@@ -86,7 +86,7 @@ export const prospectCompanyResearchJsonSchema = {
       ],
       properties: {
         companyNameEnglish: nullableString(255),
-        taxId: { type: ["string", "null"], pattern: "^[0-9]{13}$" },
+        taxId: nullableString(32),
         branchNumber: nullableString(20),
         customerType: nullableString(100),
         organizationType: nullableString(100),

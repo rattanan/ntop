@@ -10,6 +10,12 @@ const classifications: CustomerClassificationOption[] = [{
 }];
 
 describe("prospectCommandSchema", () => {
+  it("accepts a non-13-digit juristic identifier and still bounds its length", () => {
+    const base = { companyName: "Enterprise Test", source: "MANUAL", status: "NEW" } as const;
+    expect(prospectCommandSchema.safeParse({ ...base, taxId: "REG-7" }).success).toBe(true);
+    expect(prospectCommandSchema.safeParse({ ...base, taxId: "x".repeat(33) }).success).toBe(false);
+  });
+
   it("accepts the blank contact object submitted by the new prospect form", () => {
     const result = prospectCommandSchema.safeParse({
       companyName: "Enterprise Test",

@@ -2,7 +2,7 @@ import { LeadSource, LeadStatus } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
 import type { AuditWriter } from "../../lib/audit/audit-writer";
-import { LeadAccessError, LeadService, LeadDuplicateResolutionRequiredError, LeadValidationError, LeadVersionConflictError, type LeadRecord, type LeadRepository } from "../../lib/lead/lead-service";
+import { LeadAccessError, LeadService, LeadDuplicateResolutionRequiredError, LeadValidationError, LeadVersionConflictError, leadCommandSchema, type LeadRecord, type LeadRepository } from "../../lib/lead/lead-service";
 
 type Tx = { id: string };
 const tx: Tx = { id: "tx" };
@@ -14,6 +14,7 @@ const opportunity = { opportunityName: "Acme Network", opportunityFlow: "DIRECT"
 
 class FakeLeadRepository implements LeadRepository<Tx> {
   value: LeadRecord | null = { ...lead };
+  lastConversionLead: LeadRecord | null = null;
   assignable = true;
   transitions: Array<{ fromStatus: LeadStatus; toStatus: LeadStatus }> = [];
   receipts = new Map<string,{leadId:string;customerId:string|null;contactId:string|null;opportunityId:string|null;resultVersion:number}>();
@@ -27,7 +28,7 @@ class FakeLeadRepository implements LeadRepository<Tx> {
   async updateVersioned(id:string,expectedVersion:number,input:Parameters<LeadRepository<Tx>["updateVersioned"]>[2]){if(!this.value||this.value.id!==id||this.value.version!==expectedVersion)return null;this.value={...this.value,...input,customerId:input.customerId??null,version:expectedVersion+1};return this.value;}
   async markConverted(id:string,expectedVersion:number,customerId:string){if(!this.value||this.value.id!==id||this.value.version!==expectedVersion)return null;this.value={...this.value,status:LeadStatus.CONVERTED,customerId,version:expectedVersion+1};return this.value;}
   async recordStatusTransition(input:Parameters<LeadRepository<Tx>["recordStatusTransition"]>[0]){this.transitions.push({fromStatus:input.fromStatus,toStatus:input.toStatus});}
-  async completeConversion(input:Parameters<LeadRepository<Tx>["completeConversion"]>[0]){if(!this.value||this.value.version!==input.expectedVersion)return null;this.value={...this.value,status:LeadStatus.CONVERTED,customerId:input.customerId,contactId:"contact-1",version:this.value.version+1};return{lead:this.value,contactId:"contact-1",opportunityId:"opportunity-1"};}
+  async completeConversion(input:Parameters<LeadRepository<Tx>["completeConversion"]>[0]){if(!this.value||this.value.version!==input.expectedVersion)return null;this.lastConversionLead=input.lead;this.value={...input.lead,status:LeadStatus.CONVERTED,customerId:input.customerId,contactId:"contact-1",version:this.value.version+1};return{lead:this.value,contactId:"contact-1",opportunityId:"opportunity-1"};}
   async resolveAssignableOwner(ownerId:string,organizationUnitId:string|undefined){return this.assignable?{ownerId,organizationUnitId:organizationUnitId??"org-child"}:null;}
   async assignVersioned(input:Parameters<LeadRepository<Tx>["assignVersioned"]>[0]){if(!this.value||this.value.version!==input.expectedVersion)return null;this.value={...this.value,ownerId:input.toOwnerId,organizationUnitId:input.toOrganizationUnitId,status:this.value.status===LeadStatus.NEW?LeadStatus.ASSIGNED:this.value.status,version:this.value.version+1};return this.value;}
 }
@@ -46,6 +47,7 @@ function setup(duplicates:string[]=[]){
 }
 
 describe("LeadService",()=>{
+  it("accepts a non-13-digit juristic identifier and still bounds its length",()=>{expect(leadCommandSchema.safeParse({...leadCommand,taxId:"REG-7"}).success).toBe(true);expect(leadCommandSchema.safeParse({...leadCommand,taxId:"x".repeat(33)}).success).toBe(false);});
   it("enforces minimum create contact and requirement data",async()=>{const {service}=setup();await expect(service.create(actor,{company:"Acme",contactName:"Ada",contactEmail:"",source:LeadSource.WEBSITE,status:LeadStatus.NEW,score:0},"corr","create-1")).rejects.toBeInstanceOf(LeadValidationError);});
   it("updates with optimistic concurrency and audit",async()=>{const {service,leads,events}=setup();const result=await service.update(actor,"lead-1",1,leadCommand,"corr","update-1");expect(result.version).toBe(2);expect(events).toEqual([{action:"lead.update",targetId:"lead-1"}]);await expect(service.update(actor,"lead-1",1,leadCommand,"corr","update-2")).rejects.toBeInstanceOf(LeadVersionConflictError);expect(leads.value?.version).toBe(2);});
 
@@ -58,6 +60,10 @@ describe("LeadService",()=>{
   it("denies direct assignment by a sales representative",async()=>{const {service}=setup();await expect(service.assign(actor,"lead-1",1,"sales-2","ขอเปลี่ยนเจ้าของ","corr","assign-1")).rejects.toBeInstanceOf(LeadAccessError);});
 
   it("converts an ASSIGNED Lead without requiring qualification and replays exactly once",async()=>{const {service,leads,events}=setup();leads.value={...lead,status:LeadStatus.ASSIGNED};const input={expectedVersion:1,conversionMode:"LINK" as const,existingCustomerId:"customer-existing",...opportunity};const first=await service.convert(actor,"lead-1",input,"corr","convert-1");const second=await service.convert(actor,"lead-1",input,"corr","convert-1");expect(second).toEqual(first);expect(first.opportunityId).toBe("opportunity-1");expect(leads.value?.status).toBe(LeadStatus.CONVERTED);expect(leads.transitions).toEqual([{fromStatus:LeadStatus.ASSIGNED,toStatus:LeadStatus.CONVERTED}]);expect(events).toEqual([{action:"lead.convert",targetId:"lead-1"}]);});
+
+  it("does not flag an existing contact name when only the contact channel is missing",async()=>{const {service,leads}=setup();leads.value={...lead,contactName:"คุณนพพล",contactEmail:"",contactPhone:undefined};try{await service.convert(actor,"lead-1",{expectedVersion:1,conversionMode:"LINK",existingCustomerId:"customer-existing",...opportunity},"corr","convert-contact-missing");throw new Error("Expected validation failure");}catch(error){expect(error).toBeInstanceOf(LeadValidationError);expect((error as LeadValidationError).issues).toEqual({contactEmail:["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"],contactPhone:["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"]});}});
+
+  it("uses contact values entered in the conversion dialog for Customer and Opportunity conversion",async()=>{const {service,leads}=setup();leads.value={...lead,contactName:"คุณนพพล",contactEmail:"",contactPhone:undefined};await service.convert(actor,"lead-1",{expectedVersion:1,conversionMode:"LINK",existingCustomerId:"customer-existing",contactName:"คุณนพพล",contactPhone:"081 855 8081",...opportunity},"corr","convert-contact-entered");expect(leads.lastConversionLead).toMatchObject({contactName:"คุณนพพล",contactPhone:"081 855 8081"});});
 
   it("requires an explicit override before creating a duplicate customer",async()=>{const {service,leads}=setup(["duplicate-1"]);await expect(service.convert(actor,"lead-1",{expectedVersion:1,conversionMode:"CREATE",taxId:"1234567890123",type:"B2B",segment:"B1",province:"Bangkok",...opportunity},"corr","convert-1")).rejects.toBeInstanceOf(LeadDuplicateResolutionRequiredError);expect(leads.value?.status).toBe(LeadStatus.QUALIFIED);});
 
