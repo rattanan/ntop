@@ -15,6 +15,7 @@ import { ContractAccessError, ContractConfigurationError, ContractDateRangeError
 import { ContractFinancialError } from "@/lib/contract/contract-financials";
 import { ContractDocumentValidationError } from "@/lib/contract/contract-document-service";
 import { ApprovalWorkflowDisabledError } from "@/lib/approval/approval-control";
+import { DocumentStorageConfigurationError, DocumentStorageOperationError, UnsafeDocumentError } from "@/lib/prospect/prospect-document-storage";
 
 export function workflowCorrelationId(request: Request) {
   const supplied = request.headers.get("x-correlation-id")?.trim();
@@ -34,12 +35,13 @@ export function requireIdempotencyKey(request: Request, correlationId: string) {
 export function workflowApiError(error: unknown, correlationId: string) {
   let status = 500;
   let code = "INTERNAL_ERROR";
-  const message = "ไม่สามารถดำเนินการได้";
+  let message = "ไม่สามารถดำเนินการได้";
   let fieldErrors: Array<{ field: string; code: string }> | undefined;
   if (error instanceof ApprovalWorkflowDisabledError) {
     status = 409; code = "APPROVAL_WORKFLOW_DISABLED";
   } else if (error instanceof SyntaxError || error instanceof ZodError || error instanceof ForecastValidationError || error instanceof OpportunityValidationError || error instanceof LeadValidationError || error instanceof AiInputPolicyError || error instanceof AiOutputValidationError || error instanceof ContractFinancialError || error instanceof ContractDateRangeError || error instanceof ContractDocumentValidationError) {
     status = 400; code = "VALIDATION_FAILED";
+    if (error instanceof ContractDocumentValidationError) message = error.message;
   } else if (error instanceof PermissionDeniedError || error instanceof ApprovalDecisionDeniedError || error instanceof OpportunityProbabilityOverrideDeniedError) {
     status = 403; code = "FORBIDDEN";
   } else if (error instanceof OpportunityAccessError || error instanceof LeadAccessError || error instanceof QuoteAccessError || error instanceof ApprovalAccessError || error instanceof ProposalAccessError || error instanceof ContractAccessError) {
@@ -82,6 +84,10 @@ export function workflowApiError(error: unknown, correlationId: string) {
     status = 409; code = "CONTRACT_TERMINAL";
   } else if (error instanceof ContractConfigurationError) {
     status = 503; code = "CONTRACT_CONFIGURATION_UNAVAILABLE";
+  } else if (error instanceof UnsafeDocumentError) {
+    status = 422; code = "DOCUMENT_UNSAFE"; message = error.message;
+  } else if (error instanceof DocumentStorageConfigurationError || error instanceof DocumentStorageOperationError) {
+    status = 503; code = "DOCUMENT_SERVICE_UNAVAILABLE"; message = error.message;
   } else if (error instanceof AiConfigurationRuntimeError || error instanceof OpenAiCompatibleProviderError) {
     status = 503; code = "AI_PROVIDER_UNAVAILABLE";
   }

@@ -43,7 +43,7 @@ export function AppShell({ children, user, notifications, version }: { children:
         <button type="button" className="sidebar-group-button" onClick={() => setOpenGroups((value) => ({ ...value, [group.label]: !open }))} aria-expanded={open} title={group.label}>
           <GroupIcon className="sidebar-icon"/><span>{group.label}</span><ChevronDown className={`sidebar-chevron ${open ? "open" : ""}`}/>
         </button>
-        <div className={`sidebar-submenu ${open ? "open" : ""}`}>{group.items.map((item) => { const Icon = item.icon; return <Link href={item.href} onClick={() => setMobileOpen(false)} key={item.href} className={`sidebar-link sub ${isActive(pathname, item.href) ? "active" : ""}`} title={item.label}><Icon className="sidebar-icon"/><span>{item.label}</span>{isActive(pathname, item.href) && <ChevronRight className="sidebar-current"/>}</Link>; })}</div>
+        <div className={`sidebar-submenu ${open ? "open" : ""}`}><div className="sidebar-submenu-list">{group.items.map((item) => { const Icon = item.icon; return <Link href={item.href} onClick={() => setMobileOpen(false)} key={item.href} className={`sidebar-link sub ${isActive(pathname, item.href) ? "active" : ""}`} title={item.label}><Icon className="sidebar-icon"/><span>{item.label}</span>{isActive(pathname, item.href) && <ChevronRight className="sidebar-current"/>}</Link>; })}</div></div>
       </div>;
     })}
   </>;

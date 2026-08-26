@@ -417,15 +417,30 @@ model SubIndustryReference {
 }
 
 model ProvinceReference {
-  code         String   @id @db.VarChar(2)
-  name         String   @unique @db.VarChar(100)
-  region       String   @db.VarChar(100)
-  active       Boolean  @default(true)
-  displayOrder Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  code         String              @id @db.VarChar(2)
+  name         String              @unique @db.VarChar(100)
+  region       String              @db.VarChar(100)
+  active       Boolean             @default(true)
+  displayOrder Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  districts    DistrictReference[]
 
   @@index([active, displayOrder])
+}
+
+model DistrictReference {
+  code         String            @id @db.VarChar(4)
+  provinceCode String            @db.VarChar(2)
+  province     ProvinceReference @relation(fields: [provinceCode], references: [code], onDelete: Restrict)
+  name         String            @db.VarChar(191)
+  active       Boolean           @default(true)
+  displayOrder Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([provinceCode, name])
+  @@index([provinceCode, active, displayOrder])
 }
 
 model Customer {

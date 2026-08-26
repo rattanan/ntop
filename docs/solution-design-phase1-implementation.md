@@ -12,6 +12,7 @@ The existing `SalesDocument` service is currently scoped to Prospect/Lead storag
 - Add configured service categories/products and automatically derive survey/BOQ/physical-installation requirements.
 - Override survey requirement only with a reason and audited previous/new values.
 - Add multiple sites with decimal GPS coordinates and server validation for latitude/longitude.
+- Select Installation Site coordinates from an OpenStreetMap dialog by explicit place search, map click, or draggable marker; selected coordinates remain editable before submission.
 - Create manual survey requests with at least one validated contact and a preferred period.
 - Submit an internal normalized `NTSPSiteSurveyRequestV1` snapshot without an external API call.
 - Assign, schedule, start, enter a structured manual result, submit, return/reject/approve with assigned-record checks and maker-checker.
@@ -72,6 +73,8 @@ It adds service/status configuration, versioning, sites, services, components, n
 
 Migration `20260826150000_add_solution_reference_options` adds the grouped `SolutionReferenceOption` table. The normal seed path populates Solution Category, Component Type and risk reference groups before the optional demo-data boundary. Proposal Template category remains a separate document-template concern and is not reused as Solution Category.
 
+Migration `20260826200000_add_district_reference` adds `DistrictReference` under the existing `ProvinceReference` table and seeds 928 active district/เขต records from the Department of Provincial Administration CCAATT workbook (source data dated 1 September 2023). The normal seed path upserts all province and district records before optional demo data. Installation Site presents Province first, retrieves at most 100 active districts for that province through an authenticated reference endpoint, and validates the selected Province/District pair again inside the create-site transaction.
+
 ## Manual role flow
 
 1. KAM or Pre-Sales opens an Opportunity and creates the Solution Design.
@@ -100,8 +103,8 @@ Real-database integration coverage is in `tests/integration/solution-design-real
 
 - Production NTSP submission, polling, webhook, authentication, retries and reconciliation are intentionally not implemented.
 - The shared document store has not yet been generalized beyond its current Prospect/Lead ownership model; Site Survey attachment DTO fields are prepared, but Survey photo/document upload requires that separate Documents-module extension.
-- Map-pin selection is not included because the repository has no existing map component; validated manual GPS entry is supported.
-- Province-dependent District and place-search/map-pin selection remain pending an approved, complete Thai administrative-area dataset and an approved map/geocoding provider. The implementation must not silently introduce a public geocoding dependency into the private-cloud baseline.
+- The interactive map uses configurable OpenStreetMap-compatible tile and Nominatim endpoints. Public OSMF services are best-effort and have no SLA; production may switch endpoints through environment configuration without a software change.
+- Place search is user-triggered only, cached, bounded to five results and rate-limited to at most one upstream request per second. Autocomplete, bulk geocoding and tile prefetch/offline download are not implemented. Users are warned not to submit personal or confidential text to the external geocoder.
 - Full performance/security/DR/UAT evidence and a live MySQL migration rehearsal require the dedicated test environment; the configured database was unreachable during this local run.
 
 ## Integration status

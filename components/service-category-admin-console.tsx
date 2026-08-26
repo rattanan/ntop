@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useActionState, useState } from "react";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 
 import type { FormState } from "@/app/action-types";
@@ -72,7 +73,7 @@ function CategoryRow({ category }: { category: ServiceCategoryView }) {
       <td>{category.productCount.toLocaleString("th-TH")}</td>
       <td><span className={`badge ${category.active && !category.deletedAt ? "success" : "muted"}`}>{category.deletedAt ? "ลบแล้ว" : category.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></td>
       <td>
-        <Link className="secondary" href={`/admin/service-categories/${category.id}`}>ดู</Link>
+        <Link className="row-action" href={`/admin/service-categories/${category.id}`} aria-label={`ดู Service Category ${category.name}`}><Eye aria-hidden="true" />ดู</Link>
         {!category.deletedAt && <div className="service-category-row-actions">
           <button type="button" className="secondary" aria-expanded={editing} aria-controls={editorId} onClick={() => setEditing((value) => !value)}>{editing ? "ปิด" : "แก้ไข"}</button>
           <form action={deleteAction} onSubmit={(event) => { if (!window.confirm(`ยืนยันลบหมวด ${category.name}? ระบบจะลบได้เมื่อไม่มี Product อ้างอิงอยู่เท่านั้น`)) event.preventDefault(); }}>

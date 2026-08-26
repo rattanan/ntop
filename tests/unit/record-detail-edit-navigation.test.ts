@@ -12,7 +12,25 @@ const modules = [
   { name: "proposal", route: "proposals", form: "ProposalEditor", permission: "proposalManage" },
 ] as const;
 
+const detailEditActions = [
+  "activities/[id]",
+  "admin/service-categories/[id]",
+  "customers/[id]",
+  "leads/[id]",
+  "opportunities/[id]",
+  "products/[id]",
+  "proposals/[id]",
+  "prospects/[id]",
+  "quotes/[id]",
+  "solution-designs/[id]",
+] as const;
+
 describe("record detail edit navigation", () => {
+  it.each(detailEditActions)("uses the standard edit action on %s", (route) => {
+    const detail = read(`app/(portal)/${route}/page.tsx`);
+    expect(detail).toMatch(/className="secondary"[^>]*href=\{`[^`]+(?:\/edit|new\?quoteId=)[^`]*`\}[^>]*><Pencil aria-hidden="true"\s*\/>แก้ไข<\/Link>/);
+  });
+
   for (const recordModule of modules) {
     it(`keeps ${recordModule.name} detail free of its core edit form`, () => {
       const detail = read(`app/(portal)/${recordModule.route}/[id]/page.tsx`);

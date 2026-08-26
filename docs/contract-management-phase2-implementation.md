@@ -6,7 +6,10 @@ Contract Management is a module of the existing modular monolith. It consumes an
 accepted, immutable `QuoteVersion`; it does not recalculate or mutate Proposal,
 Quotation, Solution Design, BOQ, Site Survey, Opportunity, or Customer data.
 Contract writes use the application transaction boundary and the shared audit
-writer. Documents use private object storage and fail-closed malware scanning.
+writer. Documents use the configured private-storage adapter. The explicit
+`local` mode matches Prospect document storage, writes outside the public path,
+and intentionally skips malware scanning; the S3-compatible mode retains
+fail-closed malware scanning.
 External e-signature providers and NTSP are represented by ports only in Phase 2;
 the supported production paths are verified manual signed-copy upload and manual
 service-order handover.
@@ -24,7 +27,8 @@ service-order handover.
 4. Important commands write an audit event in the same transaction. Authorization
    is enforced server-side and records remain constrained to the actor's scope.
 5. A contract cannot become effective until current-version customer and NT
-   signatures reference clean, immutable document versions.
+   signatures reference immutable document versions accepted by the configured
+   private-storage adapter.
 6. Only an effective contract version can create a service order. Phase 2 records a
    real manual handover with an immutable prefill snapshot; the future NTSP adapter
    is not called from the production path.
@@ -75,6 +79,9 @@ use the shared API error envelope.
 ## Operational notes
 
 The migration adds composite indexes for the dashboard and reminder worker. Large
-files are streamed to object storage rather than buffered after Phase 2's configured
-upload limit. Retention, legal hold, encryption keys and malware-signature updates
-remain deployment controls. The module exposes no hard-delete command.
+files are streamed to private storage rather than buffered after Phase 2's
+configured upload limit. Local mode requires `DOCUMENT_STORAGE_DRIVER=local` and
+an absolute `DOCUMENT_LOCAL_STORAGE_PATH`; it creates private directories/files
+with restrictive permissions and does not call a malware scanner. Retention,
+legal hold and encryption remain deployment controls. The module exposes no
+hard-delete command.

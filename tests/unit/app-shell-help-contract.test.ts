@@ -8,8 +8,12 @@ const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 describe("App shell and Help Center", () => {
   it("provides collapsible grouped navigation and a notification dropdown", () => {
     const shell = read("components/app-shell.tsx");
+    const css = read("app/globals.css");
     expect(shell).toContain("ntop-sidebar-collapsed");
     expect(shell).toContain("sidebar-submenu");
+    expect(shell).toContain("sidebar-submenu-list");
+    expect(css).toContain(".sidebar-submenu-list { min-height:0;overflow:hidden; }");
+    expect(css).not.toContain("max-height:320px");
     expect(shell).toContain("notification-panel");
     expect(shell).toContain("Orchestration Platform");
     expect(shell).not.toContain("Sales Platform");

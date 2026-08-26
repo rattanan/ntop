@@ -33,13 +33,17 @@ export function PageNumberNavigation({ ariaLabel, basePath, itemCount, page, par
   return <nav className="card-body table-pagination" aria-label={ariaLabel}>
     <span>หน้า {page} / {totalPages} · แสดง {itemCount.toLocaleString("th-TH")} จาก {total.toLocaleString("th-TH")} {unit}</span>
     <div className="page-number-list">
-      {page > 1 && <Link className="page-number page-direction" href={href(page - 1)} rel="prev" aria-label="หน้าก่อนหน้า">‹</Link>}
+      {page > 1
+        ? <Link className="page-number page-direction" href={href(page - 1)} rel="prev" aria-label="หน้าก่อนหน้า">Prev</Link>
+        : <span className="page-number page-direction is-disabled" aria-disabled="true">Prev</span>}
       {pageNumberItems(page, totalPages).map((item, index) => item === "ellipsis"
         ? <span className="page-ellipsis" aria-hidden="true" key={`ellipsis-${index}`}>…</span>
         : item === page
           ? <span className="page-number is-current" aria-current="page" key={item}>{item}</span>
           : <Link className="page-number" href={href(item)} aria-label={`หน้า ${item}`} key={item}>{item}</Link>)}
-      {page < totalPages && <Link className="page-number page-direction" href={href(page + 1)} rel="next" aria-label="หน้าถัดไป">›</Link>}
+      {page < totalPages
+        ? <Link className="page-number page-direction" href={href(page + 1)} rel="next" aria-label="หน้าถัดไป">Next</Link>
+        : <span className="page-number page-direction is-disabled" aria-disabled="true">Next</span>}
     </div>
   </nav>;
 }

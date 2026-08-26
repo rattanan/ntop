@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -25,7 +26,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const category = product.serviceCategoryCode ? await prisma.serviceCategoryConfig.findUnique({ where: { code: product.serviceCategoryCode }, select: { name: true, deletedAt: true } }) : null;
 
   return <>
-    <div className="page-head"><div><p className="eyebrow">Product · v{product.version}</p><h1>{product.name}</h1><p>{product.code} · <span className={`badge ${product.active ? "success" : "muted"}`}>{product.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></p></div><div className="actions">{canManage && <Link className="primary" href={`/products/${id}/edit`}>แก้ไข</Link>}<Link className="secondary" href="/products">กลับรายการ Product</Link></div></div>
+    <div className="page-head"><div><p className="eyebrow">Product · v{product.version}</p><h1>{product.name}</h1><p>{product.code} · <span className={`badge ${product.active ? "success" : "muted"}`}>{product.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></p></div><div className="actions">{canManage && <Link className="secondary" href={`/products/${id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}<Link className="secondary" href="/products">กลับรายการ Product</Link></div></div>
     <section className="card"><div className="card-header"><div><strong>รายละเอียด Product</strong><small>อัปเดตล่าสุด {product.updatedAt.toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</small></div></div><div className="card-body detail-grid">
       <div><p className="detail-label">Service Category</p><p className="detail-value">{category?.name ?? product.category}{category?.deletedAt ? " (ลบแล้ว)" : ""}</p></div>
       <div><p className="detail-label">Category Code</p><p className="detail-value">{product.serviceCategoryCode ?? "—"}</p></div>

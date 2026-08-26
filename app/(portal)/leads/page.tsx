@@ -1,8 +1,10 @@
 import type { LeadStatus, LeadTemperature, Prisma } from "@prisma/client";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 
 import { LeadColumnVisibilityControls } from "@/components/lead-column-visibility-controls";
 import { ModuleTabs } from "@/components/module-tabs";
+import { PageNumberNavigation } from "@/components/page-number-navigation";
 import { requireSession } from "@/lib/auth";
 import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
@@ -40,8 +42,9 @@ export default async function LeadsPage({searchParams}:{searchParams:Promise<Sea
   const canImport=context.assignments.some(item=>(LEAD_IMPORT_ROLES as readonly string[]).includes(item.role));
   const canExport=context.assignments.some(item=>(LEAD_EXPORT_ROLES as readonly string[]).includes(item.role));
   const activeTab=query.tab==="import"&&canImport?"import":"list";
-  const href=(next:number)=>`/leads?${new URLSearchParams({...Object.fromEntries(Object.entries(query).filter(([,v])=>v)),page:String(next)} as Record<string,string>)}`;
   const currentQuery=Object.fromEntries(Object.entries(query).filter(([,value])=>typeof value==="string"&&value.length>0)) as Record<string,string>;
+  const paginationQuery=Object.fromEntries(Object.entries(currentQuery).filter(([key])=>key!=="page"));
+  const totalPages=Math.max(1,Math.ceil(total/50));
   return <><div className="page-head"><div><p className="eyebrow">Lead Management</p><h1>รายชื่อผู้มุ่งหวัง</h1><p>{total.toLocaleString("th-TH")} รายการตามขอบเขตสิทธิ์</p></div><div className="actions">{canExport&&<Link href={`/api/v1/leads/export${status?`?status=${status}`:""}`} className="secondary">Export CSV</Link>}{canCreate&&<Link href="/leads/new" className="primary">สร้าง Lead</Link>}</div></div>
     <ModuleTabs label="เมนู Lead" items={[{label:"รายการ Lead",href:"/leads",active:activeTab==="list"},...(canImport?[{label:"Import Lead",href:"/leads?tab=import",active:activeTab==="import"}]:[])]}/>
     {activeTab==="import"?<LeadImportForm/>:<>
@@ -56,8 +59,8 @@ export default async function LeadsPage({searchParams}:{searchParams:Promise<Sea
       <label><input type="checkbox" name="archived" value="1" defaultChecked={query.archived==="1"}/> รวมรายการเก็บถาวร</label>
       <div className="actions"><LeadColumnVisibilityControls query={currentQuery} columns={columns}/><button className="primary">ค้นหา</button><Link className="secondary" href="/leads">ล้างตัวกรอง</Link></div>
     </form></section>
-    <section className="card"><div className="table-wrap"><table className="table"><thead><tr>{columns.includes("lead")&&<th>Lead / บริษัท</th>}{columns.includes("source")&&<th>แหล่งที่มา</th>}{columns.includes("status")&&<th>สถานะ</th>}{columns.includes("score")&&<th>Score</th>}{columns.includes("followUp")&&<th>ติดตามครั้งถัดไป</th>}{columns.includes("owner")&&<th>ผู้รับผิดชอบ</th>}{columns.includes("actions")&&<th>การทำงาน</th>}</tr></thead><tbody>{leads.map(lead=><tr key={lead.id}>{columns.includes("lead")&&<td><Link className="link" href={`/leads/${lead.id}`}><strong>{lead.leadNumber??lead.company}</strong></Link><br/><small>{lead.company} · {lead.contactName}</small></td>}{columns.includes("source")&&<td>{source[lead.source]}</td>}{columns.includes("status")&&<td><span className="badge">{statusLabel[lead.status]}</span></td>}{columns.includes("score")&&<td>{lead.score} · {lead.temperature}</td>}{columns.includes("followUp")&&<td>{lead.nextFollowUpAt?.toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})??"—"}</td>}{columns.includes("owner")&&<td>{lead.owner.name}</td>}{columns.includes("actions")&&<td><Link className="secondary" href={`/leads/${lead.id}`}>{lead.status==="CONVERTED"?"ดูข้อมูล":"เปิด / แก้ไข"}</Link></td>}</tr>)}</tbody></table>{!leads.length&&<div className="empty">ไม่พบ Lead ตามตัวกรองและสิทธิ์ปัจจุบัน</div>}</div>
-      <div className="card-body actions"><span>หน้า {page} / {Math.max(1,Math.ceil(total/50))}</span>{page>1&&<Link className="secondary" href={href(page-1)}>ก่อนหน้า</Link>}{page*50<total&&<Link className="secondary" href={href(page+1)}>ถัดไป</Link>}</div>
+    <section className="card"><div className="table-wrap"><table className="table"><thead><tr>{columns.includes("lead")&&<th>Lead / บริษัท</th>}{columns.includes("source")&&<th>แหล่งที่มา</th>}{columns.includes("status")&&<th>สถานะ</th>}{columns.includes("score")&&<th>Score</th>}{columns.includes("followUp")&&<th>ติดตามครั้งถัดไป</th>}{columns.includes("owner")&&<th>ผู้รับผิดชอบ</th>}{columns.includes("actions")&&<th>การทำงาน</th>}</tr></thead><tbody>{leads.map(lead=><tr key={lead.id}>{columns.includes("lead")&&<td><Link className="link" href={`/leads/${lead.id}`}><strong>{lead.leadNumber??lead.company}</strong></Link><br/><small>{lead.company} · {lead.contactName}</small></td>}{columns.includes("source")&&<td>{source[lead.source]}</td>}{columns.includes("status")&&<td><span className="badge">{statusLabel[lead.status]}</span></td>}{columns.includes("score")&&<td>{lead.score} · {lead.temperature}</td>}{columns.includes("followUp")&&<td>{lead.nextFollowUpAt?.toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})??"—"}</td>}{columns.includes("owner")&&<td>{lead.owner.name}</td>}{columns.includes("actions")&&<td><Link className="row-action" href={`/leads/${lead.id}`} aria-label={`ดู Lead ${lead.leadNumber??lead.company}`}><Eye aria-hidden="true" />ดู</Link></td>}</tr>)}</tbody></table>{!leads.length&&<div className="empty">ไม่พบ Lead ตามตัวกรองและสิทธิ์ปัจจุบัน</div>}</div>
+      <PageNumberNavigation ariaLabel="แบ่งหน้า Lead" basePath="/leads" itemCount={leads.length} page={page} params={paginationQuery} total={total} totalPages={totalPages} unit="รายการ"/>
     </section></>}
   </>;
 }

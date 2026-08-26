@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 
 import { NAVIGATION_PERMISSIONS, QUICK_CREATE_PERMISSIONS } from "../lib/authorization/navigation-permissions";
 import { DASHBOARD_PERMISSIONS } from "../lib/dashboard/dashboard-permissions";
+import { THAI_DISTRICTS } from "../lib/customer/district-reference-data";
 import { THAI_PROVINCES } from "../lib/customer/province-reference";
 
 const prisma = new PrismaClient();
@@ -216,6 +217,7 @@ async function main() {
   const subIndustryOrder = new Map<string,number>();
   for (const [code,name,segmentCode] of subIndustries) { const displayOrder=(subIndustryOrder.get(segmentCode)??0)+10; subIndustryOrder.set(segmentCode,displayOrder); await prisma.subIndustryReference.upsert({where:{code},update:{name,segmentCode,active:true,displayOrder},create:{code,name,segmentCode,displayOrder}}); }
   for (const [index,province] of THAI_PROVINCES.entries()) await prisma.provinceReference.upsert({where:{code:province.code},update:{name:province.name,region:province.region,active:true,displayOrder:(index+1)*10},create:{...province,displayOrder:(index+1)*10}});
+  for (const [index,district] of THAI_DISTRICTS.entries()) await prisma.districtReference.upsert({where:{code:district.code},update:{provinceCode:district.provinceCode,name:district.name,active:true,displayOrder:(index+1)*10},create:{...district,displayOrder:(index+1)*10}});
   const industries=await Promise.all([["GOV","ภาครัฐ"],["FIN","การเงินและธนาคาร"],["MFG","การผลิต"],["RET","ค้าปลีก"],["HEALTH","สาธารณสุข"]].map(([code,name])=>prisma.industry.upsert({where:{code},update:{active:true},create:{code,name}})));
   const territories=await Promise.all([["BKK","กรุงเทพมหานคร","CENTRAL"],["NORTH","ภาคเหนือ","NORTH"],["NE","ภาคตะวันออกเฉียงเหนือ","NORTHEAST"],["SOUTH","ภาคใต้","SOUTH"]].map(([code,name,region])=>prisma.salesTerritory.upsert({where:{code},update:{active:true},create:{code,name,region}})));
   await prisma.prospectScoringRuleVersion.upsert({where:{version:1},update:{active:true},create:{version:1,active:true,createdById:admin.id,hotThreshold:75,warmThreshold:40,weights:{estimatedValue:15,companySize:8,branches:7,industryFit:8,contractTiming:8,contactFrequency:8,interest:10,budget:8,purchasePeriod:7,sourceQuality:6,aiScore:8,recency:4,completeness:3}}});

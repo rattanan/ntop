@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -14,7 +15,7 @@ export default async function ServiceCategoryDetailPage({ params }: { params: Pr
   try { category = await getServiceCategory({ ...session, authorization }, id); }
   catch (error) { if (error instanceof ServiceCategoryAccessError) notFound(); throw error; }
   const deleted = Boolean(category.deletedAt);
-  return <><div className="page-head"><div><p className="eyebrow">Service Category · v{category.version}</p><h1>{category.name}</h1><p>{category.code} · <span className={`badge ${category.active && !deleted ? "success" : "muted"}`}>{deleted ? "ลบแล้ว" : category.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></p></div><div className="actions">{!deleted && <Link className="primary" href={`/admin/service-categories/${id}/edit`}>แก้ไข</Link>}<Link className="secondary" href="/admin/service-categories">กลับรายการ Service Category</Link></div></div>
+  return <><div className="page-head"><div><p className="eyebrow">Service Category · v{category.version}</p><h1>{category.name}</h1><p>{category.code} · <span className={`badge ${category.active && !deleted ? "success" : "muted"}`}>{deleted ? "ลบแล้ว" : category.active ? "ใช้งาน" : "ปิดใช้งาน"}</span></p></div><div className="actions">{!deleted && <Link className="secondary" href={`/admin/service-categories/${id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}<Link className="secondary" href="/admin/service-categories">กลับรายการ Service Category</Link></div></div>
     <section className="card"><div className="card-header"><div><strong>รายละเอียด Service Category</strong><small>อัปเดตล่าสุด {category.updatedAt.toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}</small></div></div><div className="card-body detail-grid">
       <div><p className="detail-label">ลำดับแสดงผล</p><p className="detail-value">{category.displayOrder.toLocaleString("th-TH")}</p></div>
       <div><p className="detail-label">Products</p><p className="detail-value">{category.productCount.toLocaleString("th-TH")} รายการ</p></div>

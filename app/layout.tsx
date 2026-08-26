@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 export const metadata: Metadata = { title: "NTOP | NT Orchestration Platform", description: "ระบบบริหารลูกค้าองค์กร NT" };

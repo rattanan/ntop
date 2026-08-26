@@ -8,6 +8,7 @@ import Link from "next/link";
 
 import { ModuleTabs } from "@/components/module-tabs";
 import { Notice } from "@/components/notice";
+import { PageNumberNavigation } from "@/components/page-number-navigation";
 import { ProspectImportForm } from "@/components/prospect-import-form";
 import { requireSession } from "@/lib/auth";
 import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
@@ -137,11 +138,10 @@ export default async function ProspectsPage({
       take: 500,
     }),
   ]);
-  const params = (next: number) =>
-    `/prospects?${new URLSearchParams({
-      ...Object.fromEntries(Object.entries(query).filter(([, value]) => value)),
-      page: String(next),
-    } as Record<string, string>)}`;
+  const paginationParams = Object.fromEntries(
+    Object.entries(query).filter(([key, value]) => key !== "page" && typeof value === "string" && value.length > 0),
+  ) as Record<string, string>;
+  const totalPages = Math.max(1, Math.ceil(total / 50));
 
   return (
     <>
@@ -201,11 +201,7 @@ export default async function ProspectsPage({
           </table>
           {!rows.length && <div className="empty">ไม่พบ Prospect</div>}
         </div>
-        <div className="card-body actions">
-          <span>หน้า {page}</span>
-          {page > 1 && <Link className="secondary" href={params(page - 1)}>ก่อนหน้า</Link>}
-          {page * 50 < total && <Link className="secondary" href={params(page + 1)}>ถัดไป</Link>}
-        </div>
+        <PageNumberNavigation ariaLabel="แบ่งหน้า Prospect" basePath="/prospects" itemCount={rows.length} page={page} params={paginationParams} total={total} totalPages={totalPages} unit="รายการ" />
       </section>
     </>
   );

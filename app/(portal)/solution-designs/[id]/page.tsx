@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -15,10 +16,11 @@ import { SolutionDesignTabs } from "@/components/solution-design-tabs";
 import { requireSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
+import { loadProvinceOptions } from "@/lib/customer/province-reference";
+import { formatMoney } from "@/lib/number-format";
 import { prisma } from "@/lib/prisma";
 import { getSolutionDesign, PresalesAccessError } from "@/lib/solution-design/solution-design-service";
 import { isApprovalWorkflowEnforced } from "@/lib/approval/approval-control";
-import { formatMoney } from "@/lib/number-format";
 
 export default async function SolutionDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,7 +35,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
   }
 
   const roleCodes = [...new Set(authorization.assignments.map((assignment) => assignment.role))];
-  const [categories, products, requirements, referenceOptions, configuredBoqManage, configuredSolutionManage, technicalApprovalEnabled, commercialApprovalEnabled] = await Promise.all([
+  const [categories, products, requirements, referenceOptions, provinces, configuredBoqManage, configuredSolutionManage, technicalApprovalEnabled, commercialApprovalEnabled] = await Promise.all([
     prisma.serviceCategoryConfig.findMany({
       where: { active: true },
       select: { id: true, code: true, name: true, requiresSiteSurvey: true },
@@ -50,6 +52,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
       orderBy: { requirementNumber: "asc" },
     }),
     prisma.solutionReferenceOption.findMany({where:{active:true,groupCode:{in:["COMPONENT_TYPE","RISK_CATEGORY","RISK_PROBABILITY","RISK_IMPACT","RISK_SEVERITY"]}},select:{groupCode:true,code:true,name:true},orderBy:[{groupCode:"asc"},{displayOrder:"asc"},{name:"asc"}],take:500}),
+    loadProvinceOptions(),
     roleCodes.length ? prisma.rolePermissionGrant.count({ where: { roleCode: { in: roleCodes }, permissionCode: PERMISSIONS.boqManage } }) : Promise.resolve(0),
     roleCodes.length ? prisma.rolePermissionGrant.count({ where: { roleCode: { in: roleCodes }, permissionCode: PERMISSIONS.solutionDesignManage } }) : Promise.resolve(0),
     isApprovalWorkflowEnforced("SOLUTION_TECHNICAL_REVIEW"),
@@ -81,7 +84,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
             {design.version}.{design.revisionNumber}
           </p>
         </div>
-        <div className="actions">{canManageSolution&&<Link className="secondary" href={`/solution-designs/${id}/edit`}>แก้ไข</Link>}<span className="badge">{design.statusCode}</span></div>
+        <div className="actions">{canManageSolution&&<Link className="secondary" href={`/solution-designs/${id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}<span className="badge">{design.statusCode}</span></div>
       </div>
       <section className="presales-kpis">
         <article className="card"><span>Overall readiness</span><strong>{design.overallReadiness}%</strong></article>
@@ -92,7 +95,7 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
       <SolutionReviewForm designId={id} status={design.statusCode} technicalApprovalEnabled={technicalApprovalEnabled} commercialApprovalEnabled={commercialApprovalEnabled} />
       <SolutionDesignTabs panels={{
         services: <><section className="card"><div className="card-header"><div><strong>Products &amp; Services</strong><small>บริการที่เลือกจะกำหนดกฎ Survey และ BOQ จาก Service Category</small></div><span>{design.services.length}</span></div><div className="card-body related-list">{design.services.map((service, index) => <article key={service.id}><strong>Service {index + 1} · {service.requestedBandwidth ?? "ไม่ระบุ bandwidth"}</strong><p>{service.accessTechnology ?? "Any access technology"}</p><small>{service.surveyRequired ? "Survey required" : "No survey"} · {service.boqRequired ? "BOQ required" : "No BOQ"}</small></article>)}{!design.services.length&&<div className="compact-empty">ยังไม่มี Product หรือ Service ใน Solution นี้</div>}</div></section><AddServiceForm designId={id} categories={categories} products={products}/></>,
-        sites: <><section className="card"><div className="card-header"><div><strong>Installation Sites</strong><small>สถานที่ติดตั้งและพิกัดสำหรับ Coverage / Site Survey</small></div><span>{design.sites.length}</span></div><div className="card-body related-list">{design.sites.map(site=><article key={site.id}><strong>{site.siteCode?`${site.siteCode} · `:""}{site.siteName}</strong><p>{site.addressLine1}, {site.district}, {site.province}</p><small>{site.latitude.toString()}, {site.longitude.toString()}</small></article>)}{!design.sites.length&&<div className="compact-empty">ยังไม่มี Installation Site</div>}</div></section><AddSiteForm designId={id}/></>,
+        sites: <><section className="card"><div className="card-header"><div><strong>Installation Sites</strong><small>สถานที่ติดตั้งและพิกัดสำหรับ Coverage / Site Survey</small></div><span>{design.sites.length}</span></div><div className="card-body related-list">{design.sites.map(site=><article key={site.id}><strong>{site.siteCode?`${site.siteCode} · `:""}{site.siteName}</strong><p>{site.addressLine1}, {site.district}, {site.province}</p><small>{site.latitude.toString()}, {site.longitude.toString()}</small></article>)}{!design.sites.length&&<div className="compact-empty">ยังไม่มี Installation Site</div>}</div></section><AddSiteForm designId={id} provinces={provinces}/></>,
         components: <><section className="card"><div className="card-header"><div><strong>Solution Components &amp; Network</strong><small>อุปกรณ์ ลิงก์ และส่วนประกอบของแบบทางเทคนิค</small></div><span>{design.components.length} components · {design.networkConnections.length} links</span></div><div className="card-body related-list">{design.components.map(component=><article key={component.id}><strong>{component.componentNumber} · {component.componentName}</strong><p>{component.componentType} · {component.bandwidth??"—"}</p></article>)}{!design.components.length&&<div className="compact-empty">ยังไม่มี Solution Component</div>}</div></section><AddComponentForm designId={id} sites={siteOptions} componentTypes={referenceGroup("COMPONENT_TYPE")}/></>,
         surveys: <>{serviceOptions.length>0&&siteOptions.length>0?<CreateSurveyForm designId={id} sites={siteOptions} services={serviceOptions}/>:<section className="card"><div className="card-body compact-empty">เพิ่ม Service และ Site ก่อนสร้าง Site Survey Request</div></section>}<section className="card"><div className="card-header"><div><strong>Site Surveys</strong><small>ติดตามคำขอสำรวจและผลยืนยันความเป็นไปได้หน้างาน</small></div><span>{design.surveys.length}</span></div><div className="card-body related-list">{design.surveys.map(survey=><article key={survey.id}><Link className="link" href={`/site-surveys/${survey.id}`}>{survey.surveyRequestNumber}</Link><p>{survey.statusCode} · Integration Mode: {survey.integrationMode}</p></article>)}{!design.surveys.length&&<div className="compact-empty">ยังไม่มี Site Survey</div>}</div></section></>,
         boqs: <>{canManageBoq&&!design.boqs.some(boq=>["DRAFT","IN_PREPARATION","REVISION_REQUIRED"].includes(boq.statusCode))&&<CreateBoqDraftForm designId={id}/>}<section className="card"><div className="card-header"><div><strong>BOQ</strong><small>รายการต้นทุน ราคาขาย และประวัติการอนุมัติ</small></div><span>{design.boqs.length}</span></div><div className="card-body related-list">{design.boqs.map(boq=><article key={boq.id}><Link className="link" href={`/boqs/${boq.id}`}>{boq.boqNumber}</Link><p>{boq.statusCode} · {formatMoney(boq.totalContractValue,boq.currency)}</p></article>)}{!design.boqs.length&&<div className="compact-empty">ยังไม่มี BOQ — ผู้มีสิทธิ์สามารถสร้าง Draft ได้จากปุ่มด้านบน</div>}</div></section></>,

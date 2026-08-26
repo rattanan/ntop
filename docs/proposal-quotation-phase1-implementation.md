@@ -54,6 +54,13 @@ new editable draft version is persisted.
   AI outage returns a sanitized availability error and leaves manual workflows
   operational.
 - Proposal list/detail/dashboard queries are scoped and bounded to 200 records.
+- Proposal section panels render stored rich-text HTML after a server-side
+  allowlist sanitizer. Formatting tags such as paragraphs, headings, lists,
+  emphasis, links, quotes, code, and tables are preserved; scripts, event
+  handlers, unsafe URL schemes, embeds, and styling attributes are discarded.
+- Proposal detail opens on the primary Proposal content tab. Version comparison
+  and the version/audit timeline are separate URL-addressable tabs, and audit
+  events are queried only when the timeline tab is requested.
 - REST `/api/v1/proposals` create/read/update/restore/status/generate routes keep
   the existing API error envelope, correlation ID, and idempotency conventions.
 - Existing Quote creation remains backward compatible. An optional `proposalId`
