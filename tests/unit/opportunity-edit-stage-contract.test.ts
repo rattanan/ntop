@@ -6,6 +6,7 @@ const detail = readFileSync("app/(portal)/opportunities/[id]/page.tsx", "utf8");
 const edit = readFileSync("app/(portal)/opportunities/[id]/edit/page.tsx", "utf8");
 const action = readFileSync("app/actions/opportunity.ts", "utf8");
 const workflowForms = readFileSync("components/workflow-forms.tsx", "utf8");
+const relatedRoute = readFileSync("app/api/v1/opportunities/[id]/[collection]/route.ts", "utf8");
 
 describe("Opportunity edit stage contract", () => {
   it("does not present stage as a directly editable profile field", () => {
@@ -36,5 +37,15 @@ describe("Opportunity edit stage contract", () => {
     expect(workflowForms).not.toContain('name="targetStage" required><select');
     expect(action).toContain("error.missingFields.map");
     expect(action).toContain("ยังเปลี่ยนขั้นตอนขายไม่ได้");
+  });
+
+  it("prefers the forward route and shows the structured requirements used by its gate", () => {
+    expect(workflowForms).toContain('transition.command==="FORWARD"');
+    expect(detail).toContain("requirements={opportunity.structuredRequirements.map");
+    expect(workflowForms).toContain('selected.requiredFields.includes("requirements")');
+    expect(workflowForms).toContain("Requirement ที่ใช้เป็นหลักฐาน");
+    expect(workflowForms).toContain("requirement.requirementNumber");
+    expect(workflowForms).toContain("ยังไม่มี structured requirement");
+    expect(relatedRoute).toContain("revalidatePath(`/opportunities/${id}`)");
   });
 });

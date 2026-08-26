@@ -24,7 +24,7 @@
 ### Release 1
 
 1. Admin AI Provider Configuration and Test Connection
-2. Meeting/Visit Draft from typed or pasted text only
+2. Meeting/Visit/Call Draft from typed or pasted text only
 3. Next Action Recommendation converted to Activity/Task after Human Confirmation
 4. Deterministic Deal Risk/Pipeline Health with optional AI explanation
 5. Provenance, feedback, audit, bounded timeout/quota and manual fallback
@@ -64,9 +64,9 @@ Fields: `enabled`, `apiUrl`, `model`, write-only `apiKey`, `requestTimeoutMs`; a
 
 Provider environment/bootstrap names are `OPENAI_API_URL`, `OPENAI_API_KEY` and `OPENAI_MODEL` Existing or chat-provided secret values must never appear in source, docs, UI responses, logs or audit and should be rotated after exposure
 
-### Meeting/Visit Draft
+### Meeting/Visit/Call Draft
 
-Input is typed/pasted text after a meeting Pasted external transcript is treated as user-provided text with user attestation Release 1 has no audio/video/file/transcription path
+Input is typed/pasted text after a customer call, meeting or visit. Pasted external transcript is treated as user-provided text with user attestation. Release 1 has no audio/video/file/transcription path. The Activity detail entry point is available only for configured customer-conversation types (`CALL`, `PHONE_CALL`, `MEETING`, `SITE_VISIT`, `CUSTOMER_VISIT`, `ONLINE_MEETING`, `VIDEO_CONFERENCE`).
 
 Strict output schema:
 
@@ -86,7 +86,7 @@ An AI Suggestion creates no record until confirmation Confirmation creates one A
 
 ### Deal Risk/Pipeline Health
 
-Triggering is deterministic and based on versioned Admin configuration by risk type, stage and segment Examples include no follow-up, overdue close date and missing next action AI explains impact/recommended action only Every signal shows rule/version, threshold and triggering facts Historical snapshots do not change after rule edits
+Triggering is deterministic and based on versioned Admin configuration by risk type, stage and segment Examples include no follow-up, overdue close date and missing next action AI explains impact/recommended action only Every signal shows rule/version, threshold and triggering facts Historical snapshots do not change after rule edits The Opportunity UI must distinguish no active rule, a successful evaluation with no matching risk, and unavailable Risk Signal persistence instead of presenting every outcome as an empty signal list
 
 ## 4. AI provider and execution
 
@@ -148,6 +148,7 @@ All mutations require server authorization, optimistic concurrency/idempotency w
 - AI endpoint timeout/outage/circuit-open leaves manual workflows operational
 - Release 1 exposes no web fetch, audio/video/transcription, document analysis or autonomous mutation path
 - Meeting output validates strict schema and saves only user-selected confirmed fields
+- Meeting Insight is offered for supported call/meeting/visit Activity types and rejects non-conversation types server-side
 - Confirming one Next Action repeatedly creates one authorized task with correct timezone
 - Risk signal is deterministic for same facts/rule version and remains available without AI
 - Secrets/unauthorized fields are rejected before provider call

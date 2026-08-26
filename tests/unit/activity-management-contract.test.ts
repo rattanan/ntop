@@ -82,5 +82,6 @@ describe("Activity management contract", () => {
     expect(resultsRoute).toContain("createActivityRuntime().updateResults");
     expect(insightRoute).toContain("createActivityRuntime().draftMeetingInsight");
     expect(insightConfirmRoute).toContain("createActivityRuntime().confirmMeetingInsight");
+    expect(detail).toContain("supportsMeetingInsight(activity.type)");
   });
 });

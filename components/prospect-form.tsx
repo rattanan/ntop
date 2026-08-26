@@ -9,10 +9,11 @@ import { useRouter } from "next/navigation";
 import { Notice } from "@/components/notice";
 import { FormField, Input, Textarea } from "@/components/form-field";
 import { COMPANY_SIZE_OPTIONS, omitBlankLegacySubIndustry, type CustomerClassificationOption } from "@/lib/customer/customer-classification-options";
+import { PROSPECT_TRANSITIONS } from "@/lib/prospect/prospect-rules";
 import { prospectCommandSchema, type ProspectCommand } from "@/lib/prospect/prospect-validation";
 
 const sources = Object.values(ProspectSource);
-const statuses = Object.values(ProspectStatus).filter(
+const mutableStatuses = Object.values(ProspectStatus).filter(
   (value) => value !== "CONVERTED" && value !== "ARCHIVED",
 );
 
@@ -124,6 +125,11 @@ export function ProspectForm({
 
   const selectedSegment = watch("organizationType") ?? "";
   const subIndustries = classifications.find((item) => item.code === selectedSegment)?.subIndustries ?? [];
+  const statuses = prospect?.status
+    ? [prospect.status, ...PROSPECT_TRANSITIONS[prospect.status]].filter(
+        (value) => value !== "CONVERTED" && value !== "ARCHIVED",
+      )
+    : mutableStatuses;
 
   const field = (
     name: keyof ProspectCommand,

@@ -8,6 +8,7 @@ import type { AuthorizationContext } from "../authorization/authorization-contex
 import { assertPermission, PERMISSIONS, PermissionDeniedError, type Permission, type PermissionPolicy } from "../authorization/permission-policy";
 import { permissionPolicy } from "../authorization/permission-policy";
 import { createLegacyMeetingDraft } from "../ai/legacy-meeting-draft";
+import { MEETING_INSIGHT_ACTIVITY_TYPE_MESSAGE, supportsMeetingInsight } from "./activity-insight";
 
 export type ActivityActor = { id: string; role: Role; authorization: AuthorizationContext };
 export type ActivityTransaction = Prisma.TransactionClient;
@@ -149,7 +150,7 @@ export class ActivityService {
     return this.repository.transaction(async (transaction) => {
       const current = await this.repository.findAccessible(id, actor.authorization, transaction);
       if (!current) throw new ActivityAccessError();
-      if (current.type !== ActivityType.MEETING) throw new ActivityValidationError({ type: ["AI Meeting Insight ใช้ได้เฉพาะ Activity ประเภท Meeting"] });
+      if (!supportsMeetingInsight(current.type)) throw new ActivityValidationError({ type: [MEETING_INSIGHT_ACTIVITY_TYPE_MESSAGE] });
       const meetingText = (current.notes ?? current.description ?? "").trim();
       if (!meetingText) throw new ActivityValidationError({ notes: ["กรุณาบันทึกรายละเอียดการประชุมก่อน Generate Insight"] });
       return createLegacyMeetingDraft(meetingText);
@@ -163,7 +164,7 @@ export class ActivityService {
     return this.repository.transaction(async (transaction) => {
       const current = await this.repository.findAccessible(id, actor.authorization, transaction);
       if (!current) throw new ActivityAccessError();
-      if (current.type !== ActivityType.MEETING) throw new ActivityValidationError({ type: ["AI Meeting Insight ใช้ได้เฉพาะ Activity ประเภท Meeting"] });
+      if (!supportsMeetingInsight(current.type)) throw new ActivityValidationError({ type: [MEETING_INSIGHT_ACTIVITY_TYPE_MESSAGE] });
       const updated = await this.repository.updateInsightVersioned(id, parsed.data.expectedVersion, { aiSummary: parsed.data.aiSummary, actionItems: parsed.data.actionItems || null }, transaction);
       if (!updated) throw new ActivityConflictError();
       await this.audit.append({ actorId: actor.id, action: "activity.meeting-insight.confirm", targetType: "Activity", targetId: id, targetVersion: String(updated.version), outcome: "SUCCESS", correlationId, data: { previousVersion: current.version, humanConfirmed: true, source: "USER_ENTERED_MEETING_NOTES" } }, { transaction });

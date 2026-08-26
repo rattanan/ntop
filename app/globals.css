@@ -513,6 +513,18 @@ kbd { padding:2px 6px;border:1px solid var(--nt-gray-300);border-bottom-width:2p
 .probability-history p { display:flex;justify-content:space-between;gap:14px;margin:0;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px; }
 .probability-history p span { color:var(--muted-foreground);text-align:right; }
 .opportunity-transition,.opportunity-edit { margin-top:18px; }
+.transition-requirement-evidence { display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface-subtle); }
+.transition-evidence-head { display:flex;align-items:flex-start;justify-content:space-between;gap:14px; }
+.transition-evidence-head>div { display:grid;gap:3px; }
+.transition-evidence-head strong { font-size:13px; }
+.transition-evidence-head small { color:var(--muted-foreground);font-size:11px; }
+.transition-requirement-evidence ul { display:grid;gap:8px;margin:0;padding:0;list-style:none; }
+.transition-requirement-evidence li { display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 12px;border:1px solid var(--border);border-radius:9px;background:var(--card); }
+.transition-requirement-evidence li>div { min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px; }
+.transition-requirement-evidence li strong { min-width:0;overflow-wrap:anywhere;font-size:12px; }
+.transition-requirement-evidence li small { flex:none;color:var(--muted-foreground);font-size:10px; }
+.transition-requirement-evidence .notice { margin:0; }
+.transition-evidence-link { width:max-content;font-size:12px; }
 .timeline-list { padding-block:10px; }
 .numeric-cell { font-variant-numeric:tabular-nums;white-space:nowrap; }
 .table-result-count { align-self:center;margin-left:auto;color:var(--muted-foreground);font-size:11px;font-weight:700; }
@@ -725,6 +737,7 @@ textarea.control { min-height:112px;resize:vertical;line-height:1.55; }
   .field.full { grid-column:auto; }
   .form-card .actions { position:static;margin-inline:0;background:none; }
   .form-card .actions .primary { width:100%; }
+  .transition-evidence-head,.transition-requirement-evidence li { align-items:flex-start;flex-direction:column; }
   .table-tools>* { width:100%!important;max-width:none!important;flex-basis:100%!important; }
   .command-overlay { place-items:end center;padding:0;background:rgb(15 20 28 / .5); }
   .command-dialog { width:100%;max-height:88dvh;border-radius:18px 18px 0 0; }

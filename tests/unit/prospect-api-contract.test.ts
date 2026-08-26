@@ -47,6 +47,8 @@ describe("Prospect API contract", () => {
   it("maps schema validation errors to the API validation response", () => {
     expect(apiErrors).toContain("error instanceof ZodError");
     expect(apiErrors).toContain('code = "VALIDATION_FAILED"');
+    expect(apiErrors).toContain("const firstIssue");
+    expect(apiErrors).toContain('message = firstIssue ?? "ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง"');
   });
 
   it("keeps AI output draft until human confirmation and records provider failures", () => {

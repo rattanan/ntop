@@ -37,8 +37,10 @@ export default async function OpportunityDetail({ params }: { params: Promise<{ 
   try { opportunity = await getOpportunity(context,id); } catch (error) { if (error instanceof OpportunityAccessError) notFound(); throw error; }
   const roleCodes = context.assignments.map((item)=>item.role);
   const policyAt = new Date();
-  const [riskSignals,health,overrideGrant,transitionPolicyRows] = await Promise.all([
-    listOpportunityRiskSignals(prisma,id).catch(()=>[]), getOpportunityHealth(context,id),
+  const [riskSignalResult,health,overrideGrant,transitionPolicyRows] = await Promise.all([
+    listOpportunityRiskSignals(prisma,id)
+      .then((signals)=>({signals,available:true as const}))
+      .catch(()=>({signals:[],available:false as const})), getOpportunityHealth(context,id),
     roleCodes.length?prisma.rolePermissionGrant.count({where:{roleCode:{in:roleCodes},permissionCode:PERMISSIONS.opportunityProbabilityOverride}}):Promise.resolve(0),
     prisma.opportunityTransitionPolicyVersion.findMany({where:{fromStage:opportunity.stage,active:true,effectiveFrom:{lte:policyAt},OR:[{effectiveTo:null},{effectiveTo:{gt:policyAt}}]},select:{id:true,command:true,toStage:true,requiredFields:true,version:true},orderBy:[{version:"desc"},{createdAt:"desc"}],take:100}),
   ]);
@@ -50,7 +52,7 @@ export default async function OpportunityDetail({ params }: { params: Promise<{ 
     return [{ id: policy.id, command: policy.command, targetStage: policy.toStage, requiredFields: jsonStringArray(policy.requiredFields) }];
   });
   const canEdit=permissionPolicy.allows(session,PERMISSIONS.recordUpdate),canOverride=permissionPolicy.allows(session,PERMISSIONS.opportunityProbabilityOverride)||overrideGrant>0;
-  const signalViews=riskSignals.map((signal)=>({id:signal.id,riskType:signal.riskType,ruleCode:signal.ruleVersion.rule.code,ruleVersion:signal.ruleVersion.version,thresholdSnapshot:jsonObject(signal.thresholdSnapshot),triggeringFacts:jsonObject(signal.triggeringFacts),severitySnapshot:jsonObject(signal.severitySnapshot),evaluatedAt:signal.evaluatedAt.toISOString()}));
+  const signalViews=riskSignalResult.signals.map((signal)=>({id:signal.id,riskType:signal.riskType,ruleCode:signal.ruleVersion.rule.code,ruleVersion:signal.ruleVersion.version,thresholdSnapshot:jsonObject(signal.thresholdSnapshot),triggeringFacts:jsonObject(signal.triggeringFacts),severitySnapshot:jsonObject(signal.severitySnapshot),evaluatedAt:signal.evaluatedAt.toISOString()}));
   const probabilityHistory=opportunity.probabilityHistory.map((item)=>({id:item.id,previousProbability:item.previousProbability,newProbability:item.newProbability,reason:item.reason,changedByName:item.changedBy.name,changedAt:item.changedAt.toLocaleString("th-TH")}));
   const money=new Intl.NumberFormat("th-TH",{style:"currency",currency:opportunity.currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(opportunity.estimatedValue));
   return <>
@@ -65,7 +67,7 @@ export default async function OpportunityDetail({ params }: { params: Promise<{ 
       <section className="card" id="competitors"><div className="card-header"><div><strong>Competitors &amp; Win Strategy</strong><small>{opportunity.competitors.length} รายการ</small></div></div><div className="card-body related-list">{opportunity.competitors.map(item=><article key={item.id}><div><span className={`threat-dot ${item.threatLevel.toLowerCase()}`} aria-hidden="true"/><strong>{item.competitorName}</strong>{item.incumbentFlag&&<span className="badge muted">Incumbent</span>}</div><p data-expandable-text>{item.winStrategy??item.differentiation??"ยังไม่มีกลยุทธ์"}</p><small>Threat {item.threatLevel}{item.estimatedPrice?` · ${new Intl.NumberFormat("th-TH",{style:"currency",currency:opportunity.currency,minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(item.estimatedPrice))}`:""}</small></article>)}{!opportunity.competitors.length&&<div className="compact-empty">ยังไม่มีข้อมูลคู่แข่ง</div>}</div></section>
     </section>
     {canEdit&&<OpportunityRelatedForms opportunityId={id}/>}
-    {canEdit&&<section className="opportunity-transition" id="stage-transition"><OpportunityTransitionForm opportunityId={id} version={opportunity.version} stage={opportunity.stage} expectedCloseAt={opportunity.expectedCloseAt?.toISOString().slice(0,16)} transitions={transitions}/></section>}
-    <DealRiskPanel opportunityId={id} signals={signalViews} canRefresh={canEdit} canExplain={canEdit}/>
+    {canEdit&&<section className="opportunity-transition" id="stage-transition"><OpportunityTransitionForm opportunityId={id} version={opportunity.version} stage={opportunity.stage} expectedCloseAt={opportunity.expectedCloseAt?.toISOString().slice(0,16)} transitions={transitions} requirements={opportunity.structuredRequirements.map((item)=>({id:item.id,requirementNumber:item.requirementNumber,title:item.title,mandatoryFlag:item.mandatoryFlag,status:item.status,feasibilityStatus:item.feasibilityStatus}))}/></section>}
+    <DealRiskPanel opportunityId={id} signals={signalViews} canRefresh={canEdit} canExplain={canEdit} riskPersistenceAvailable={riskSignalResult.available}/>
   </>;
 }

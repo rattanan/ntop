@@ -8,4 +8,21 @@ export const APPROACHES = [["DIRECT", "Direct"], ["PARTNER", "Partner"], ["DISPL
 export const ROLE_LABELS = { ADMIN: "ผู้ดูแลระบบ", SALES: "ฝ่ายขาย", VIEWER: "ผู้ดูข้อมูล" } as const;
 export const LEAD_SOURCES = [["IMPORT", "นำเข้า"], ["WEBSITE", "เว็บไซต์ / API"], ["EVENT", "กิจกรรม"], ["PARTNER", "พันธมิตร"], ["REFERRAL", "ผู้แนะนำ"], ["EXISTING_CUSTOMER", "Customer เดิมแนะนำ"], ["MARKETING_CAMPAIGN", "แคมเปญการตลาด"], ["API", "API"], ["GOVERNMENT_TENDER", "ประกวดราคาภาครัฐ"]] as const;
 export const LEAD_STATUSES = [["NEW", "ใหม่"], ["ASSIGNED", "มอบหมายแล้ว"], ["CONTACTED", "ติดต่อแล้ว"], ["NURTURING", "กำลังติดตาม"], ["QUALIFIED", "ผ่านการคัดกรอง"], ["DISQUALIFIED", "ไม่ผ่าน"], ["INVALID", "ข้อมูลไม่ถูกต้อง"], ["DUPLICATE", "ข้อมูลซ้ำ"], ["NOT_INTERESTED", "ไม่สนใจ"], ["NO_BUDGET", "ไม่มีงบประมาณ"], ["CONVERTED", "แปลงแล้ว"], ["ARCHIVED", "เก็บถาวร"]] as const;
-export const ACTIVITY_TYPES = [["CALL", "โทรศัพท์"], ["EMAIL", "อีเมล"], ["MEETING", "ประชุม"], ["SITE_VISIT", "เยี่ยมพื้นที่"], ["ONLINE_MEETING", "ประชุมออนไลน์"], ["NOTE", "บันทึก"], ["FOLLOW_UP", "ติดตาม"], ["TASK", "งาน"], ["DOCUMENT_REQUEST", "ขอเอกสาร"]] as const;
+export const ACTIVITY_TYPES = [
+  ["CALL", "โทรศัพท์"],
+  ["PHONE_CALL", "โทรศัพท์ (Prospect)"],
+  ["EMAIL", "อีเมล"],
+  ["LINE", "LINE"],
+  ["MEETING", "ประชุม"],
+  ["SITE_VISIT", "เยี่ยมพื้นที่"],
+  ["CUSTOMER_VISIT", "เข้าพบ Customer"],
+  ["ONLINE_MEETING", "ประชุมออนไลน์"],
+  ["VIDEO_CONFERENCE", "วิดีโอคอล"],
+  ["DEMO", "สาธิต"],
+  ["PRESENTATION", "นำเสนอ"],
+  ["NOTE", "บันทึก"],
+  ["FOLLOW_UP", "ติดตาม"],
+  ["TASK", "งาน"],
+  ["DOCUMENT_REQUEST", "ขอเอกสาร"],
+  ["OTHER", "อื่น ๆ"],
+] as const;

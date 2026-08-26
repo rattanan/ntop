@@ -8,6 +8,7 @@ import {
   refreshOpportunityRiskSignals,
   requestDealRiskExplanation,
 } from "@/app/actions/ai-risk";
+import { FormNotice, Notice } from "./notice";
 
 type SignalView = {
   id: string;
@@ -54,11 +55,13 @@ export function DealRiskPanel({
   signals,
   canRefresh,
   canExplain,
+  riskPersistenceAvailable,
 }: {
   opportunityId: string;
   signals: SignalView[];
   canRefresh: boolean;
   canExplain: boolean;
+  riskPersistenceAvailable: boolean;
 }) {
   const [state, action, pending] = useActionState(
     refreshOpportunityRiskSignals,
@@ -71,16 +74,23 @@ export function DealRiskPanel({
         <p className="help">
           คะแนน Health แสดงความพร้อมโดยรวมของ Opportunity ส่วน AI Insight ด้านล่างชี้ความเสี่ยงเฉพาะเหตุการณ์ กฎและหลักฐานเป็น source of truth; AI ช่วยอธิบายแต่ไม่เปลี่ยนข้อมูลหรือ Stage อัตโนมัติ
         </p>
-        {canRefresh && (
+        {!riskPersistenceAvailable && (
+          <Notice variant="error">
+            ระบบ Risk Signal ไม่พร้อมใน environment นี้ กรุณาติดต่อผู้ดูแลระบบ
+          </Notice>
+        )}
+        {canRefresh && riskPersistenceAvailable && (
           <form action={action} style={{ margin: "14px 0" }}>
             <input type="hidden" name="opportunityId" value={opportunityId} />
             <button className="secondary" disabled={pending}>
               {pending ? "กำลังวิเคราะห์…" : <><Sparkles aria-hidden="true"/>อัปเดต AI Insight</>}
             </button>
-            {state.message && <p className="help">{state.message}</p>}
+            <FormNotice state={state} />
           </form>
         )}
-        {!signals.length && <p className="empty">ยังไม่มี Risk Signal</p>}
+        {riskPersistenceAvailable && !signals.length && (
+          <p className="empty">ยังไม่มี Risk Signal ที่บันทึกไว้</p>
+        )}
         {signals.map((signal) => (
           <article key={signal.id} className="card opportunity-risk-signal" style={{ marginTop: 12 }}>
             <div className="card-body">

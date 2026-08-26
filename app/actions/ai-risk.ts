@@ -16,7 +16,9 @@ import {
   createDealRiskRuleRuntime,
   evaluateOpportunityRisks,
 } from "@/lib/ai/deal-risk-runtime";
+import { buildDealRiskRefreshFeedback } from "@/lib/ai/deal-risk-refresh-feedback";
 import { DealRiskRuleValidationError } from "@/lib/ai/deal-risk-rule-service";
+import { safeErrorIdentity } from "@/lib/api/safe-error-identity";
 import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { requirePermission } from "@/lib/authorization/require-permission";
 
@@ -86,23 +88,24 @@ export async function refreshOpportunityRiskSignals(
 ): Promise<FormState> {
   const actor = await requirePermission(PERMISSIONS.recordUpdate);
   const opportunityId = text(formData, "opportunityId");
+  const correlationId = crypto.randomUUID();
   try {
     const result = await evaluateOpportunityRisks(
       actor,
       opportunityId,
-      crypto.randomUUID(),
+      correlationId,
     );
     revalidatePath("/opportunities/" + opportunityId);
+    return buildDealRiskRefreshFeedback(result);
+  } catch (error) {
+    console.error("deal_risk_evaluation_failed", {
+      correlationId,
+      error: safeErrorIdentity(error),
+    });
     return {
-      message:
-        "ประเมิน " +
-        result.evaluatedRuleCount +
-        " rules และพบ " +
-        result.signalCount +
-        " signals",
+      message: `ระบบ Risk Signal ไม่พร้อม กรุณาลองอีกครั้งหรือติดต่อผู้ดูแลระบบ (Correlation ID: ${correlationId})`,
+      status: "error",
     };
-  } catch {
-    return { message: "ไม่สามารถประเมิน Deal Risk สำหรับ Opportunity นี้ได้" };
   }
 }
 

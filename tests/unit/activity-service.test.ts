@@ -64,13 +64,22 @@ describe("ActivityService", () => {
     expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.results.update", data: expect.objectContaining({ hasOutcome: true, hasCustomerFeedback: true, hasNextAction: true }) }), { transaction: tx });
   });
 
-  it("generates a reviewable Meeting Insight draft and persists it only after confirmation", async () => {
+  it("generates a reviewable Meeting Insight draft for a phone call and persists it only after confirmation", async () => {
     const { service, repository, audit, actor, tx } = setup();
+    vi.mocked(repository.findAccessible).mockResolvedValue({ id: "activity-1", version: 2, ownerId: "user-1", statusCode: "OPEN", terminal: false, type: "PHONE_CALL", notes: "Customer confirmed the rollout.\nAction send revised plan", description: null, customerId: "customer-1", opportunityId: null });
     await expect(service.draftMeetingInsight(actor as never, "activity-1")).resolves.toEqual({ summary: "Customer confirmed the rollout. Action send revised plan", actionItems: "Action send revised plan" });
     expect(repository.updateInsightVersioned).not.toHaveBeenCalled();
     await expect(service.confirmMeetingInsight(actor as never, "activity-1", { expectedVersion: 2, aiSummary: "Customer confirmed rollout", actionItems: "Send revised plan" }, "corr-insight")).resolves.toEqual({ id: "activity-1", version: 3 });
     expect(repository.updateInsightVersioned).toHaveBeenCalledWith("activity-1", 2, { aiSummary: "Customer confirmed rollout", actionItems: "Send revised plan" }, tx);
     expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "activity.meeting-insight.confirm", data: expect.objectContaining({ humanConfirmed: true }) }), { transaction: tx });
+  });
+
+  it("rejects Meeting Insight for non-conversation Activity types", async () => {
+    const { service, repository, actor } = setup();
+    vi.mocked(repository.findAccessible).mockResolvedValue({ id: "activity-1", version: 2, ownerId: "user-1", statusCode: "OPEN", terminal: false, type: "TASK", notes: "Internal task", description: null, customerId: "customer-1", opportunityId: null });
+    await expect(service.draftMeetingInsight(actor as never, "activity-1")).rejects.toThrow("ข้อมูล Activity ไม่ถูกต้อง");
+    await expect(service.confirmMeetingInsight(actor as never, "activity-1", { expectedVersion: 2, aiSummary: "Should not save", actionItems: "" }, "corr-insight-task")).rejects.toThrow("ข้อมูล Activity ไม่ถูกต้อง");
+    expect(repository.updateInsightVersioned).not.toHaveBeenCalled();
   });
 
   it("denies result and Meeting Insight writes for a Viewer before repository mutation", async () => {

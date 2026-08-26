@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/lib/auth";
 import { loadAuthorizationContext } from "@/lib/authorization/authorization-context";
@@ -9,5 +10,5 @@ import { requireIdempotencyKey,workflowApiError,workflowCorrelationId,workflowUn
 export async function POST(request:Request,{params}:{params:Promise<{id:string;collection:string}>}){
   const correlationId=workflowCorrelationId(request),session=await getSession();if(!session)return workflowUnauthenticated(correlationId);
   const key=requireIdempotencyKey(request,correlationId);if(typeof key!=="string")return key;
-  try{const {id,collection}=await params;if(!(collection in opportunityRelatedSchemas))return NextResponse.json({error:{code:"RESOURCE_NOT_FOUND",message:"ไม่พบ collection",retryable:false,correlationId}},{status:404});const authorization=await loadAuthorizationContext({actorId:session.id,legacyRole:session.role});const data=await createOpportunityRelatedRuntime().add({...session,authorization},id,collection as OpportunityRelatedCollection,await request.json(),correlationId,key);return NextResponse.json({data,meta:{correlationId}},{status:201});}catch(error){return workflowApiError(error,correlationId);}
+  try{const {id,collection}=await params;if(!(collection in opportunityRelatedSchemas))return NextResponse.json({error:{code:"RESOURCE_NOT_FOUND",message:"ไม่พบ collection",retryable:false,correlationId}},{status:404});const authorization=await loadAuthorizationContext({actorId:session.id,legacyRole:session.role});const data=await createOpportunityRelatedRuntime().add({...session,authorization},id,collection as OpportunityRelatedCollection,await request.json(),correlationId,key);revalidatePath(`/opportunities/${id}`);return NextResponse.json({data,meta:{correlationId}},{status:201});}catch(error){return workflowApiError(error,correlationId);}
 }
