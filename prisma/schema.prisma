@@ -391,12 +391,51 @@ model LoginEvent {
   @@index([correlationId])
 }
 
+model CustomerSegment {
+  code           String                 @id @db.VarChar(20)
+  name           String                 @db.VarChar(255)
+  active         Boolean                @default(true)
+  displayOrder   Int                    @default(0)
+  subIndustries  SubIndustryReference[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([active, displayOrder])
+}
+
+model SubIndustryReference {
+  code         String          @id @db.VarChar(50)
+  name         String          @db.VarChar(255)
+  segmentCode  String          @db.VarChar(20)
+  segment      CustomerSegment @relation(fields: [segmentCode], references: [code], onDelete: Restrict)
+  active       Boolean         @default(true)
+  displayOrder Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([segmentCode, active, displayOrder])
+}
+
+model ProvinceReference {
+  code         String   @id @db.VarChar(2)
+  name         String   @unique @db.VarChar(100)
+  region       String   @db.VarChar(100)
+  active       Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active, displayOrder])
+}
+
 model Customer {
   id                        String                        @id @default(cuid())
   name                      String
   taxId                     String                        @unique
   type                      CustomerType
   segment                   String
+  subIndustry               String?                       @db.VarChar(50)
+  companySize               String?                       @db.VarChar(20)
   province                  String
   address                   String?                       @db.Text
   status                    CustomerStatus                @default(PROSPECT)
@@ -592,10 +631,26 @@ model Lead {
   leadNumber             String?                 @unique @db.VarChar(32)
   leadType               LeadType                @default(CORPORATE)
   company                String
+  companyNameEnglish     String?                 @db.VarChar(255)
   taxId                  String?                 @db.VarChar(32)
   branchNumber           String?                 @db.VarChar(20)
+  customerType           String?                 @db.VarChar(100)
+  segment                String?                 @db.VarChar(100)
   industry               String?                 @db.VarChar(191)
+  subIndustry            String?                 @db.VarChar(191)
+  companySize            String?                 @db.VarChar(100)
+  numberOfEmployees      Int?
   website                String?                 @db.VarChar(500)
+  address                String?                 @db.Text
+  subDistrict            String?                 @db.VarChar(191)
+  district               String?                 @db.VarChar(191)
+  province               String?                 @db.VarChar(191)
+  postalCode             String?                 @db.VarChar(20)
+  region                 String?                 @db.VarChar(100)
+  currentTelecomProvider String?                 @db.Text
+  currentInternetProvider String?                @db.Text
+  currentCloudProvider   String?                 @db.Text
+  currentSecurityProvider String?                @db.Text
   contactName            String
   contactFirstName       String?                 @db.VarChar(191)
   contactLastName        String?                 @db.VarChar(191)
@@ -611,6 +666,14 @@ model Lead {
   temperature            LeadTemperature         @default(COLD)
   score                  Int                     @default(0)
   scoreBreakdown         Json?
+  aiSummary              String?                 @db.Text
+  aiOpportunityScore     Int?
+  aiConfidenceScore      Int?
+  aiRiskScore            Int?
+  suggestedNextAction    String?                 @db.Text
+  enrichmentData         Json?
+  enrichmentStatus       ProspectEnrichmentStatus @default(NOT_REQUESTED)
+  enrichmentUpdatedAt    DateTime?
   recommendedProducts    String?                 @db.Text
   requirementSummary     String?                 @db.Text
   estimatedBudget        Decimal?                @db.Decimal(19, 4)
@@ -657,6 +720,8 @@ model Lead {
   @@index([nextFollowUpAt, status])
   @@index([firstContactDueAt, status])
   @@index([taxId])
+  @@index([segment, subIndustry])
+  @@index([province])
   @@index([campaignId, status])
 }
 

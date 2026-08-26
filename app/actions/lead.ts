@@ -35,15 +35,40 @@ async function actor() {
 }
 
 function leadInput(formData: FormData) {
+  const optionalNumber = (name: string) => text(formData, name) ? Number(text(formData, name)) : undefined;
   return {
     company: text(formData, "company"),
+    companyNameEnglish: text(formData, "companyNameEnglish") || undefined,
+    taxId: text(formData, "taxId") || undefined,
+    branchNumber: text(formData, "branchNumber") || undefined,
+    customerType: text(formData, "customerType") || undefined,
+    segment: text(formData, "segment") || undefined,
+    subIndustry: text(formData, "subIndustry") || undefined,
+    companySize: text(formData, "companySize") || undefined,
+    numberOfEmployees: optionalNumber("numberOfEmployees"),
+    website: text(formData, "website") || undefined,
+    address: text(formData, "address") || undefined,
+    subDistrict: text(formData, "subDistrict") || undefined,
+    district: text(formData, "district") || undefined,
+    province: text(formData, "province") || undefined,
+    postalCode: text(formData, "postalCode") || undefined,
+    region: text(formData, "region") || undefined,
+    currentTelecomProvider: text(formData, "currentTelecomProvider") || undefined,
+    currentInternetProvider: text(formData, "currentInternetProvider") || undefined,
+    currentCloudProvider: text(formData, "currentCloudProvider") || undefined,
+    currentSecurityProvider: text(formData, "currentSecurityProvider") || undefined,
     contactName: text(formData, "contactName"),
+    jobTitle: text(formData, "jobTitle") || undefined,
+    department: text(formData, "department") || undefined,
     contactEmail: text(formData, "contactEmail"),
     contactPhone: text(formData, "contactPhone") || undefined,
     source: text(formData, "source"),
     status: text(formData, "status"),
     score: Number(text(formData, "score")),
     recommendedProducts: text(formData, "recommendedProducts") || undefined,
+    requirementSummary: text(formData, "requirementSummary") || undefined,
+    estimatedBudget: text(formData, "estimatedBudget") || undefined,
+    expectedPurchaseAt: text(formData, "expectedPurchaseAt") || undefined,
     notes: text(formData, "notes") || undefined,
     disqualificationReason: text(formData, "disqualificationReason") || undefined,
     customerId: text(formData, "customerId") || undefined,
@@ -92,7 +117,8 @@ export async function assignLead(id: string, expectedVersion: number, _: FormSta
     await createLeadRuntime().assign(currentActor, id, expectedVersion, parsed.data.ownerId, text(formData, "reason"), crypto.randomUUID(), text(formData, "idempotencyKey") || crypto.randomUUID(), parsed.data.organizationUnitId);
     revalidatePath("/leads");
     revalidatePath(`/leads/${id}`);
-    redirect(`/leads/${id}`);
+    const accessRetained = Boolean(await prisma.lead.findFirst({ where: { id, ...buildLeadScopeWhere(currentActor.authorization) }, select: { id: true } }));
+    return { status: "success", message: accessRetained ? "มอบหมาย Lead แล้ว" : "มอบหมาย Lead แล้ว รายการถูกย้ายออกจากขอบเขตที่คุณเข้าถึง", redirectTo: accessRetained ? `/leads/${id}` : "/leads" };
   } catch (error) { return failure(error); }
 }
 
@@ -130,7 +156,7 @@ export async function addLeadActivity(id: string, _: FormState, formData: FormDa
       return { activityId: activity.id };
     });
     revalidatePath(`/leads/${id}`); revalidatePath("/leads"); revalidatePath("/activities");
-    redirect(result.activityId ? `/activities/${result.activityId}` : `/leads/${id}`);
+    return { status: "success", message: result.activityId ? "บันทึก Activity แล้ว" : "Activity นี้ถูกบันทึกไว้แล้ว" };
   } catch (error) { return failure(error); }
 }
 
@@ -172,7 +198,12 @@ export async function convertLead(id: string, expectedVersion: number, _: FormSt
       taxId: text(formData, "taxId") || undefined,
       type: text(formData, "type") || undefined,
       segment: text(formData, "segment") || undefined,
+      subIndustry: text(formData, "subIndustry") || undefined,
+      companySize: text(formData, "companySize") || undefined,
       province: text(formData, "province") || undefined,
+      contactName: text(formData, "conversionContactName") || undefined,
+      contactEmail: text(formData, "conversionContactEmail") || undefined,
+      contactPhone: text(formData, "conversionContactPhone") || undefined,
       duplicateOverrideReason: text(formData, "duplicateOverrideReason") || undefined,
       opportunityName: text(formData, "opportunityName"),
       opportunityFlow: text(formData, "opportunityFlow"),
@@ -185,6 +216,6 @@ export async function convertLead(id: string, expectedVersion: number, _: FormSt
     revalidatePath(`/leads/${id}`);
     revalidatePath("/customers");
     revalidatePath("/opportunities");
-    redirect(`/customers/${converted.customerId}?tab=sales`);
+    return { status: "success", message: "สร้าง Opportunity สำเร็จ กำลังเปิดหน้ารายละเอียด…", redirectTo: `/opportunities/${converted.opportunityId}` };
   } catch (error) { return failure(error); }
 }

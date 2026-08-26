@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import type { FormState } from "@/app/action-types";
 import { createContractAction } from "@/app/(portal)/contracts/actions";
 import { FormNotice } from "@/components/notice";
+import { Input } from "@/components/form-field";
 
 type ContractQuote = {
   id: string;
@@ -64,7 +65,7 @@ export function ContractCreateForm({
           <td><input className="control" name={`quantity.${index}`} inputMode="decimal" defaultValue={item.quantity} required /></td>
           <td><input className="control" name={`monthlyCharge.${index}`} inputMode="decimal" defaultValue="0" required /></td>
           <td><input className="control" name={`oneTimeCharge.${index}`} inputMode="decimal" defaultValue={item.unitPrice} required /></td>
-          <td><input className="control" name={`durationMonths.${index}`} type="number" min="1" max="1200" defaultValue="12" required /></td>
+          <td><Input name={`durationMonths.${index}`} type="number" min="1" max="1200" defaultValue="12" required /></td>
           <td><input className="control" name={`discountAmount.${index}`} inputMode="decimal" defaultValue={item.discountAmount} required /></td>
         </tr>)}</tbody>
       </table>

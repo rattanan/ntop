@@ -3,10 +3,10 @@
 | Metadata | Value |
 |---|---|
 | Status | Approved Baseline |
-| Version | 1.0 |
+| Version | 1.1 |
 | Owner | Sales Director / Sales Operations |
 | Reviewers | KAM, Team Manager, Presales, Coverage, Pricing, Order Operations, Audit, QA |
-| Last Updated | 2026-07-11 |
+| Last Updated | 2026-08-26 |
 | Related Documents | [Requirements](product-requirements.md), [Domain](domain-model.md), [Permissions](roles-and-permissions.md), [Approval](approval-workflow.md), [Forecast](sales-forecast-design.md) |
 | Assumptions | Canonical stages ใช้ชื่อด้านล่าง; transition enforce server-side |
 | Open Decisions | Stage probability defaults; stale-day thresholds by segment; reopen authority; mandatory document checklist |
@@ -53,6 +53,8 @@ stateDiagram-v2
 | Active → Cancelled | duplicate/invalid reason and authority | Manager | OpportunityCancelled |
 
 ย้อน stage ปกติอนุญาตผ่าน `return` command พร้อม reason และ invalidate downstream draft assumptions; ห้ามแก้ stage field โดยตรง (FR-004, COMP-001)
+
+หน้า Opportunity ต้องแสดง canonical path `QUALIFY → DISCOVER → SOLUTION → PROPOSAL → NEGOTIATION → WON` โดยเน้นขั้นปัจจุบันและแสดงขั้นที่ยังไม่ถึงไว้ล่วงหน้า Route ใน UI ต้องอ่านจาก `OpportunityTransitionPolicyVersion` เท่านั้น โดย reference data ต้องมี version ที่ active สำหรับ `SOLUTION → PROPOSAL` และยังคงบังคับ `coverageConfirmed` กับ `solutionComplete` ฝั่ง server
 
 ## 4. Gates and dependencies
 

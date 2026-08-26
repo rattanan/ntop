@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import type { FormState } from "@/app/action-types";
 import { createDealRiskRuleVersion } from "@/app/actions/ai-risk";
 import { FormNotice } from "./notice";
+import { Input } from "./form-field";
 
 const initialState: FormState = {};
 
@@ -47,7 +48,7 @@ export function DealRiskRuleForm() {
             </label>
             <label className="field">
               <span>Threshold</span>
-              <input className="control" name="threshold" type="number" min="0" step="1" required />
+              <Input name="threshold" type="number" min="0" step="1" required />
             </label>
             <label className="field">
               <span>Missing data</span>

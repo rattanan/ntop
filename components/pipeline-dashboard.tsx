@@ -15,7 +15,7 @@ type Props = {
 
 const stageOrder = ["QUALIFY", "DISCOVER", "SOLUTION", "PROPOSAL", "NEGOTIATION"] as const;
 const stageLabels: Record<string, string> = { QUALIFY: "Qualify", DISCOVER: "Discover", SOLUTION: "Solution", PROPOSAL: "Proposal", NEGOTIATION: "Negotiation" };
-const moneyFormat = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 });
+const moneyFormat = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const numberFormat = new Intl.NumberFormat("th-TH");
 
 function formatMoney(value: { toString(): string }) { return moneyFormat.format(Number(value.toString())); }

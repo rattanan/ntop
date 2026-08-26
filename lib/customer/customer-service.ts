@@ -32,6 +32,8 @@ export const customerCommandSchema = z.strictObject({
   taxId: z.string().trim().regex(/^\d{13}$/),
   type: z.enum(["B2G", "B2B"]),
   segment: z.string().trim().min(1).max(100),
+  subIndustry: z.string().trim().max(50).optional(),
+  companySize: z.enum(["SMALL", "MEDIUM", "LARGE"]).optional(),
   province: z.string().trim().min(1).max(255),
   address: z.string().trim().max(10_000).optional(),
   status: z.enum(["PROSPECT", "ACTIVE", "INACTIVE", "BLACKLISTED", "CLOSED"]),
@@ -76,6 +78,12 @@ export interface CustomerRepository<TTransaction> {
     permissionCode: string,
     transaction: TTransaction,
   ): Promise<boolean>;
+  classificationExists?(
+    segment: string,
+    subIndustry: string | undefined,
+    transaction: TTransaction,
+  ): Promise<boolean>;
+  provinceExists?(province: string, transaction: TTransaction): Promise<boolean>;
   create(
     input: CustomerCommand,
     actorId: string,
@@ -248,6 +256,10 @@ export class CustomerService<TTransaction> {
           return { ...existing, duplicateCandidateCount: 0 };
         }
       }
+      if (this.repository.classificationExists && !await this.repository.classificationExists(parsed.segment, parsed.subIndustry, transaction)) {
+        throw new CustomerValidationError({ segment: ["Segment หรืออุตสาหกรรมย่อยไม่สัมพันธ์กับข้อมูลอ้างอิงที่เปิดใช้งาน"] });
+      }
+      if (this.repository.provinceExists && !await this.repository.provinceExists(parsed.province, transaction)) throw new CustomerValidationError({ province: ["กรุณาเลือกจังหวัดจากรายการ"] });
       const created = await this.repository.create(
         { ...parsed, ownerId },
         actor.id,
@@ -338,6 +350,10 @@ export class CustomerService<TTransaction> {
         transaction,
       );
       if (!current || current.mergedIntoCustomerId) throw new CustomerAccessError();
+      if (this.repository.classificationExists && !await this.repository.classificationExists(parsed.segment, parsed.subIndustry, transaction)) {
+        throw new CustomerValidationError({ segment: ["Segment หรืออุตสาหกรรมย่อยไม่สัมพันธ์กับข้อมูลอ้างอิงที่เปิดใช้งาน"] });
+      }
+      if (this.repository.provinceExists && !await this.repository.provinceExists(parsed.province, transaction)) throw new CustomerValidationError({ province: ["กรุณาเลือกจังหวัดจากรายการ"] });
       if (current.status !== parsed.status && ["INACTIVE", "BLACKLISTED", "CLOSED"].includes(parsed.status)) {
         throw new CustomerValidationError({ status: ["ใช้คำสั่ง Customer lifecycle และระบุเหตุผลเพื่อเปลี่ยนเป็นสถานะนี้"] });
       }

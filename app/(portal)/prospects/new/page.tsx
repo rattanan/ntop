@@ -1,8 +1,10 @@
 import { ProspectForm } from "@/components/prospect-form";
 import { requireSession } from "@/lib/auth";
+import { loadCustomerClassifications } from "@/lib/customer/customer-classification";
 
 export default async function NewProspectPage() {
   await requireSession();
+  const classifications = await loadCustomerClassifications();
   return (
     <>
       <div className="page-head">
@@ -12,7 +14,7 @@ export default async function NewProspectPage() {
           <p>ระบบจะตรวจข้อมูลซ้ำก่อนบันทึก</p>
         </div>
       </div>
-      <ProspectForm />
+      <ProspectForm classifications={classifications} />
     </>
   );
 }

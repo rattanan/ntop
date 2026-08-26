@@ -7,6 +7,7 @@ import {
 import Link from "next/link";
 
 import { ModuleTabs } from "@/components/module-tabs";
+import { Notice } from "@/components/notice";
 import { ProspectImportForm } from "@/components/prospect-import-form";
 import { requireSession } from "@/lib/auth";
 import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
@@ -16,6 +17,7 @@ import {
   loadProspectPermissions,
 } from "@/lib/prospect/prospect-authorization";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/number-format";
 
 type Search = {
   q?: string;
@@ -28,6 +30,7 @@ type Search = {
   page?: string;
   columns?: string;
   tab?: string;
+  notice?: string;
 };
 
 const allColumns = [
@@ -159,6 +162,7 @@ export default async function ProspectsPage({
         </div>
       </div>
       <ModuleTabs label="เมนู Prospect" items={tabItems} />
+      {query.notice === "owner-assigned" && <Notice variant="success">มอบหมาย Owner สำเร็จ รายการถูกย้ายไปยังขอบเขตหน่วยงานของผู้รับผิดชอบใหม่แล้ว</Notice>}
       <section className="card">
         <form className="card-body form-grid">
           <label className="field"><span>ค้นหา</span><input className="control" name="q" defaultValue={query.q} /></label>
@@ -187,7 +191,7 @@ export default async function ProspectsPage({
                   {columns.includes("status") && <td><span className="badge">{row.status}</span></td>}
                   {columns.includes("heat") && <td><span className={`badge prospect-${row.heatLevel.toLowerCase()}`}>{row.heatLevel}</span></td>}
                   {columns.includes("score") && <td>{row.calculatedScore}</td>}
-                  {columns.includes("value") && <td>{row.estimatedOpportunityValue?.toString() ?? "—"}</td>}
+                  {columns.includes("value") && <td>{formatMoney(row.estimatedOpportunityValue, row.currency)}</td>}
                   {columns.includes("lastContact") && <td>{row.lastContactAt?.toLocaleDateString("th-TH") ?? "—"}</td>}
                   {columns.includes("followUp") && <td>{row.nextFollowUpAt?.toLocaleString("th-TH", { timeZone: "Asia/Bangkok" }) ?? "—"}</td>}
                   {columns.includes("created") && <td>{row.createdAt.toLocaleDateString("th-TH")}</td>}

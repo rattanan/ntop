@@ -4,4 +4,5 @@ export type FormState = {
   status?: "info" | "warning" | "error" | "success";
   apiKey?: string;
   apiKeyPrefix?: string;
+  redirectTo?: string;
 };

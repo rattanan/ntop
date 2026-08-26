@@ -1,4 +1,7 @@
 import { AppShell } from "@/components/app-shell";
+import { FormFieldAssistance } from "@/components/form-field-assistance";
+import { ExpandableTextAssistance } from "@/components/expandable-text-assistance";
+import { ProvinceInputAssistance } from "@/components/province-input-assistance";
 import { requireSession } from "@/lib/auth";
 import { loadAuthorizationContext, loadGrantedPermissions } from "@/lib/authorization/authorization-context";
 import { loadHeaderNotifications } from "@/lib/notifications/header-notifications";
@@ -19,6 +22,9 @@ export default async function PortalLayout({ children }: { children: React.React
       notifications={notifications}
       version={packageMetadata.version}
     >
+      <FormFieldAssistance />
+      <ExpandableTextAssistance />
+      <ProvinceInputAssistance />
       {children}
     </AppShell>
   );

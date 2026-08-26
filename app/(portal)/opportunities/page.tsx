@@ -6,7 +6,7 @@ import { loadAuthorizationContext } from "@/lib/authorization/authorization-cont
 import { listOpportunities } from "@/lib/opportunity/opportunity-query-service";
 
 const stageLabels: Record<string,string> = { QUALIFY:"คัดกรอง",DISCOVER:"ค้นหาความต้องการ",SOLUTION:"ออกแบบโซลูชัน",PROPOSAL:"ยื่นข้อเสนอ",NEGOTIATION:"เจรจา",WON:"ชนะ",LOST:"ไม่ชนะ",CANCELLED:"ยกเลิก" };
-const currency = new Intl.NumberFormat("th-TH", { style:"currency",currency:"THB",maximumFractionDigits:0 });
+const currency = new Intl.NumberFormat("th-TH", { style:"currency",currency:"THB",minimumFractionDigits:2,maximumFractionDigits:2 });
 
 export default async function OpportunitiesPage() {
   const session = await requireSession();

@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { LeadDocumentService } from "@/lib/lead/lead-document-service";
+import { leadActor,leadApiError,leadIdempotencyKey } from "../../../lead-api";
+type Params={params:Promise<{id:string;documentId:string}>};
+function disposition(name:string){const fallback=name.replace(/[^\x20-\x7E]/g,"_").replace(/["\\]/g,"_")||"document";return`attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(name)}`;}
+export async function GET(request:Request,{params}:Params){const auth=await leadActor(request);if("response"in auth)return auth.response;try{const{id,documentId}=await params,data=await new LeadDocumentService().download(auth.actor,id,documentId,auth.correlationId);return new NextResponse(Buffer.from(data.bytes),{headers:{"cache-control":"private, no-store","content-disposition":disposition(data.fileName),"content-length":String(data.bytes.length),"content-type":data.mimeType}});}catch(error){return leadApiError(error,auth.correlationId);}}
+export async function DELETE(request:Request,{params}:Params){const auth=await leadActor(request);if("response"in auth)return auth.response;const key=leadIdempotencyKey(request,auth.correlationId);if(key instanceof NextResponse)return key;try{const{id,documentId}=await params,data=await new LeadDocumentService().remove(auth.actor,id,documentId,auth.correlationId,key);return NextResponse.json({data,meta:{correlationId:auth.correlationId}});}catch(error){return leadApiError(error,auth.correlationId);}}

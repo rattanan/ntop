@@ -11,6 +11,7 @@
 - Existing environments receive the approved `prospect.*` role grants through a forward data migration, so edit and document-upload actions do not depend on reseeding.
 - Duplicate detection considers normalized Thai/English company names, tax ID, contact email/phone/mobile and website domain.
 - Assignment, status, activity, contact, merge, conversion, import-created rows and AI confirmation write audit evidence.
+- After owner assignment, the API reports whether the actor retains read access. The detail UI refreshes when access remains and redirects to the scoped Prospect list with a success notice when the record moves outside the actor's organization scope, avoiding a misleading detail-page 404 without weakening authorization.
 - Conversion creates Lead and links Prospect contacts, activities and document metadata in one transaction without copying objects.
 - Money uses `Decimal(19,4)`, operational dates are UTC instants, and deletion is soft-delete only.
 - CSV/XLSX import follows preview and promote steps with persistent batches/rows. Export uses authorization scope and current supported filters.
@@ -40,6 +41,22 @@
 ## Database and compatibility
 
 The forward-only migration is `20260714220000_add_prospect_management/migration.sql`. It is compatible with the MariaDB 5.5 disposable environment and MySQL 8. It does not drop or redefine existing module tables beyond additively extending Activity types/fields. The migration was applied to the `ntop` test database on 2026-07-14, followed by synthetic seed data.
+
+### Shared customer classification and form behavior (2026-08-26)
+
+- Prospect และ Customer ใช้ชุดข้อมูลอ้างอิง `CustomerSegment` และ `SubIndustryReference` เดียวกัน โดยตัวเลือกแสดง `รหัส — ชื่อ` และอุตสาหกรรมย่อยขึ้นกับ Segment
+- `companySize` รับเฉพาะ `SMALL`, `MEDIUM`, `LARGE`; UI แสดง `รหัส — เล็ก/กลาง/ใหญ่`
+- หน้า Prospect แสดงชื่อ `Target Close Date` แต่ยังส่ง field REST v1 เดิม `currentContractEndDate` เพื่อรักษา backward compatibility จนกว่าจะมี API version ใหม่
+- ฟอร์มใน Portal แสดงคำอธิบายภาษาไทยและตัวอย่างจาก field metadata กลาง และ numeric input ที่รู้จักแสดงหน่วยท้ายช่อง
+- Prospect detail ย้าย Assign Owner ไปที่ปุ่มดินสอข้าง Owner และใช้ dialog; card เดิมด้านล่างไม่ถูก render แล้ว
+- Convert to Lead ใช้ dialog ด้านบน ถ้าไม่มี Contact จะต้องกรอกชื่อและช่องทางอย่างน้อยหนึ่งรายการก่อน ระบบจะเก็บ dialog และค่าที่กรอกไว้เมื่อ validation ไม่ผ่าน
+- การสร้าง Contact ก่อน Convert เพิ่ม Prospect version แล้วใช้ version ใหม่นั้นกับ convert command เพื่อรักษา optimistic concurrency
+- Migration เพิ่มข้อมูลอ้างอิงและ Customer classification แบบ forward-only ที่ `20260826100000_add_customer_classification_reference`; ยังไม่ได้รันกับ production
+- Prospect → Lead conversion ส่งต่อ classification, address, provider, Target Close Date และ Estimated Opportunity Value พร้อม link Contact/Activity/SalesDocument เดิม โดยไม่ duplicate เอกสาร
+- Lead create/edit ใช้ core field ชุดเดียวกับ Prospect; migration `20260826113000_align_lead_and_add_province_reference` เพิ่ม Lead fields, AI confirmation fields และข้อมูลอ้างอิง 77 จังหวัด (ยังไม่ได้รันกับ production)
+- Lead detail ใช้ dialog สำหรับ Assign/Reassign, Create Activity และ Convert; conversion แยก action เชื่อม Customer เดิม/สร้างใหม่ แสดงผลสำเร็จก่อน redirect ไป Opportunity
+- Lead AI Insight อ่านเฉพาะ bounded Lead/Contact/Activity/document context ที่ผ่าน scope, ถือข้อความเอกสารเป็น untrusted evidence และไม่แก้ Lead Score/Temperature; draft ต้องให้มนุษย์ยืนยันก่อน
+- Lead document download/upload/delete ตรวจ Lead scope ฝั่ง serverและเขียน audit; เอกสารที่เชื่อมมาจาก Prospect ใช้ SalesDocument record เดิม
 
 ## Manual smoke flow
 
@@ -79,7 +96,7 @@ The scanner endpoint receives object location, SHA-256, MIME type and size, and 
 
 ## Known limitations and technical debt
 
-- Document download/preview remains disabled until an expiring signed-access policy is approved. The server-side Prospect AI capability has read-only access for bounded extraction after the same Prospect authorization check. Local mode has no malware scan and must remain an explicit operator choice.
+- Document preview และ direct object-storage URL ยังปิดอยู่; download ทำผ่าน scoped application route พร้อม private/no-store headers และ audit. AI capabilities อ่านได้เฉพาะ bounded extraction หลัง authorization check. Local mode ไม่มี malware scanและต้องเป็น explicit operator choice เท่านั้น
 - The dashboard implements real KPI/status/hot drill-down; the remaining industry/province/region/source/owner/trend chart visualizations are exposed by the dashboard API but need richer chart components.
 - Bulk API supports up to 100 items; the list-page checkbox interaction remains a UI follow-up.
 - The Playwright smoke test covers unauthenticated API protection. Authenticated three-role browser fixtures require a test-only session/bootstrap mechanism that does not yet exist.

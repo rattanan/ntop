@@ -6,6 +6,7 @@ import { loadAuthorizationContext } from "@/lib/authorization/authorization-cont
 import { assertPermission, PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { buildOpportunityScopeWhere } from "@/lib/opportunity/opportunity-query";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/number-format";
 
 export default async function NewContractPage({
   searchParams,
@@ -57,7 +58,7 @@ export default async function NewContractPage({
           {quotes.map((candidate) => <Link key={candidate.id} href={`/contracts/new?quoteVersionId=${candidate.id}`}>
             <strong>{candidate.quote.quoteNo} · v{candidate.versionNumber}</strong>
             <span>{candidate.quote.customer.name}</span>
-            <small>{candidate.currency} {candidate.total.toString()}</small>
+            <small>{formatMoney(candidate.total, candidate.currency)}</small>
           </Link>)}
           {!quotes.length && <div className="empty">ไม่มี Quote Version สถานะ ACCEPTED ที่ยังไม่ถูกสร้างสัญญา</div>}
         </div>

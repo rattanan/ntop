@@ -44,6 +44,8 @@ function command(formData: FormData, actorId: string) {
     taxId: text(formData, "taxId"),
     type: text(formData, "type"),
     segment: text(formData, "segment"),
+    subIndustry: text(formData, "subIndustry") || undefined,
+    companySize: text(formData, "companySize") || undefined,
     province: text(formData, "province"),
     address: text(formData, "address") || undefined,
     status: text(formData, "status"),

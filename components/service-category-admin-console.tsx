@@ -11,6 +11,7 @@ import {
 import { PageNumberNavigation } from "./page-number-navigation";
 import { FormNotice } from "./notice";
 import { SortableTableHeader } from "./sortable-table-header";
+import { Input } from "./form-field";
 
 type Category = {
   id: string;
@@ -39,7 +40,7 @@ function CategoryFields({ category }: { category?: Category }) {
   return <div className="form-grid">
     <label className="field"><span>รหัสหมวดหมู่</span><input className="control" name="code" required maxLength={100} defaultValue={category?.code} placeholder="เช่น CLOUD_CONNECTIVITY"/></label>
     <label className="field"><span>ชื่อหมวดหมู่</span><input className="control" name="name" required maxLength={255} defaultValue={category?.name}/></label>
-    <label className="field"><span>ลำดับแสดงผล</span><input className="control" name="displayOrder" type="number" min="0" max="100000" required defaultValue={category?.displayOrder ?? 0}/></label>
+    <label className="field"><span>ลำดับแสดงผล</span><Input name="displayOrder" type="number" min="0" max="100000" required defaultValue={category?.displayOrder ?? 0}/></label>
     <label className="field checkbox-field"><input name="requiresSiteSurvey" type="checkbox" defaultChecked={category?.requiresSiteSurvey}/> ต้องทำ Site Survey</label>
     <label className="field checkbox-field"><input name="requiresBoq" type="checkbox" defaultChecked={category?.requiresBoq}/> ต้องจัดทำ BOQ</label>
     <label className="field checkbox-field"><input name="requiresPhysicalInstallation" type="checkbox" defaultChecked={category?.requiresPhysicalInstallation}/> มีการติดตั้งหน้างาน</label>

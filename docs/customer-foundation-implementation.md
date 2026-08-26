@@ -21,6 +21,10 @@
 - Customer list/search is scoped and cursor bounded; merged aliases are excluded from the active list.
 - REST mutations require correlation/idempotency inputs; updates require If-Match.
 - Existing UI routes and legacy Customer fields remain available.
+- Customer create/edit ใช้ Customer Type, Segment, อุตสาหกรรมย่อย และขนาดบริษัทชุดเดียวกับ Prospect; Segment/อุตสาหกรรมย่อยตรวจความสัมพันธ์จาก active reference data ฝั่ง server
+- Segment และอุตสาหกรรมย่อยแสดงแบบ `รหัส — ชื่อ`; ขนาดบริษัทใช้ `SMALL — เล็ก`, `MEDIUM — กลาง`, `LARGE — ใหญ่`
+- Forward migration `20260826100000_add_customer_classification_reference` เพิ่ม reference tables, seed data และ optional Customer fields `subIndustry`/`companySize`; ต้อง apply ใน environment เป้าหมายก่อนเปิดใช้ฟอร์มใหม่
+- จังหวัดใน Customer, Prospect, Lead และ Lead conversion ใช้ searchable dropdown จาก `ProvinceReference` ชุดเดียวกัน และ server validation ไม่รับค่าที่ไม่อยู่ใน active reference; seed ครบ 77 จังหวัดใน migration `20260826113000_align_lead_and_add_province_reference`
 
 ## REST surface
 

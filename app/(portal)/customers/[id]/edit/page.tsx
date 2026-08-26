@@ -8,6 +8,7 @@ import { isAdmin, requireSession } from "@/lib/auth";
 import { buildAuthorizedUserWhere, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
 import { PERMISSIONS, permissionPolicy } from "@/lib/authorization/permission-policy";
 import { getCustomer360 } from "@/lib/customer/prisma-customer-repository";
+import { loadCustomerClassifications } from "@/lib/customer/customer-classification";
 import { prisma } from "@/lib/prisma";
 
 export default async function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,12 +19,12 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
   const customer = await getCustomer360(prisma, context, id);
   if (!customer || customer.mergedIntoCustomerId) notFound();
 
-  const users = isAdmin(session.role)
-    ? await prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true, name: true, email: true }, orderBy: { name: "asc" } })
-    : [];
+  const [users,classifications] = await Promise.all([isAdmin(session.role)
+    ? prisma.user.findMany({ where: buildAuthorizedUserWhere(context), select: { id: true, name: true, email: true }, orderBy: { name: "asc" } })
+    : Promise.resolve([]),loadCustomerClassifications()]);
   const customerFormValue = {
     id: customer.id, version: customer.version, name: customer.name, taxId: customer.taxId,
-    type: customer.type, segment: customer.segment, province: customer.province,
+    type: customer.type, segment: customer.segment, subIndustry: customer.subIndustry, companySize: customer.companySize, province: customer.province,
     status: customer.status, address: customer.address, ownerId: customer.ownerId,
     contacts: customer.contacts.map((contact) => ({
       id: contact.id, name: contact.name, title: contact.title, phone: contact.phone,
@@ -40,7 +41,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
       <Link className="back-link" href={`/customers/${id}`}><ArrowLeft aria-hidden="true" />กลับหน้ารายละเอียด</Link>
       <p className="eyebrow">Customer Management</p><h1>แก้ไข {customer.name}</h1>
     </div></div>
-    <CustomerForm value={customerFormValue} users={users} role={session.role} />
+    <CustomerForm value={customerFormValue} users={users} role={session.role} classifications={classifications} />
     <section className="card compact-card" style={{ marginTop: 20 }}>
       <div className="card-header"><div><strong>จัดการ Contacts</strong><small>{customer.contacts.length} รายการ</small></div></div>
       <div className="card-body">

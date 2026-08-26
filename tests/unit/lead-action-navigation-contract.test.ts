@@ -5,13 +5,14 @@ import { describe, expect, it } from "vitest";
 const action = readFileSync(join(process.cwd(), "app/actions/lead.ts"), "utf8");
 
 describe("Lead workflow navigation contract", () => {
-  it("opens the created Activity after recording it from a Lead", () => {
+  it("keeps Activity creation in the Lead dialog and refreshes the timeline", () => {
     expect(action).toContain("select: { id: true }");
-    expect(action).toContain("`/activities/${result.activityId}`");
+    expect(action).toContain('status: "success", message: result.activityId');
+    expect(action).not.toContain("`/activities/${result.activityId}`");
   });
 
-  it("opens the Customer sales context after Lead conversion", () => {
-    expect(action).toContain("`/customers/${converted.customerId}?tab=sales`");
-    expect(action).not.toContain("redirect(`/opportunities/${converted.opportunityId}`)");
+  it("reports success and sends the client to the created Opportunity", () => {
+    expect(action).toContain('redirectTo: `/opportunities/${converted.opportunityId}`');
+    expect(action).not.toContain("`/customers/${converted.customerId}?tab=sales`");
   });
 });

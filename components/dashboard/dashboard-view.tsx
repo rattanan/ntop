@@ -39,7 +39,7 @@ const metricIcons = {
   incidents: AlertTriangle,
 } as const;
 
-const moneyFormatter = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 });
+const moneyFormatter = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const numberFormatter = new Intl.NumberFormat("th-TH", { maximumFractionDigits: 1 });
 const dateTimeFormatter = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" });
 

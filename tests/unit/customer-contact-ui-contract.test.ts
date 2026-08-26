@@ -13,6 +13,21 @@ describe("Customer contact UI contract",()=>{
   it("routes contact mutations through customer application service",()=>{expect(actions).toContain("createCustomerRuntime().createContact");expect(actions).toContain("createCustomerRuntime().updateContact");});
   it("passes a plain projected value from the dedicated edit page without Prisma relations",()=>{expect(detail).not.toContain("<CustomerForm");expect(edit).toContain("const customerFormValue = {");expect(edit).toContain("<CustomerForm value={customerFormValue}");expect(edit).not.toContain("<CustomerForm value={customer}");});
   it("separates Customer 360 into compact tabs with hierarchy and duplicate governance",()=>{for(const tab of["overview","contacts","governance","sales"]){expect(detail).toContain(`tabHref(\"${tab}\")`);}expect(detail).toContain('activeTab === "governance"');expect(detail).toContain("Duplicate candidates");expect(detail).toContain("<CustomerGovernanceActions");});
+  it("places sales after overview and scopes pipeline records to the exact Customer",()=>{
+    expect(detail.indexOf('href={tabHref("overview")}')).toBeLessThan(detail.indexOf('href={tabHref("sales")}'));
+    expect(detail.indexOf('href={tabHref("sales")}')).toBeLessThan(detail.indexOf('href={tabHref("contacts")}'));
+    expect(detail).toContain("const opportunities = customer.opportunities");
+    expect(detail).not.toContain("mergeAliases.flatMap");
+    expect(detail).toContain("สถานะการขาย");
+    expect(detail).toContain("ความครบถ้วนโปรไฟล์");
+  });
+  it("opens Customer lifecycle from the top action instead of rendering a lower form panel",()=>{
+    const retention=readFileSync(join(process.cwd(),"components/data-retention-actions.tsx"),"utf8");
+    expect(detail).toContain("customer-hero-actions");
+    expect(detail).toContain("<CustomerLifecycleActions");
+    expect(retention).toContain('className="record-action-dialog customer-lifecycle-dialog"');
+    expect(retention).toContain('aria-label="จัดการ Customer lifecycle"');
+  });
   it("offers permission-aware create actions in every sales and activity panel",()=>{
     expect(detail).toContain("PERMISSIONS.recordCreate");
     expect(detail).toContain("LEAD_CREATE_ROLES");

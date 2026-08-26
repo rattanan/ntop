@@ -2,7 +2,8 @@ import { ArrowRight, BadgeCheck, BrainCircuit, Pencil, ShieldAlert, TrendingUp }
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ProspectActionForms, ProspectActivityManager, ProspectAiInsightActions, ProspectContactManager, ProspectDocumentList, ProspectDocumentUpload, type ProspectAiInsightDraft } from "@/components/prospect-action-forms";
+import { ProspectActivityManager, ProspectAiInsightActions, ProspectContactManager, ProspectDocumentList, ProspectDocumentUpload, type ProspectAiInsightDraft } from "@/components/prospect-action-forms";
+import { ProspectConvertAction, ProspectOwnerAction } from "@/components/prospect-primary-actions";
 import { ProspectSoftDeleteAction } from "@/components/data-retention-actions";
 import { requireSession } from "@/lib/auth";
 import { loadAssignableOwnerOptions, loadAuthorizationContext } from "@/lib/authorization/authorization-context";
@@ -10,6 +11,7 @@ import { PERMISSIONS } from "@/lib/authorization/permission-policy";
 import { buildProspectScopeWhere, loadProspectPermissions } from "@/lib/prospect/prospect-authorization";
 import { formatDocumentSize } from "@/lib/prospect/prospect-document-format";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/number-format";
 
 function scoreLevel(score: number | null, inverse = false) {
   if (score === null) return "neutral";
@@ -101,16 +103,16 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
     <div className="customer-hero">
       <div>
         <p className="eyebrow">{prospect.prospectCode}</p><h1>{prospect.companyName}</h1>
-        <div className="customer-meta"><span className="badge">{prospect.status}</span><span className={`badge prospect-${prospect.heatLevel.toLowerCase()}`}>{prospect.heatLevel} · {prospect.calculatedScore}</span><span>Owner: {prospect.owner.name}</span></div>
+        <div className="customer-meta"><span className="badge">{prospect.status}</span><span className={`badge prospect-${prospect.heatLevel.toLowerCase()}`}>{prospect.heatLevel} · {prospect.calculatedScore}</span>{permissions.has(PERMISSIONS.prospectAssign)?<ProspectOwnerAction id={id} version={prospect.version} ownerName={prospect.owner.name} owners={owners}/>:<span>Owner: {prospect.owner.name}</span>}</div>
       </div>
-      <div className="actions record-head-actions">{prospect.convertedLead && <Link className="primary" href={`/leads/${prospect.convertedLead.id}`}>เปิด Lead {prospect.convertedLead.leadNumber}<ArrowRight aria-hidden="true" /></Link>}{canConvert && prospect.status === "QUALIFIED" && <Link className="primary" href="#prospect-conversion">สร้าง Lead จากข้อมูลนี้<ArrowRight aria-hidden="true" /></Link>}{permissions.has(PERMISSIONS.prospectSoftDelete)&&!prospect.convertedLead&&<ProspectSoftDeleteAction id={id} version={prospect.version}/>} {canUpdate && <Link className="secondary" href={`/prospects/${id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}</div>
+      <div className="actions record-head-actions">{prospect.convertedLead && <Link className="primary" href={`/leads/${prospect.convertedLead.id}`}>เปิด Lead {prospect.convertedLead.leadNumber}<ArrowRight aria-hidden="true" /></Link>}{canConvert && prospect.status === "QUALIFIED" && <ProspectConvertAction id={id} version={prospect.version} hasContact={Boolean(primaryContact)} contactName={primaryContact?.name}/>} {permissions.has(PERMISSIONS.prospectSoftDelete)&&!prospect.convertedLead&&<ProspectSoftDeleteAction id={id} version={prospect.version}/>} {canUpdate && <Link className="secondary" href={`/prospects/${id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}</div>
     </div>
 
     <div className="detail-columns prospect-overview-row">
       <section className="card"><div className="card-header">Overview</div><div className="card-body detail-grid">
         <div><p className="detail-label">Industry</p><p>{prospect.industry?.name ?? prospect.subIndustry ?? "—"}</p></div>
         <div><p className="detail-label">Province / Region</p><p>{prospect.province ?? "—"} / {prospect.region ?? "—"}</p></div>
-        <div><p className="detail-label">Estimated Value</p><p>{prospect.estimatedOpportunityValue?.toString() ?? "—"} {prospect.currency}</p></div>
+        <div><p className="detail-label">Estimated Value</p><p>{formatMoney(prospect.estimatedOpportunityValue, prospect.currency)}</p></div>
         <div><p className="detail-label">Pain Points</p><p>{prospect.businessPainPoints ?? "—"}</p></div>
         <div><p className="detail-label">Recommended Products</p><p>{prospect.recommendedProducts ?? "—"}</p></div>
         <div><p className="detail-label">Next Follow-up</p><p>{prospect.nextFollowUpAt?.toLocaleString("th-TH", { timeZone: "Asia/Bangkok" }) ?? "—"}</p></div>
@@ -137,6 +139,5 @@ export default async function ProspectDetailPage({ params }: { params: Promise<{
 
     <section className="card prospect-documents"><div className="card-header"><div><span>Documents</span><small>เอกสารทั้งหมดถูกเก็บแบบ Private และตรวจ Malware ก่อนบันทึก</small></div><span className="badge muted">{prospect.documents.length} files</span></div><div className="card-body document-layout"><ProspectDocumentList id={id} documents={documents} canUpdate={canUpdate} />{canUpdate && <ProspectDocumentUpload id={id} />}</div></section>
 
-    <ProspectActionForms id={id} version={prospect.version} status={prospect.status} owners={owners} canAssign={permissions.has(PERMISSIONS.prospectAssign)} canConvert={canConvert} transferSummary={{ company: prospect.companyName, contact: primaryContact?.name ?? "—", score: prospect.calculatedScore, requirement: prospect.businessPainPoints, products: prospect.recommendedProducts, estimatedValue: prospect.estimatedOpportunityValue?.toString() ?? prospect.expectedBudget?.toString() ?? null }} />
   </>;
 }

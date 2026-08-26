@@ -1,8 +1,8 @@
 "use client";
 
-import { ArchiveRestore, Trash2 } from "lucide-react";
+import { ArchiveRestore, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { PROSPECT_DELETE_REASONS } from "@/lib/data-retention/data-retention-policy";
 import { Notice, type NoticeVariant } from "./notice";
@@ -38,7 +38,13 @@ export function DeletedProspectActions({ id, version, canPermanentlyDelete }: { 
 }
 
 export function CustomerLifecycleActions({id,version}:{id:string;version:number}){
-  const router=useRouter();const[pending,setPending]=useState(false);const[feedback,setFeedback]=useState<Feedback>(null);const[reason,setReason]=useState("");
+  const router=useRouter();const dialog=useRef<HTMLDialogElement>(null);const[pending,setPending]=useState(false);const[feedback,setFeedback]=useState<Feedback>(null);const[reason,setReason]=useState("");
   const submit=async(status:"INACTIVE"|"BLACKLISTED"|"CLOSED")=>{if(reason.trim().length<3){setFeedback({text:"กรุณาระบุเหตุผลอย่างน้อย 3 ตัวอักษร",variant:"error"});return;}setPending(true);setFeedback(null);try{const response=await fetch(`/api/v1/customers/${id}/lifecycle`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:version,status,reason})});const result=await response.json();if(!response.ok)throw new Error(result.error?.message??"เปลี่ยนสถานะ Customer ไม่สำเร็จ");setFeedback({text:"เปลี่ยนสถานะ Customer แล้ว",variant:"success"});router.refresh();}catch(error){setFeedback({text:error instanceof Error?error.message:"เปลี่ยนสถานะ Customer ไม่สำเร็จ",variant:"error"});}finally{setPending(false);}};
-  return <section className="card compact-card"><div className="card-header"><div><strong>Customer lifecycle</strong><small>ไม่มีการลบ Customer และข้อมูลธุรกรรมเดิม</small></div></div><div className="card-body"><label className="field"><span>เหตุผล <span className="required">*</span></span><textarea className="control" value={reason} onChange={event=>setReason(event.target.value)} minLength={3}/></label><div className="actions"><button className="secondary" disabled={pending} onClick={()=>submit("INACTIVE")}>Deactivate</button><button className="secondary" disabled={pending} onClick={()=>submit("BLACKLISTED")}>Blacklist</button><button className="danger-secondary" disabled={pending} onClick={()=>submit("CLOSED")}>Close Account</button></div>{feedback&&<Notice variant={feedback.variant}>{feedback.text}</Notice>}</div></section>;
+  const close=()=>{if(!pending)dialog.current?.close();};
+  return <>
+    <button className="icon-action customer-lifecycle-trigger" type="button" aria-label="จัดการ Customer lifecycle" title="จัดการ Customer lifecycle" onClick={()=>{setFeedback(null);dialog.current?.showModal();}}><Trash2 aria-hidden="true"/></button>
+    <dialog className="record-action-dialog customer-lifecycle-dialog" ref={dialog} aria-labelledby="customer-lifecycle-title" onCancel={event=>{if(pending)event.preventDefault();}}>
+      <section className="record-action-dialog-panel"><div className="record-action-dialog-head"><div><strong id="customer-lifecycle-title">Customer lifecycle</strong><small>เปลี่ยนสถานะโดยเก็บข้อมูลธุรกรรมและ Audit เดิมไว้ครบถ้วน</small></div><button className="dialog-close" type="button" aria-label="ปิดหน้าต่าง" disabled={pending} onClick={close}><X aria-hidden="true"/></button></div><div className="dialog-form"><label className="field"><span>เหตุผล <span className="required">*</span></span><textarea className="control" value={reason} onChange={event=>setReason(event.target.value)} minLength={3} required placeholder="เช่น ลูกค้ายุติกิจการ หรือขอระงับการติดต่อ"/></label><p className="help">การดำเนินการนี้ไม่ใช่การลบ Customer และไม่ลบ Lead, Opportunity หรือประวัติกิจกรรม</p>{feedback&&<Notice variant={feedback.variant}>{feedback.text}</Notice>}<div className="actions customer-lifecycle-actions"><button className="secondary" type="button" disabled={pending} onClick={()=>submit("INACTIVE")}>ระงับการใช้งาน</button><button className="secondary" type="button" disabled={pending} onClick={()=>submit("BLACKLISTED")}>ขึ้นบัญชีเฝ้าระวัง</button><button className="danger-secondary" type="button" disabled={pending} onClick={()=>submit("CLOSED")}>ปิดบัญชี</button></div></div></section>
+    </dialog>
+  </>;
 }

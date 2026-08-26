@@ -19,13 +19,37 @@ const optionalText = (maximum: number) => z.string().trim().max(maximum).optiona
 
 export const leadCommandSchema = z.strictObject({
   company: z.string().trim().min(2).max(255),
+  companyNameEnglish: optionalText(255),
+  taxId: optionalText(32),
+  branchNumber: optionalText(20),
+  customerType: z.enum(["B2G", "B2B"]).optional(),
+  segment: optionalText(100),
+  subIndustry: optionalText(191),
+  companySize: z.enum(["SMALL", "MEDIUM", "LARGE"]).optional(),
+  numberOfEmployees: z.number().int().min(0).optional(),
+  website: z.union([z.string().trim().url().max(500), z.literal("")]).optional(),
+  address: optionalText(10_000),
+  subDistrict: optionalText(191),
+  district: optionalText(191),
+  province: optionalText(191),
+  postalCode: optionalText(20),
+  region: optionalText(100),
+  currentTelecomProvider: optionalText(10_000),
+  currentInternetProvider: optionalText(10_000),
+  currentCloudProvider: optionalText(10_000),
+  currentSecurityProvider: optionalText(10_000),
   contactName: z.string().trim().min(2).max(255),
+  jobTitle: optionalText(191),
+  department: optionalText(191),
   contactEmail: z.union([z.string().trim().email(), z.literal("")]).optional(),
   contactPhone: optionalText(100),
   source: z.enum(LeadSource),
   status: z.enum(LeadStatus),
   score: z.number().int().min(0).max(100),
   recommendedProducts: optionalText(10_000),
+  requirementSummary: optionalText(10_000),
+  estimatedBudget: z.string().regex(/^\d+(\.\d{1,4})?$/).optional(),
+  expectedPurchaseAt: z.coerce.date().optional(),
   notes: optionalText(10_000),
   disqualificationReason: optionalText(1000),
   customerId: z.string().trim().min(1).optional(),
@@ -39,7 +63,12 @@ const conversionSchema = z.strictObject({
   taxId: z.string().trim().optional(),
   type: z.enum(["B2G", "B2B"]).optional(),
   segment: z.string().trim().optional(),
+  subIndustry: z.string().trim().max(50).optional(),
+  companySize: z.enum(["SMALL", "MEDIUM", "LARGE"]).optional(),
   province: z.string().trim().optional(),
+  contactName: z.string().trim().max(255).optional(),
+  contactEmail: z.union([z.string().trim().email(), z.literal("")]).optional(),
+  contactPhone: z.string().trim().max(100).optional(),
   duplicateOverrideReason: z.string().trim().max(1000).optional(),
   opportunityName: z.string().trim().min(2).max(255),
   opportunityFlow: z.string().trim().min(1).max(255),
@@ -75,6 +104,8 @@ export interface LeadRepository<TTransaction> {
   assignVersioned(input: { leadId: string; expectedVersion: number; currentStatus: LeadStatus; temperature: LeadTemperature; fromOwnerId: string; fromOrganizationUnitId: string | null; toOwnerId: string; toOrganizationUnitId: string; actorId: string; reason: string; assignedAt: Date }, transaction: TTransaction): Promise<LeadRecord | null>;
   recordStatusTransition(input: { leadId: string; fromStatus: LeadStatus; toStatus: LeadStatus; reason?: string; actorId: string; correlationId: string }, transaction: TTransaction): Promise<void>;
   hasGrantedPermission(roleCodes: readonly string[], permission: string, transaction: TTransaction): Promise<boolean>;
+  classificationExists?(segment: string, subIndustry: string | undefined, transaction: TTransaction): Promise<boolean>;
+  provinceExists?(province: string, transaction: TTransaction): Promise<boolean>;
 }
 
 type ConversionCustomerRepository<TTransaction> = Pick<
@@ -126,7 +157,7 @@ export class LeadService<TTransaction> {
     if (!result.success) throw new LeadValidationError(result.error.flatten().fieldErrors);
     const { duplicateOverrideReason, ...parsed } = result.data;
     if (!parsed.contactEmail && !parsed.contactPhone) throw new LeadValidationError({ contactEmail: ["ระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"], contactPhone: ["ระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"] });
-    if (!parsed.recommendedProducts && !parsed.notes) throw new LeadValidationError({ recommendedProducts: ["ระบุสินค้าที่สนใจหรือสรุปความต้องการ"], notes: ["ระบุสินค้าที่สนใจหรือสรุปความต้องการ"] });
+    if (!parsed.recommendedProducts && !parsed.requirementSummary && !parsed.notes) throw new LeadValidationError({ recommendedProducts: ["ระบุสินค้าที่สนใจหรือสรุปความต้องการ"], requirementSummary:["ระบุ Business Pain Points / Requirement อย่างน้อยหนึ่งรายการ"], notes: ["ระบุสินค้าที่สนใจหรือสรุปความต้องการ"] });
     return this.repository.transaction(async (transaction) => {
       const receipt = await this.repository.findReceipt(actor.id, idempotencyKey, "lead.create", transaction);
       if (receipt) {
@@ -138,6 +169,8 @@ export class LeadService<TTransaction> {
         const customer = await this.customers.findAccessible(parsed.customerId, actor.authorization, transaction);
         if (!customer) throw new LeadAccessError();
       }
+      if (parsed.segment && this.repository.classificationExists && !await this.repository.classificationExists(parsed.segment, parsed.subIndustry, transaction)) throw new LeadValidationError({ segment: ["Segment หรืออุตสาหกรรมย่อยไม่ถูกต้อง"] });
+      if (parsed.province && this.repository.provinceExists && !await this.repository.provinceExists(parsed.province, transaction)) throw new LeadValidationError({ province: ["กรุณาเลือกจังหวัดจากรายการ"] });
       const duplicates = await this.repository.findPotentialDuplicates(parsed, transaction);
       if (duplicates.length && (duplicateOverrideReason?.length ?? 0) < 5) throw new LeadDuplicateResolutionRequiredError(duplicates.length);
       const created = await this.repository.create({ ...parsed, ownerId: actor.id, actorId: actor.id, correlationId }, transaction);
@@ -169,6 +202,8 @@ export class LeadService<TTransaction> {
         const customer = await this.customers.findAccessible(parsed.customerId, actor.authorization, transaction);
         if (!customer) throw new LeadAccessError();
       }
+      if (parsed.segment && this.repository.classificationExists && !await this.repository.classificationExists(parsed.segment, parsed.subIndustry, transaction)) throw new LeadValidationError({ segment: ["Segment หรืออุตสาหกรรมย่อยไม่ถูกต้อง"] });
+      if (parsed.province && this.repository.provinceExists && !await this.repository.provinceExists(parsed.province, transaction)) throw new LeadValidationError({ province: ["กรุณาเลือกจังหวัดจากรายการ"] });
       const updated = await this.repository.updateVersioned(id, expectedVersion, parsed, transaction);
       if (!updated) throw new LeadVersionConflictError();
       if (current.status !== updated.status) await this.repository.recordStatusTransition({ leadId: id, fromStatus: current.status, toStatus: updated.status, actorId: actor.id, correlationId, reason: parsed.disqualificationReason }, transaction);
@@ -220,6 +255,8 @@ export class LeadService<TTransaction> {
         throw new LeadIdempotencyConflictError();
       }
       if (lead.status === LeadStatus.CONVERTED || lead.status === LeadStatus.ARCHIVED) throw new LeadConversionError();
+      const conversionLead = { ...lead, contactName: parsed.data.contactName || lead.contactName, contactEmail: parsed.data.contactEmail || lead.contactEmail, contactPhone: parsed.data.contactPhone || lead.contactPhone };
+      if (!conversionLead.contactName || (!conversionLead.contactEmail && !conversionLead.contactPhone)) throw new LeadValidationError({ contactName: ["กรุณาระบุชื่อผู้ติดต่อ"], contactEmail: ["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"], contactPhone: ["กรุณาระบุอีเมลหรือโทรศัพท์อย่างน้อยหนึ่งรายการ"] });
 
       let customerId: string;
       let duplicateCount = 0;
@@ -231,8 +268,11 @@ export class LeadService<TTransaction> {
         if (!customer) throw new LeadAccessError();
         customerId = customer.id;
       } else {
+        if (!parsed.data.segment || !parsed.data.province) throw new LeadValidationError({ segment: ["กรุณาเลือก Segment"], province: ["กรุณาเลือกจังหวัด"] });
+        if (this.repository.classificationExists && !await this.repository.classificationExists(parsed.data.segment, parsed.data.subIndustry, transaction)) throw new LeadValidationError({ segment: ["Segment หรืออุตสาหกรรมย่อยไม่ถูกต้อง"] });
+        if (this.repository.provinceExists && !await this.repository.provinceExists(parsed.data.province, transaction)) throw new LeadValidationError({ province: ["กรุณาเลือกจังหวัดจากรายการ"] });
         const customerInput = customerCommandSchema.safeParse({
-          name: lead.company,
+          name: conversionLead.company,
           taxId: parsed.data.taxId ?? "",
           type: parsed.data.type,
           segment: parsed.data.segment ?? "",
@@ -240,7 +280,10 @@ export class LeadService<TTransaction> {
           status: "PROSPECT",
           ownerId: lead.ownerId,
           organizationUnitId: null,
-          contact: { name: lead.contactName, email: lead.contactEmail || "", phone: lead.contactPhone || undefined, purpose: "LEAD_CONVERSION", isPrimary: true },
+          subIndustry: parsed.data.subIndustry,
+          companySize: parsed.data.companySize,
+          address: lead.address,
+          contact: { name: conversionLead.contactName, email: conversionLead.contactEmail || "", phone: conversionLead.contactPhone || undefined, purpose: "LEAD_CONVERSION", isPrimary: true },
         });
         if (!customerInput.success) throw new LeadValidationError(customerInput.error.flatten().fieldErrors);
         const duplicates = await this.customers.findDeterministicDuplicates(customerInput.data, "", transaction);
@@ -256,7 +299,7 @@ export class LeadService<TTransaction> {
         }
         await this.auditWriter.append({ actorId: actor.id, action: "customer.create", targetType: "Customer", targetId: customer.id, targetVersion: String(customer.version), outcome: "SUCCESS", correlationId, reason: parsed.data.duplicateOverrideReason, data: { sourceLeadId: lead.id, duplicateCandidateCount: duplicateCount } }, { transaction });
       }
-      const conversion = await this.repository.completeConversion({ lead, expectedVersion: parsed.data.expectedVersion, customerId, opportunityName: parsed.data.opportunityName, opportunityFlow: parsed.data.opportunityFlow, estimatedValue: parsed.data.estimatedValue, expectedCloseAt: parsed.data.expectedCloseAt, probability: parsed.data.probability, productInterest: parsed.data.productInterest }, transaction);
+      const conversion = await this.repository.completeConversion({ lead: conversionLead, expectedVersion: parsed.data.expectedVersion, customerId, opportunityName: parsed.data.opportunityName, opportunityFlow: parsed.data.opportunityFlow, estimatedValue: parsed.data.estimatedValue, expectedCloseAt: parsed.data.expectedCloseAt, probability: parsed.data.probability, productInterest: parsed.data.productInterest }, transaction);
       if (!conversion) throw new LeadVersionConflictError();
       await this.repository.recordStatusTransition({ leadId: id, fromStatus: lead.status, toStatus: LeadStatus.CONVERTED, actorId: actor.id, correlationId, reason: parsed.data.duplicateOverrideReason }, transaction);
       await this.auditWriter.append({ actorId: actor.id, action: "lead.convert", targetType: "Lead", targetId: id, targetVersion: String(conversion.lead.version), outcome: "SUCCESS", correlationId, reason: parsed.data.duplicateOverrideReason, data: { customerId, contactId: conversion.contactId, opportunityId: conversion.opportunityId, createdCustomerVersion, duplicateCandidateCount: duplicateCount } }, { transaction });

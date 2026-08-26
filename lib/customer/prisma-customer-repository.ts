@@ -19,6 +19,8 @@ const customerSelect = {
   taxId: true,
   type: true,
   segment: true,
+  subIndustry: true,
+  companySize: true,
   province: true,
   address: true,
   status: true,
@@ -34,6 +36,8 @@ function toRecord(record: {
   taxId: string;
   type: "B2G" | "B2B";
   segment: string;
+  subIndustry: string | null;
+  companySize: string | null;
   province: string;
   address: string | null;
   status: "PROSPECT" | "ACTIVE" | "INACTIVE" | "BLACKLISTED" | "CLOSED";
@@ -44,6 +48,8 @@ function toRecord(record: {
   return {
     ...record,
     address: record.address ?? undefined,
+    subIndustry: record.subIndustry ?? undefined,
+    companySize: record.companySize as "SMALL" | "MEDIUM" | "LARGE" | undefined,
     organizationUnitId: record.organizationUnitId,
     externalIds: [],
   };
@@ -130,6 +136,22 @@ export class PrismaCustomerRepository
     return grant !== null;
   }
 
+  async classificationExists(segment: string, subIndustry: string | undefined, transaction: CustomerTransaction) {
+    const reference = await transaction.customerSegment.findFirst({
+      where: {
+        code: segment,
+        active: true,
+        ...(subIndustry ? { subIndustries: { some: { code: subIndustry, active: true } } } : {}),
+      },
+      select: { code: true },
+    });
+    return reference !== null;
+  }
+
+  async provinceExists(province: string, transaction: CustomerTransaction) {
+    return Boolean(await transaction.provinceReference.findFirst({ where: { name: province, active: true }, select: { code: true } }));
+  }
+
   async create(
     input: CustomerCommand,
     actorId: string,
@@ -141,6 +163,8 @@ export class PrismaCustomerRepository
         taxId: input.taxId,
         type: input.type,
         segment: input.segment,
+        subIndustry: input.subIndustry || null,
+        companySize: input.companySize || null,
         province: input.province,
         address: input.address || null,
         status: input.status,
@@ -181,6 +205,8 @@ export class PrismaCustomerRepository
         taxId: input.taxId,
         type: input.type,
         segment: input.segment,
+        subIndustry: input.subIndustry || null,
+        companySize: input.companySize || null,
         province: input.province,
         address: input.address || null,
         status: input.status,
@@ -461,18 +487,7 @@ export async function getCustomer360(
         orderBy: { validFrom: "desc" },
       },
       mergeAliases: {
-        include: {
-          externalIds: true,
-          contacts: true,
-          opportunities: { orderBy: { updatedAt: "desc" } },
-          leads: { orderBy: { updatedAt: "desc" } },
-          activities: {
-            where: { deletedAt: null },
-            include: { owner: true },
-            orderBy: { createdAt: "desc" },
-            take: 8,
-          },
-        },
+        select: { id: true, name: true, taxId: true },
         orderBy: { updatedAt: "desc" },
       },
       mergedIntoCustomer: { select: { id: true, name: true } },

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const route = readFileSync("app/api/v1/prospects/route.ts", "utf8");
 const detail = readFileSync("app/api/v1/prospects/[id]/route.ts", "utf8");
+const assign = readFileSync("app/api/v1/prospects/[id]/assign/route.ts", "utf8");
 const preview = readFileSync("app/api/v1/prospects/import/preview/route.ts", "utf8");
 const enrich = readFileSync("lib/prospect/prospect-enrichment-service.ts", "utf8");
 const enrichRoute = readFileSync("app/api/v1/prospects/[id]/enrich/route.ts", "utf8");
@@ -14,6 +15,7 @@ const activityRoute = readFileSync("app/api/v1/prospects/[id]/activities/[activi
 const documentRoute = readFileSync("app/api/v1/prospects/[id]/documents/[documentId]/route.ts", "utf8");
 const permissionMigration = readFileSync("prisma/migrations/20260822090000_backfill_prospect_management_permissions/migration.sql", "utf8");
 const prospectDetail = readFileSync("app/(portal)/prospects/[id]/page.tsx", "utf8");
+const prospectList = readFileSync("app/(portal)/prospects/page.tsx", "utf8");
 const prospectActions = readFileSync("components/prospect-action-forms.tsx", "utf8");
 const prospectRepository = readFileSync("lib/prospect/prospect-repository.ts", "utf8");
 const enrichmentContext = readFileSync("lib/prospect/prospect-enrichment-context.ts", "utf8");
@@ -24,6 +26,14 @@ describe("Prospect API contract", () => {
     expect(route).toContain("buildProspectScopeWhere");
     expect(route).toContain("prospectIdempotencyKey");
     expect(detail).toContain("buildProspectScopeWhere");
+  });
+
+  it("redirects to the Prospect list after assignment removes the actor read scope", () => {
+    expect(assign).toContain("createProspectRuntime().assign");
+    expect(prospectActions).toContain("result.accessRetained === false");
+    expect(prospectActions).toContain('router.replace("/prospects?notice=owner-assigned")');
+    expect(prospectList).toContain('query.notice === "owner-assigned"');
+    expect(prospectList).toContain("มอบหมาย Owner สำเร็จ");
   });
 
   it("bounds, validates, and checks duplicates during import preview", () => {

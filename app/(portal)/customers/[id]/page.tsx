@@ -17,6 +17,7 @@ import {
 } from "@/lib/customer/prisma-customer-repository";
 import { LEAD_CREATE_ROLES } from "@/lib/lead/lead-rules";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/number-format";
 
 const stage: Record<string, string> = {
   QUALIFY: "คัดกรอง",
@@ -30,8 +31,17 @@ const stage: Record<string, string> = {
   EXPIRED: "หมดอายุ",
 };
 
-const customerTabs = ["overview", "contacts", "governance", "sales"] as const;
+const customerTabs = ["overview", "sales", "contacts", "governance"] as const;
 type CustomerTab = (typeof customerTabs)[number];
+
+const customerStatusLabels: Record<string, string> = {
+  PROSPECT: "Prospect Customer",
+  ACTIVE: "Active Customer",
+  INACTIVE: "Inactive Customer",
+  BLACKLISTED: "Watchlist Customer",
+  CLOSED: "Closed Customer",
+};
+const companySizeLabels: Record<string, string> = { SMALL: "เล็ก", MEDIUM: "กลาง", LARGE: "ใหญ่" };
 
 export default async function CustomerDetail({
   params,
@@ -88,37 +98,35 @@ export default async function CustomerDetail({
     ...customer.duplicateCandidatesA.map((item) => ({ ...item.customerB, score: Number(item.matchScore) })),
     ...customer.duplicateCandidatesB.map((item) => ({ ...item.customerA, score: Number(item.matchScore) })),
   ];
-  const opportunities = [
-    ...customer.opportunities,
-    ...customer.mergeAliases.flatMap((alias) => alias.opportunities),
-  ];
-  const leads = [
-    ...customer.leads,
-    ...customer.mergeAliases.flatMap((alias) => alias.leads),
-  ];
-  const activities = [
-    ...customer.activities,
-    ...customer.mergeAliases.flatMap((alias) => alias.activities),
-  ]
+  // Sales records must remain scoped to this exact Customer. Alias records are
+  // intentionally not mixed into the primary account because a historical
+  // merge candidate can otherwise surface an unrelated company's pipeline.
+  const opportunities = customer.opportunities;
+  const leads = customer.leads;
+  const activities = customer.activities
     .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
     .slice(0, 8);
+  const openLeads = leads.filter((lead) => !["CONVERTED", "DISQUALIFIED", "INVALID", "DUPLICATE", "ARCHIVED"].includes(lead.status)).length;
+  const salesJourney = opportunities.length ? stage[opportunities[0].stage] ?? opportunities[0].stage : leads.length ? "Lead" : "ยังไม่เริ่มกระบวนการขาย";
+  const profileValues = [customer.taxId, customer.segment, customer.subIndustry, customer.companySize, customer.province, customer.address, customer.contacts.length ? "contact" : null];
+  const profileCompleteness = Math.round(profileValues.filter(Boolean).length / profileValues.length * 100);
   const tabHref = (tab: CustomerTab) => `/customers/${customer.id}?tab=${tab}`;
   return <>
     <div className="customer-hero">
-      <div><p className="eyebrow">Customer 360 · {customer.taxId} · v{customer.version}</p><h1>{customer.name}</h1><div className="customer-meta"><span className="badge">{customer.type}</span><span className={`badge ${customer.status === "ACTIVE" ? "success" : "muted"}`}>{customer.status}</span><span>{customer.segment}</span><span>{customer.province}</span></div></div>
-      {editable && <Link className="secondary" href={`/customers/${customer.id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}
+      <div><p className="eyebrow">Customer 360 · {customer.taxId} · v{customer.version}</p><h1>{customer.name}</h1><div className="customer-meta"><span className="badge">{customer.type}</span><span className={`badge ${customer.status === "ACTIVE" ? "success" : "muted"}`}>Customer · {customerStatusLabels[customer.status] ?? customer.status}</span><span className="badge muted">Sales · {salesJourney}</span><span>{customer.segment}</span><span>{customer.province}</span></div></div>
+      <div className="actions customer-hero-actions">{canManageLifecycle&&!customer.mergedIntoCustomerId&&<CustomerLifecycleActions id={customer.id} version={customer.version}/>} {editable && <Link className="secondary" href={`/customers/${customer.id}/edit`}><Pencil aria-hidden="true" />แก้ไข</Link>}</div>
     </div>
     {customer.mergedIntoCustomer && <p className="notice">บัญชีนี้ถูก merge แล้ว โปรดใช้ <Link className="link" href={`/customers/${customer.mergedIntoCustomer.id}`}>{customer.mergedIntoCustomer.name}</Link></p>}
-    {canManageLifecycle&&!customer.mergedIntoCustomerId&&<div style={{marginBottom:18}}><CustomerLifecycleActions id={customer.id} version={customer.version}/></div>}
     <nav className="customer-tabs" aria-label="Customer detail sections">
       <Link className={activeTab === "overview" ? "active" : ""} href={tabHref("overview")}>ภาพรวม</Link>
+      <Link className={activeTab === "sales" ? "active" : ""} href={tabHref("sales")}><span>การขายและกิจกรรม</span><small>{opportunities.length + leads.length + activities.length}</small></Link>
       <Link className={activeTab === "contacts" ? "active" : ""} href={tabHref("contacts")}><span>Contacts</span><small>{customer.contacts.length}</small></Link>
       <Link className={activeTab === "governance" ? "active" : ""} href={tabHref("governance")}><span>Hierarchy & Duplicate</span><small>{customer.parentRelationships.length + customer.childRelationships.length + duplicateCandidates.length}</small></Link>
-      <Link className={activeTab === "sales" ? "active" : ""} href={tabHref("sales")}><span>การขายและกิจกรรม</span><small>{opportunities.length + leads.length + activities.length}</small></Link>
     </nav>
 
     {activeTab === "overview" && <div className="customer-tab-panel">
-      <section className="card compact-card"><div className="card-header">ภาพรวมบัญชี</div><div className="card-body detail-grid"><div><p className="detail-label">เจ้าของบัญชี</p><p className="detail-value">{customer.owner.name}</p></div><div><p className="detail-label">Organization</p><p className="detail-value">{customer.organizationUnit?.name ?? "—"}</p></div><div><p className="detail-label">ที่อยู่</p><p className="detail-value">{customer.address || "—"}</p></div></div></section>
+      <section className="customer-overview-kpis" aria-label="Customer summary dashboard"><article><span>สถานะบัญชี</span><strong>{customerStatusLabels[customer.status] ?? customer.status}</strong><small>Customer lifecycle</small></article><article><span>สถานะการขาย</span><strong>{salesJourney}</strong><small>{openLeads} Lead ที่กำลังติดตาม</small></article><article><span>Opportunity</span><strong>{opportunities.length}</strong><small>ผูกกับ Customer นี้โดยตรง</small></article><article><span>ความครบถ้วนโปรไฟล์</span><strong>{profileCompleteness}%</strong><div className="customer-profile-meter" aria-label={`ข้อมูลโปรไฟล์ครบ ${profileCompleteness}%`}><span style={{width:`${profileCompleteness}%`}}/></div></article></section>
+      <section className="card compact-card"><div className="card-header">รายละเอียด Customer</div><div className="card-body detail-grid"><div><p className="detail-label">รหัสผู้เสียภาษี</p><p className="detail-value">{customer.taxId}</p></div><div><p className="detail-label">ประเภท Customer</p><p className="detail-value">{customer.type}</p></div><div><p className="detail-label">Segment</p><p className="detail-value">{customer.segment}</p></div><div><p className="detail-label">อุตสาหกรรมย่อย</p><p className="detail-value">{customer.subIndustry || "—"}</p></div><div><p className="detail-label">ขนาดบริษัท</p><p className="detail-value">{customer.companySize ? companySizeLabels[customer.companySize] ?? customer.companySize : "—"}</p></div><div><p className="detail-label">จังหวัด</p><p className="detail-value">{customer.province}</p></div><div><p className="detail-label">เจ้าของบัญชี</p><p className="detail-value">{customer.owner.name}</p></div><div><p className="detail-label">Organization</p><p className="detail-value">{customer.organizationUnit?.name ?? "—"}</p></div><div><p className="detail-label">ที่อยู่</p><p className="detail-value">{customer.address || "—"}</p></div></div></section>
       <div className="detail-columns compact-columns"><section className="card compact-card"><div className="card-header">Identifiers และ aliases</div><div className="card-body">{customer.externalIds.map(item=><div className="timeline" key={item.id}><strong>{item.sourceSystem}</strong><p>{item.externalId}</p></div>)}{customer.mergeAliases.map(alias=><div className="timeline" key={alias.id}><strong>Alias · {alias.name}</strong><p>{alias.taxId}</p></div>)}{!customer.externalIds.length&&!customer.mergeAliases.length&&<div className="compact-empty">ยังไม่มี External ID หรือ alias</div>}</div></section><section className="card compact-card"><div className="card-header">Ownership history</div><div className="card-body">{customer.ownershipHistory.map(item=><div className="timeline" key={item.id}><strong>{item.owner.name}</strong><p>{item.organizationUnit?.name ?? "ไม่ระบุหน่วยงาน"}</p><small>{item.validFrom.toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}{item.validTo?` – ${item.validTo.toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}`:" – ปัจจุบัน"}</small></div>)}{!customer.ownershipHistory.length&&<div className="compact-empty">ยังไม่มีประวัติเจ้าของบัญชี</div>}</div></section></div>
     </div>}
 
@@ -130,7 +138,7 @@ export default async function CustomerDetail({
       <div className="detail-columns compact-columns">
         <section className="card compact-card">
           <div className="card-header"><strong>Opportunity</strong>{canCreateRelated&&<Link className="secondary customer-panel-create" href="/opportunities/new" aria-label="สร้าง Opportunity"><Plus aria-hidden="true"/>สร้าง</Link>}</div>
-          <div className="card-body">{opportunities.length?opportunities.map(item=><div className="timeline" key={item.id}><Link className="link" href={`/opportunities/${item.id}`}>{item.name}</Link><p>{stage[item.stage]??item.stage} · {new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:0}).format(Number(item.estimatedValue))}</p></div>):<div className="compact-empty">ยังไม่มีโอกาสขาย</div>}</div>
+          <div className="card-body">{opportunities.length?opportunities.map(item=><div className="timeline" key={item.id}><Link className="link" href={`/opportunities/${item.id}`}>{item.name}</Link><p>{stage[item.stage]??item.stage} · {formatMoney(item.estimatedValue,"THB")}</p></div>):<div className="compact-empty">ยังไม่มีโอกาสขาย</div>}</div>
         </section>
         <section className="card compact-card">
           <div className="card-header"><strong>Lead ที่เกี่ยวข้อง</strong>{canCreateLead&&<Link className="secondary customer-panel-create" href="/leads/new" aria-label="สร้าง Lead"><Plus aria-hidden="true"/>สร้าง</Link>}</div>

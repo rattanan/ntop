@@ -14,13 +14,34 @@ export function buildLeadScopeWhere(context: AuthorizationContext): Prisma.LeadW
   return qualifiedOnly ? { AND: [scope, { status: LeadStatus.QUALIFIED }] } : scope;
 }
 
-const select = { id: true, company: true, contactName: true, contactEmail: true, contactPhone: true, source: true, status: true, temperature: true, score: true, recommendedProducts: true, requirementSummary: true, notes: true, disqualificationReason: true, ownerId: true, organizationUnitId: true, customerId: true, contactId: true, version: true } as const;
+const select = { id: true, company: true, companyNameEnglish:true, taxId:true, branchNumber:true, customerType:true, segment:true, subIndustry:true, companySize:true, numberOfEmployees:true, website:true, address:true, subDistrict:true, district:true, province:true, postalCode:true, region:true, currentTelecomProvider:true, currentInternetProvider:true, currentCloudProvider:true, currentSecurityProvider:true, contactName: true, jobTitle:true, department:true, contactEmail: true, contactPhone: true, source: true, status: true, temperature: true, score: true, recommendedProducts: true, requirementSummary: true, estimatedBudget:true, expectedPurchaseAt:true, notes: true, disqualificationReason: true, ownerId: true, organizationUnitId: true, customerId: true, contactId: true, version: true } as const;
 
 function record(value: Awaited<ReturnType<LeadTransaction["lead"]["findFirst"]>> & Record<string, unknown>): LeadRecord {
   return {
     id: value.id as string,
     company: value.company as string,
+    companyNameEnglish: (value.companyNameEnglish as string | null) ?? undefined,
+    taxId: (value.taxId as string | null) ?? undefined,
+    branchNumber: (value.branchNumber as string | null) ?? undefined,
+    customerType: (value.customerType as LeadRecord["customerType"]) ?? undefined,
+    segment: (value.segment as string | null) ?? undefined,
+    subIndustry: (value.subIndustry as string | null) ?? undefined,
+    companySize: (value.companySize as LeadRecord["companySize"]) ?? undefined,
+    numberOfEmployees: (value.numberOfEmployees as number | null) ?? undefined,
+    website: (value.website as string | null) ?? undefined,
+    address: (value.address as string | null) ?? undefined,
+    subDistrict: (value.subDistrict as string | null) ?? undefined,
+    district: (value.district as string | null) ?? undefined,
+    province: (value.province as string | null) ?? undefined,
+    postalCode: (value.postalCode as string | null) ?? undefined,
+    region: (value.region as string | null) ?? undefined,
+    currentTelecomProvider: (value.currentTelecomProvider as string | null) ?? undefined,
+    currentInternetProvider: (value.currentInternetProvider as string | null) ?? undefined,
+    currentCloudProvider: (value.currentCloudProvider as string | null) ?? undefined,
+    currentSecurityProvider: (value.currentSecurityProvider as string | null) ?? undefined,
     contactName: value.contactName as string,
+    jobTitle: (value.jobTitle as string | null) ?? undefined,
+    department: (value.department as string | null) ?? undefined,
     contactEmail: (value.contactEmail as string | null) ?? "",
     contactPhone: (value.contactPhone as string | null) ?? undefined,
     source: value.source as LeadRecord["source"],
@@ -29,6 +50,8 @@ function record(value: Awaited<ReturnType<LeadTransaction["lead"]["findFirst"]>>
     score: value.score as number,
     recommendedProducts: (value.recommendedProducts as string | null) ?? undefined,
     requirementSummary: (value.requirementSummary as string | null) ?? undefined,
+    estimatedBudget: value.estimatedBudget ? String(value.estimatedBudget) : undefined,
+    expectedPurchaseAt: (value.expectedPurchaseAt as Date | null) ?? undefined,
     notes: (value.notes as string | null) ?? undefined,
     disqualificationReason: (value.disqualificationReason as string | null) ?? undefined,
     ownerId: value.ownerId as string,
@@ -43,6 +66,8 @@ export class PrismaLeadRepository implements LeadRepository<LeadTransaction> {
   constructor(private readonly client: PrismaClient) {}
   transaction<T>(work: (transaction: LeadTransaction) => Promise<T>) { return this.client.$transaction(work); }
   async hasGrantedPermission(roleCodes: readonly string[], permission: string, transaction: LeadTransaction) { return (await transaction.rolePermissionGrant.count({ where: { roleCode: { in: [...roleCodes] }, permissionCode: permission } })) > 0; }
+  async classificationExists(segment: string, subIndustry: string | undefined, transaction: LeadTransaction) { const row=await transaction.customerSegment.findFirst({where:{code:segment,active:true,...(subIndustry?{subIndustries:{some:{code:subIndustry,active:true}}}:{})},select:{code:true}}); return Boolean(row); }
+  async provinceExists(province: string, transaction: LeadTransaction) { return Boolean(await transaction.provinceReference.findFirst({where:{name:province,active:true},select:{code:true}})); }
   async findAccessible(id: string, context: AuthorizationContext, transaction: LeadTransaction) {
     const value = await transaction.lead.findFirst({ where: { id, ...buildLeadScopeWhere(context) }, select });
     return value ? record(value as never) : null;
@@ -112,7 +137,7 @@ export class PrismaLeadRepository implements LeadRepository<LeadTransaction> {
     const sequence = await transaction.opportunityNumberSequence.update({ where: { id: sequenceId }, data: { nextValue: { increment: 1 } } });
     const opportunityRequirements = [input.lead.requirementSummary, input.lead.notes].filter((value): value is string => Boolean(value)).join("\n\n") || null;
     const opportunity = await transaction.opportunity.create({ data: { opportunityNumber: `OPP-${year}-${String(sequence.nextValue).padStart(6, "0")}`, name: input.opportunityName, customerId: input.customerId, flow: input.opportunityFlow, estimatedValue: input.estimatedValue, probability: input.probability, expectedCloseAt: input.expectedCloseAt, organizationUnitId: input.lead.organizationUnitId ?? null, ownerId: input.lead.ownerId, requirements: opportunityRequirements, nextAction: input.productInterest ?? input.lead.recommendedProducts ?? null, sourceLeadId: input.lead.id } });
-    const updated = await transaction.lead.updateMany({ where: { id: input.lead.id, version: input.expectedVersion, status: input.lead.status }, data: { status: LeadStatus.CONVERTED, customerId: input.customerId, contactId: contact.id, convertedAt: new Date(), version: { increment: 1 } } });
+    const updated = await transaction.lead.updateMany({ where: { id: input.lead.id, version: input.expectedVersion, status: input.lead.status }, data: { status: LeadStatus.CONVERTED, customerId: input.customerId, contactId: contact.id, contactName:input.lead.contactName,contactEmail:input.lead.contactEmail||null,contactPhone:input.lead.contactPhone||null, convertedAt: new Date(), version: { increment: 1 } } });
     if (updated.count !== 1) return null;
     return { lead: record(await transaction.lead.findUniqueOrThrow({ where: { id: input.lead.id }, select }) as never), contactId: contact.id, opportunityId: opportunity.id };
   }

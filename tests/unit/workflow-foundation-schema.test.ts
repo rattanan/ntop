@@ -9,6 +9,8 @@ const migration = read("prisma/migrations/20260713220000_add_opportunity_pipelin
 const compatibilityMigration = read("prisma/legacy-mariadb-5.5-opportunity-commercial.sql");
 const relaxedQualificationMigration = read("prisma/migrations/20260825180000_relax_qualify_discover_transition_policy/migration.sql");
 const relaxedQualificationCompatibilityMigration = read("prisma/legacy-mariadb-5.5-relax-qualify-discover-transition-policy.sql");
+const solutionProposalRepair = read("prisma/migrations/20260826140000_repair_solution_proposal_transition/migration.sql");
+const solutionProposalCompatibility = read("prisma/legacy-mariadb-5.5-repair-solution-proposal-transition-policy.sql");
 
 describe("Opportunity/Pipeline/Quote/Approval persistence", () => {
   it("adds optimistic stage history and configured transitions", () => {
@@ -26,6 +28,16 @@ describe("Opportunity/Pipeline/Quote/Approval persistence", () => {
       expect(policyMigration).not.toContain("JSON_ARRAY('qualificationResult')");
       expect(policyMigration).not.toContain('["qualificationResult"]');
       expect(policyMigration).toContain("`effectiveTo`");
+      expect(policyMigration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
+    }
+  });
+
+  it("repairs the governed SOLUTION to PROPOSAL route without weakening its evidence gates", () => {
+    for (const policyMigration of [solutionProposalRepair, solutionProposalCompatibility]) {
+      expect(policyMigration).toContain("'SOLUTION_PROPOSAL', 2");
+      expect(policyMigration).toContain("coverageConfirmed");
+      expect(policyMigration).toContain("solutionComplete");
+      expect(policyMigration).toContain("opportunity.transition");
       expect(policyMigration).not.toMatch(/DROP\s+(TABLE|COLUMN)/i);
     }
   });

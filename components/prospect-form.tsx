@@ -7,6 +7,8 @@ import { useForm, type Resolver } from "react-hook-form";
 import { useRouter } from "next/navigation";
 
 import { Notice } from "@/components/notice";
+import { FormField, Input, Textarea } from "@/components/form-field";
+import { COMPANY_SIZE_OPTIONS, type CustomerClassificationOption } from "@/lib/customer/customer-classification";
 import { prospectCommandSchema, type ProspectCommand } from "@/lib/prospect/prospect-validation";
 
 const sources = Object.values(ProspectSource);
@@ -27,8 +29,10 @@ function firstFormError(value: unknown): string | null {
 
 export function ProspectForm({
   prospect,
+  classifications,
 }: {
   prospect?: Partial<ProspectCommand> & { id: string; version: number };
+  classifications: CustomerClassificationOption[];
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -48,6 +52,7 @@ export function ProspectForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<ProspectCommand>({
     resolver: zodResolver(prospectCommandSchema) as Resolver<ProspectCommand>,
@@ -114,21 +119,18 @@ export function ProspectForm({
     },
   );
 
+  const selectedSegment = watch("organizationType") ?? "";
+  const subIndustries = classifications.find((item) => item.code === selectedSegment)?.subIndustries ?? [];
+
   const field = (
     name: keyof ProspectCommand,
     label: string,
     type = "text",
     required = false,
   ) => (
-    <label className="field">
-      <span>{label}</span>
-      <input className="control" type={type} required={required} {...register(name as never)} />
-      {errors[name] && (
-        <small className="error">
-          {String(errors[name]?.message ?? "ข้อมูลไม่ถูกต้อง")}
-        </small>
-      )}
-    </label>
+    <FormField label={label} name={String(name)} required={required} error={errors[name]?.message ? [String(errors[name]?.message)] : undefined}>
+      <Input type={type} required={required} error={Boolean(errors[name])} {...register(name as never)} />
+    </FormField>
   );
 
   return (
@@ -141,21 +143,19 @@ export function ProspectForm({
             {field("companyNameEnglish", "ชื่อภาษาอังกฤษ")}
             {field("taxId", "เลขผู้เสียภาษี 13 หลัก")}
             {field("branchNumber", "เลขสาขา")}
-            {field("customerType", "ประเภท Customer")}
-            {field("organizationType", "ประเภทองค์กร")}
-            {field("subIndustry", "อุตสาหกรรมย่อย")}
-            {field("companySize", "ขนาดบริษัท")}
-            <label className="field">
-              <span>จำนวนพนักงาน</span>
-              <input
-                className="control"
+            <FormField label="ประเภท Customer" name="customerType"><select className="control" {...register("customerType")}><option value="">ไม่ระบุ</option><option value="B2G">B2G — ภาครัฐ</option><option value="B2B">B2B — ภาคเอกชน</option></select></FormField>
+            <FormField label="Segment" name="organizationType"><select className="control" {...register("organizationType", { onChange: () => setValue("subIndustry", "", { shouldDirty: true }) })}><option value="">เลือก Segment</option>{classifications.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
+            <FormField label="อุตสาหกรรมย่อย" name="subIndustry"><select className="control" disabled={!selectedSegment} {...register("subIndustry")}><option value="">ไม่ระบุ</option>{subIndustries.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
+            <FormField label="ขนาดบริษัท" name="companySize"><select className="control" {...register("companySize")}><option value="">ไม่ระบุ</option>{COMPANY_SIZE_OPTIONS.map(item => <option key={item.code} value={item.code}>{item.code} — {item.name}</option>)}</select></FormField>
+            <FormField label="จำนวนพนักงาน" name="numberOfEmployees">
+              <Input
                 type="number"
                 min="0"
                 {...register("numberOfEmployees", {
                   setValueAs: (value) => (value === "" ? undefined : Number(value)),
                 })}
               />
-            </label>
+            </FormField>
             {field("website", "เว็บไซต์", "url")}
           </div>
         </section>
@@ -188,12 +188,12 @@ export function ProspectForm({
             {field("currentInternetProvider", "Internet Provider")}
             {field("currentCloudProvider", "Cloud Provider")}
             {field("currentSecurityProvider", "Security Provider")}
-            {field("expectedBudget", "Expected Budget")}
-            {field("estimatedOpportunityValue", "Estimated Opportunity Value")}
+            <FormField label="Expected Budget" name="expectedBudget"><Input type="number" min="0" step="0.01" {...register("expectedBudget")} /></FormField>
+            <FormField label="Estimated Opportunity Value" name="estimatedOpportunityValue"><Input type="number" min="0" step="0.01" {...register("estimatedOpportunityValue")} /></FormField>
             {field("expectedPurchasePeriod", "Expected Purchase Period")}
-            {field("currentContractEndDate", "Contract End Date", "date")}
-            <label className="field full"><span>Business Pain Points</span><textarea className="control" {...register("businessPainPoints")} /></label>
-            <label className="field full"><span>Recommended Products</span><textarea className="control" {...register("recommendedProducts")} /></label>
+            {field("currentContractEndDate", "Target Close Date", "date")}
+            <div className="field full"><FormField label="Business Pain Points" name="businessPainPoints"><Textarea {...register("businessPainPoints")} /></FormField></div>
+            <div className="field full"><FormField label="Recommended Products" name="recommendedProducts"><Textarea {...register("recommendedProducts")} /></FormField></div>
           </div>
         </section>
         <section className="form-section">

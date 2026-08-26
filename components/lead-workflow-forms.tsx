@@ -6,13 +6,16 @@ import { useActionState, useState } from "react";
 
 import type { FormState } from "@/app/action-types";
 import { addLeadActivity, assignLead, convertLead, qualifyLead, updateLead } from "@/app/actions/lead";
-import { ACTIVITY_TYPES, FLOWS, LEAD_SOURCES, LEAD_STATUSES, SEGMENTS } from "@/lib/constants";
+import { ACTIVITY_TYPES, FLOWS, LEAD_STATUSES, SEGMENTS } from "@/lib/constants";
+import type { CustomerClassificationOption } from "@/lib/customer/customer-classification";
+import type { ProvinceOption } from "@/lib/customer/province-reference";
 
 import { FormField, Input, Textarea } from "./form-field";
+import { LeadFormFields, type LeadFormValue } from "./lead-form-fields";
 import { FormNotice, Notice } from "./notice";
 
 const initial: FormState = {};
-type LeadValue = { id:string; version:number; company:string; taxId:string|null; contactName:string; contactEmail:string|null; contactPhone:string|null; source:string; status:string; score:number; recommendedProducts:string|null; requirementSummary:string|null; estimatedBudget:string|null; notes:string|null; disqualificationReason?:string|null; customerId:string|null };
+type LeadValue = LeadFormValue & { id:string; version:number; company:string; taxId:string|null; contactName:string; contactEmail:string|null; contactPhone:string|null; source:string; status:string; score:number; recommendedProducts:string|null; requirementSummary:string|null; estimatedBudget:string|null; notes:string|null; disqualificationReason?:string|null; customerId:string|null };
 type CustomerOption = { id:string; name:string; taxId:string; province:string };
 type OwnerOption = { userId:string; name:string; email:string; organizationUnitId:string; organizationUnitName:string; organizationUnitCode:string };
 
@@ -40,20 +43,13 @@ export function LeadQualificationForm({ lead }: { lead: LeadValue }) {
   return <form action={action} className="card form-card"><div className="card-body"><input type="hidden" name="idempotencyKey" value={key}/><div className="form-section"><h2>Qualification Checklist</h2><p>ระบบคำนวณ completeness และ Lead Score ใหม่เมื่อยืนยัน</p><div className="form-grid">{qualificationItems.map(([key,label])=><label key={key}><input type="checkbox" name={key}/> {label}</label>)}<div className="field full"><FormField label="สรุปความต้องการ" name="requirementSummary" required error={state.errors?.requirementSummary}><Textarea name="requirementSummary" minLength={5} required error={!!state.errors?.requirementSummary}/></FormField></div><FormField label="มูลค่าประมาณการ (บาท)" name="estimatedBudget" required error={state.errors?.estimatedBudget}><Input name="estimatedBudget" type="number" min="0" step="0.0001" required error={!!state.errors?.estimatedBudget}/></FormField><FormField label="เหตุผล Manager Override (เมื่อ checklist ไม่ครบ)" name="overrideReason"><Input name="overrideReason" minLength={5}/></FormField></div></div><FormNotice state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending?"กำลังประเมิน…":"ยืนยัน Qualification"}</button></div></div></form>;
 }
 
-export function LeadEditForm({ lead, customers }: { lead: LeadValue; customers: CustomerOption[] }) {
+export function LeadEditForm({ lead, customers, classifications, provinces }: { lead: LeadValue; customers: CustomerOption[]; classifications: CustomerClassificationOption[]; provinces: ProvinceOption[] }) {
   const [state, action, pending] = useActionState(updateLead.bind(null, lead.id, lead.version), initial);
   const key = useState(() => crypto.randomUUID())[0];
-  return <form action={action} className="card form-card"><div className="card-body"><input type="hidden" name="idempotencyKey" value={key}/><div className="form-section"><h2>แก้ไข Lead</h2><p>Version {lead.version} · ระบบจะป้องกันการบันทึกทับข้อมูลใหม่กว่า</p><div className="form-grid">
-    <FormField label="บริษัท" name="company" required error={state.errors?.company}><Input id="company" name="company" defaultValue={lead.company} required error={!!state.errors?.company}/></FormField>
-    <FormField label="ชื่อผู้ติดต่อ" name="contactName" required error={state.errors?.contactName}><Input id="contactName" name="contactName" defaultValue={lead.contactName} required error={!!state.errors?.contactName}/></FormField>
-    <FormField label="อีเมล" name="contactEmail" error={state.errors?.contactEmail}><Input id="contactEmail" name="contactEmail" type="email" defaultValue={lead.contactEmail ?? ""} error={!!state.errors?.contactEmail}/></FormField>
-    <FormField label="โทรศัพท์" name="contactPhone"><Input id="contactPhone" name="contactPhone" defaultValue={lead.contactPhone ?? ""}/></FormField>
-    <FormField label="แหล่งที่มา" name="source" required><select id="source" name="source" className="control" defaultValue={lead.source}>{LEAD_SOURCES.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></FormField>
+  return <form action={action} className="card form-card"><div className="card-body"><input type="hidden" name="idempotencyKey" value={key}/><div className="form-section"><h2>แก้ไข Lead</h2><p>Version {lead.version} · ระบบจะป้องกันการบันทึกทับข้อมูลใหม่กว่า</p></div>
+    <LeadFormFields value={lead} customers={customers} classifications={classifications} provinces={provinces} errors={state.errors}/><div className="form-section"><div className="form-grid">
     <FormField label="สถานะ" name="status" required error={state.errors?.status}><select id="status" name="status" className="control" defaultValue={lead.status}>{LEAD_STATUSES.filter(([value])=>value!=="CONVERTED").map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></FormField>
     <FormField label="Lead Score" name="score" required><Input id="score" name="score" type="number" min="0" max="100" defaultValue={lead.score} required/></FormField>
-    <FormField label="Customer ที่เชื่อมอยู่" name="customerId"><select id="customerId" name="customerId" className="control" defaultValue={lead.customerId ?? ""}><option value="">ยังไม่เชื่อม Customer</option>{customers.map(customer=><option key={customer.id} value={customer.id}>{customer.name} ({customer.taxId})</option>)}</select></FormField>
-    <div className="field full"><FormField label="สินค้าที่แนะนำ" name="recommendedProducts"><Input id="recommendedProducts" name="recommendedProducts" defaultValue={lead.recommendedProducts ?? ""}/></FormField></div>
-    <div className="field full"><FormField label="บันทึก" name="notes"><Textarea id="notes" name="notes" defaultValue={lead.notes ?? ""}/></FormField></div>
     <div className="field full"><FormField label="เหตุผล Disqualified" name="disqualificationReason" error={state.errors?.disqualificationReason}><Textarea id="disqualificationReason" name="disqualificationReason" defaultValue={lead.disqualificationReason ?? ""}/></FormField></div>
   </div></div><FormNotice state={state}/><div className="actions"><button className="primary" disabled={pending}>{pending?"กำลังบันทึก…":"บันทึกการแก้ไข"}</button></div></div></form>;
 }

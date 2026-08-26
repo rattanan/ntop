@@ -23,7 +23,8 @@ const numberFormat = new Intl.NumberFormat("th-TH");
 const moneyFormat = new Intl.NumberFormat("th-TH", {
   style: "currency",
   currency: "THB",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 export default async function ProspectDashboard() {
