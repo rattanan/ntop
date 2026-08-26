@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Notice, type NoticeVariant } from "@/components/notice";
 
 type TransitionOption = { code: string; label: string };
-type DocumentOption = { id: string; label: string };
 type ServiceOrderOption = { id: string; orderNo: string; status: string };
 
 async function payload(response: Response) {
@@ -15,9 +14,9 @@ async function payload(response: Response) {
   return result.data;
 }
 
-export function ContractWorkflowControls({ contractId, version, currentStatusLabel, workflowUnavailableReason, transitions, canUploadDocument, canSign, canCreateServiceOrder, documents, serviceOrders }: { contractId: string; version: number; currentStatusLabel: string; workflowUnavailableReason: string; transitions: TransitionOption[]; canUploadDocument: boolean; canSign: boolean; canCreateServiceOrder: boolean; documents: DocumentOption[]; serviceOrders: ServiceOrderOption[] }) {
+export function ContractWorkflowControls({ contractId, version, currentStatusLabel, workflowUnavailableReason, transitions, canUploadDocument, canCreateServiceOrder, serviceOrders }: { contractId: string; version: number; currentStatusLabel: string; workflowUnavailableReason: string; transitions: TransitionOption[]; canUploadDocument: boolean; canCreateServiceOrder: boolean; serviceOrders: ServiceOrderOption[] }) {
   const router = useRouter();
-  const [pending, setPending] = useState<"transition" | "document" | "signature" | "serviceOrder" | null>(null);
+  const [pending, setPending] = useState<"transition" | "document" | "serviceOrder" | null>(null);
   const [message, setMessage] = useState<{ text: string; variant: NoticeVariant } | null>(null);
 
   return <div className="grid-2 contract-control-grid" data-testid="contract-workflow-controls">
@@ -90,20 +89,6 @@ export function ContractWorkflowControls({ contractId, version, currentStatusLab
       <label className="field"><span>File</span><input className="control" name="file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" aria-describedby="contract-document-guidance" required /></label>
       <p className="contract-document-guidance" id="contract-document-guidance">รองรับ PDF, Word, Excel, JPG, PNG และ ZIP · ไฟล์อยู่ภายนอก public path และเข้าถึงผ่านสิทธิ์ของระบบเท่านั้น</p>
       <div className="field full contract-document-actions"><button className="secondary" data-testid="contract-document-submit" disabled={pending !== null}>{pending === "document" ? "กำลังอัปโหลด…" : "อัปโหลดเอกสาร"}</button></div>
-    </div></form>}
-    {canSign && documents.length > 0 && <form className="card" onSubmit={async (event) => {
-      event.preventDefault(); const form = new FormData(event.currentTarget); setPending("signature"); setMessage(null);
-      try {
-        await payload(await fetch(`/api/v1/contracts/${contractId}/signatures`, { method: "POST", headers: { "content-type": "application/json", "idempotency-key": crypto.randomUUID() }, body: JSON.stringify({ expectedVersion: version, partyCode: form.get("partyCode"), documentVersionId: form.get("documentVersionId"), signedByName: form.get("signedByName"), signedAt: new Date(String(form.get("signedAt"))).toISOString() }) }));
-        setMessage({ text: "บันทึกหลักฐานลายเซ็นเรียบร้อย", variant: "success" }); router.refresh();
-      } catch (error) { setMessage({ text: error instanceof Error ? error.message : "บันทึกลายเซ็นไม่สำเร็จ", variant: "error" }); }
-      finally { setPending(null); }
-    }}><div className="card-header"><strong>Verified Signature Evidence</strong></div><div className="card-body form-grid">
-      <label className="field"><span>Signing party</span><select className="control" name="partyCode"><option value="CUSTOMER">Customer</option><option value="NT">NT</option></select></label>
-      <label className="field"><span>Clean document</span><select className="control" name="documentVersionId">{documents.map((document) => <option key={document.id} value={document.id}>{document.label}</option>)}</select></label>
-      <label className="field"><span>Signed by</span><input className="control" name="signedByName" minLength={2} required /></label>
-      <label className="field"><span>Signed at</span><input className="control" name="signedAt" type="datetime-local" required /></label>
-      <div className="field full"><button className="primary" data-testid="contract-signature-submit" disabled={pending !== null}>{pending === "signature" ? "กำลังบันทึก…" : "บันทึกลายเซ็น"}</button></div>
     </div></form>}
     {message && <Notice variant={message.variant}>{message.text}</Notice>}
   </div>;

@@ -49,6 +49,11 @@ describe("Contract document upload", () => {
     expect(api).toContain('code = "DOCUMENT_SERVICE_UNAVAILABLE"; message = error.message');
   });
 
+  it("serializes Prisma BigInt file sizes before returning the upload response", () => {
+    const route = readFileSync("app/api/v1/contracts/[id]/documents/route.ts", "utf8");
+    expect(route).toContain("sizeBytes:data.sizeBytes.toString()");
+  });
+
   it("uses the configured document-storage driver for Contract runtime", () => {
     const runtime = readFileSync("lib/contract/contract-runtime.ts", "utf8");
     expect(runtime).toContain("createProspectDocumentStorage()");

@@ -24,12 +24,12 @@ describe("permission-driven application navigation", () => {
     expect(routes).not.toContain("/admin/users");
   });
 
-  it("keeps Contract directly below Proposal in the Commercial menu", () => {
+  it("keeps Quotation above Contract in the Commercial menu", () => {
     const commercial = NAV_GROUPS.find((group) => group.label === "Commercial");
     const routes = commercial?.items.map((item) => item.href) ?? [];
     const proposalIndex = routes.indexOf("/proposals");
 
-    expect(routes[proposalIndex + 1]).toBe("/contracts");
+    expect(routes.slice(proposalIndex, proposalIndex + 3)).toEqual(["/proposals", "/quotes", "/contracts"]);
     expect(visibleNavigation([NAVIGATION_PERMISSIONS.contracts]).flatMap((group) => group.items.map((item) => item.href))).toEqual(["/contracts"]);
     expect(navigationLabel("/contracts/contract-1")).toBe("สัญญา");
   });

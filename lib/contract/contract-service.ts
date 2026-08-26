@@ -67,7 +67,6 @@ export class ContractService<Tx> {
       if ((toStatusCode === "PENDING_APPROVAL" || contract.statusCode === "PENDING_APPROVAL") && !await this.approvalEnabled()) throw new ApprovalWorkflowDisabledError("CONTRACT_APPROVAL");
       const [edge, target] = await Promise.all([this.repository.findTransition(contract.statusCode, toStatusCode, tx), this.repository.statusIsActive(toStatusCode, tx)]);
       if (!edge || !target) throw new ContractTransitionError();
-      if (edge.makerChecker && contract.ownerId === actor.id) throw new ContractMakerCheckerError();
       const requiredPermission = edge.requiredPermission ?? PERMISSIONS.contractManage;
       if (!(await this.hasPermission(actor, requiredPermission, tx))) throw new PermissionDeniedError(requiredPermission as Permission);
       if (edge.requiredSignatureParties.some((party) => !contract.cleanSignatureParties.includes(party))) throw new ContractSignatureRequiredError();
@@ -117,7 +116,6 @@ export class ContractAccessError extends Error { constructor() { super("Contract
 export class ContractConfigurationError extends Error { constructor(message = "Contract configuration is unavailable.") { super(message); this.name = "ContractConfigurationError"; } }
 export class ContractVersionConflictError extends Error { constructor() { super("Contract version is stale."); this.name = "ContractVersionConflictError"; } }
 export class ContractTransitionError extends Error { constructor() { super("Contract status transition is not allowed."); this.name = "ContractTransitionError"; } }
-export class ContractMakerCheckerError extends Error { constructor() { super("Maker-checker separation is required."); this.name = "ContractMakerCheckerError"; } }
 export class ContractSignatureRequiredError extends Error { constructor() { super("Required clean signatures are missing."); this.name = "ContractSignatureRequiredError"; } }
 export class ContractServiceOrderError extends Error { constructor() { super("Contract is not eligible for service-order handover."); this.name = "ContractServiceOrderError"; } }
 export class ContractTerminalError extends Error { constructor() { super("Terminal contract cannot be changed."); this.name = "ContractTerminalError"; } }

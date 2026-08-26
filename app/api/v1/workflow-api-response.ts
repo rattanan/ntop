@@ -11,7 +11,7 @@ import { AiConfigurationRuntimeError } from "@/lib/ai/provider-configuration-run
 import { OpenAiCompatibleProviderError } from "@/lib/ai/openai-compatible-client";
 import { AiInputPolicyError, AiOutputValidationError } from "@/lib/ai/safety-policy";
 import { ProposalAccessError, ProposalConfigurationError, ProposalTerminalError, ProposalTransitionError, ProposalVersionConflictError } from "@/lib/proposal/proposal-service";
-import { ContractAccessError, ContractConfigurationError, ContractDateRangeError, ContractMakerCheckerError, ContractServiceOrderError, ContractSignatureRequiredError, ContractTerminalError, ContractTransitionError, ContractVersionConflictError } from "@/lib/contract/contract-service";
+import { ContractAccessError, ContractConfigurationError, ContractDateRangeError, ContractServiceOrderError, ContractSignatureRequiredError, ContractTerminalError, ContractTransitionError, ContractVersionConflictError } from "@/lib/contract/contract-service";
 import { ContractFinancialError } from "@/lib/contract/contract-financials";
 import { ContractDocumentValidationError } from "@/lib/contract/contract-document-service";
 import { ApprovalWorkflowDisabledError } from "@/lib/approval/approval-control";
@@ -78,7 +78,7 @@ export function workflowApiError(error: unknown, correlationId: string) {
     status = 409; code = "PROPOSAL_TERMINAL";
   } else if (error instanceof ProposalConfigurationError) {
     status = 503; code = "PROPOSAL_CONFIGURATION_UNAVAILABLE";
-  } else if (error instanceof ContractTransitionError || error instanceof ContractMakerCheckerError || error instanceof ContractSignatureRequiredError || error instanceof ContractServiceOrderError) {
+  } else if (error instanceof ContractTransitionError || error instanceof ContractSignatureRequiredError || error instanceof ContractServiceOrderError) {
     status = 422; code = "CONTRACT_COMMAND_DENIED";
   } else if (error instanceof ContractTerminalError) {
     status = 409; code = "CONTRACT_TERMINAL";

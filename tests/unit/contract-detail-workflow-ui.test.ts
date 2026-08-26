@@ -22,9 +22,15 @@ describe("Contract detail workflow and evidence layout", () => {
     expect(css).toContain(".contract-document-form-grid");
   });
 
-  it("explains maker-checker and permission restrictions without weakening them", () => {
-    expect(page).toContain("permittedTransitions.some((edge) => edge.makerChecker && contract.ownerId === session.id)");
-    expect(page).toContain("หลัก maker-checker");
+  it("does not show the verified signature evidence step", () => {
+    expect(controls).not.toContain("Verified Signature Evidence");
+    expect(controls).not.toContain('data-testid="contract-signature-submit"');
+  });
+
+  it("allows owners to see permitted transitions without a maker-checker filter", () => {
+    expect(page).not.toContain("edge.makerChecker && contract.ownerId === session.id");
+    expect(page).not.toContain("หลัก maker-checker");
+    expect(page).toContain("transitions={permittedTransitions.map");
     expect(page).toContain("ไม่มีสิทธิ์ส่งต่อสถานะ");
   });
 

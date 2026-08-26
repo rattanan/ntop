@@ -21,9 +21,10 @@ service-order handover.
 2. Each edit creates an immutable contract version. Optimistic concurrency rejects
    stale commands. Monetary values are calculated with `Decimal` at four-decimal
    precision and never with binary floating point.
-3. Contract type, lifecycle statuses, transitions, transition permissions and
-   maker-checker behavior are data-configured. APIs preserve the existing v1 error,
-   correlation and idempotency conventions.
+3. Contract type, lifecycle statuses, transitions and transition permissions are
+   data-configured. Contract owners may execute transitions when they hold the
+   configured permission; Contract transitions do not enforce maker-checker.
+   APIs preserve the existing v1 error, correlation and idempotency conventions.
 4. Important commands write an audit event in the same transaction. Authorization
    is enforced server-side and records remain constrained to the actor's scope.
 5. A contract cannot become effective until current-version customer and NT
@@ -42,7 +43,7 @@ service-order handover.
    customer, status, type, expiry and renewal date. Documents are never returned as
    public object-storage URLs.
 10. Unit/integration tests cover financial calculations, lifecycle guards,
-    maker-checker, immutable versioning, accepted-quote creation, signatures,
+    owner transitions, immutable versioning, accepted-quote creation, signatures,
     amendments, renewals and service-order eligibility.
 
 ## Lifecycle
