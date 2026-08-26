@@ -8,21 +8,24 @@ function setup() {
   const tx = {
     contractDocumentVersion: {
       findUnique: vi.fn(async () => null),
+      findFirst: vi.fn(async () => ({ id: "version-1", objectKey: "contracts/c1/file.xlsx", fileName: "file.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", sizeBytes: BigInt(3), sha256: "hash" })),
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: "version-1", ...data })),
+      update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: "version-1", versionNumber: 1, ...data })),
+      updateMany: vi.fn(async () => ({ count: 1 })),
     },
     contractDocument: {
       findFirst: vi.fn(async () => null),
       create: vi.fn(async () => ({ id: "document-1", currentVersion: 0 })),
       update: vi.fn(async () => undefined),
     },
-    contractCommandReceipt: { create: vi.fn(async () => undefined) },
+    contractCommandReceipt: { findUnique: vi.fn(async () => null), create: vi.fn(async () => undefined) },
   };
   const repository = {
     transaction: vi.fn(async (work: (value: typeof tx) => Promise<unknown>) => work(tx)),
     find: vi.fn(async () => ({ id: "contract-1", version: 2 })),
   };
   const audit = { append: vi.fn(async () => ({ id: "audit-1" })) };
-  const storage = { put: vi.fn(async () => undefined), read: vi.fn(), remove: vi.fn(async () => undefined), assertClean: vi.fn(async () => undefined) };
+  const storage = { put: vi.fn(async () => undefined), read: vi.fn(async () => new Uint8Array([1, 2, 3])), remove: vi.fn(async () => undefined), assertClean: vi.fn(async () => undefined) };
   return { service: new ContractDocumentService(repository as never, audit as never, storage), repository, audit, storage };
 }
 
@@ -52,6 +55,27 @@ describe("Contract document upload", () => {
   it("serializes Prisma BigInt file sizes before returning the upload response", () => {
     const route = readFileSync("app/api/v1/contracts/[id]/documents/route.ts", "utf8");
     expect(route).toContain("sizeBytes:data.sizeBytes.toString()");
+  });
+
+  it("downloads scoped private bytes and audits access", async () => {
+    const { service, storage, audit } = setup();
+    await expect(service.download({ id: "user-1", authorization: {} as never }, "contract-1", "version-1", "corr-download")).resolves.toMatchObject({ fileName: "file.xlsx", bytes: new Uint8Array([1, 2, 3]) });
+    expect(storage.read).toHaveBeenCalledWith("contracts/c1/file.xlsx");
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "contract.document.download", targetId: "version-1" }), expect.anything());
+  });
+
+  it("soft deletes a scoped document version idempotently and audits it", async () => {
+    const { service, audit } = setup();
+    await expect(service.remove({ id: "user-1", authorization: {} as never }, "contract-1", "version-1", "corr-delete", "key-delete")).resolves.toEqual({ id: "version-1", deleted: true });
+    expect(audit.append).toHaveBeenCalledWith(expect.objectContaining({ action: "contract.document.delete", targetId: "version-1" }), expect.anything());
+  });
+
+  it("provides scoped download and delete routes with private headers and idempotency", () => {
+    const route = readFileSync("app/api/v1/contracts/[id]/documents/[documentId]/route.ts", "utf8");
+    expect(route).toContain('"cache-control": "private, no-store"');
+    expect(route).toContain("PERMISSIONS.contractView");
+    expect(route).toContain("PERMISSIONS.contractManage");
+    expect(route).toContain("requireIdempotencyKey");
   });
 
   it("uses the configured document-storage driver for Contract runtime", () => {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContractWorkflowControls } from "@/components/contract-workflow-controls";
+import { ContractDocumentActions } from "@/components/contract-document-actions";
 import { PageNumberNavigation } from "@/components/page-number-navigation";
 import { SortableTableHeader } from "@/components/sortable-table-header";
 import { requireSession } from "@/lib/auth";
@@ -43,10 +44,10 @@ export default async function ContractDetailPage({ params, searchParams }: { par
     prisma.rolePermissionGrant.findMany({ where: { roleCode: { in: roleCodes } }, select: { permissionCode: true } }),
   ]);
   if (!contract) notFound();
-  const documentWhere: Prisma.ContractDocumentVersionWhereInput = { document: { contractId: id }, ...(documentQuery ? { OR: [{ fileName: { contains: documentQuery } }, { document: { category: { contains: documentQuery } } }] } : {}) };
+  const documentWhere: Prisma.ContractDocumentVersionWhereInput = { document: { contractId: id }, deletedAt: null, ...(documentQuery ? { OR: [{ fileName: { contains: documentQuery } }, { document: { category: { contains: documentQuery } } }] } : {}) };
   const [documentTotal, allDocumentTotal] = await Promise.all([
     prisma.contractDocumentVersion.count({ where: documentWhere }),
-    prisma.contractDocumentVersion.count({ where: { document: { contractId: id } } }),
+    prisma.contractDocumentVersion.count({ where: { document: { contractId: id }, deletedAt: null } }),
   ]);
   const documentTotalPages = Math.max(1, Math.ceil(documentTotal / documentPageSize));
   const documentPage = Math.min(requestedDocumentPage, documentTotalPages);
@@ -86,8 +87,8 @@ export default async function ContractDetailPage({ params, searchParams }: { par
         <SortableTableHeader basePath={`/contracts/${id}`} column="category" currentSort={documentSort} currentOrder={documentOrder} label="Category" params={documentQuery ? { q: documentQuery } : {}}/>
         <SortableTableHeader basePath={`/contracts/${id}`} column="versionNumber" currentSort={documentSort} currentOrder={documentOrder} label="Version" params={documentQuery ? { q: documentQuery } : {}}/>
         <SortableTableHeader basePath={`/contracts/${id}`} column="sizeBytes" currentSort={documentSort} currentOrder={documentOrder} label="Size" params={documentQuery ? { q: documentQuery } : {}}/>
-        <th>Status</th><SortableTableHeader basePath={`/contracts/${id}`} column="createdAt" currentSort={documentSort} currentOrder={documentOrder} label="Uploaded" params={documentQuery ? { q: documentQuery } : {}}/>
-      </tr></thead><tbody>{documentVersions.length ? documentVersions.map((document) => <tr key={document.id}><td><strong>{document.fileName}</strong><small className="table-subtext">{document.mimeType}</small></td><td>{document.document.category}</td><td>v{document.versionNumber}</td><td>{fileSize(document.sizeBytes)}</td><td><span className="badge muted">{document.malwareScanStatus}</span></td><td>{dateTime.format(document.createdAt)}</td></tr>) : <tr><td colSpan={6}><div className="empty-state"><strong>ไม่พบเอกสาร</strong><p>{documentQuery ? "ลองเปลี่ยนคำค้นหาหรือล้างการค้นหา" : "อัปโหลดเอกสาร Contract แล้วรายการจะปรากฏที่นี่"}</p></div></td></tr>}</tbody></table></div>
+        <th>Status</th><SortableTableHeader basePath={`/contracts/${id}`} column="createdAt" currentSort={documentSort} currentOrder={documentOrder} label="Uploaded" params={documentQuery ? { q: documentQuery } : {}}/><th aria-label="Actions"></th>
+      </tr></thead><tbody>{documentVersions.length ? documentVersions.map((document) => <tr key={document.id}><td><strong>{document.fileName}</strong><small className="table-subtext">{document.mimeType}</small></td><td>{document.document.category}</td><td>v{document.versionNumber}</td><td>{fileSize(document.sizeBytes)}</td><td><span className="badge muted">{document.malwareScanStatus}</span></td><td>{dateTime.format(document.createdAt)}</td><td><ContractDocumentActions contractId={id} documentId={document.id} fileName={document.fileName} canDelete={canManage}/></td></tr>) : <tr><td colSpan={7}><div className="empty-state"><strong>ไม่พบเอกสาร</strong><p>{documentQuery ? "ลองเปลี่ยนคำค้นหาหรือล้างการค้นหา" : "อัปโหลดเอกสาร Contract แล้วรายการจะปรากฏที่นี่"}</p></div></td></tr>}</tbody></table></div>
       <PageNumberNavigation ariaLabel="แบ่งหน้ารายการเอกสาร Contract" basePath={`/contracts/${id}`} itemCount={documentVersions.length} page={documentPage} params={{ ...(documentQuery ? { q: documentQuery } : {}), sort: documentSort, order: documentOrder }} total={documentTotal} totalPages={documentTotalPages} unit="ไฟล์"/>
     </section>
     <section className="card"><div className="card-header"><strong>Current version items</strong><span className="badge muted">immutable v{current?.versionNumber}</span></div><div className="table-wrap"><table className="table"><thead><tr><th>Service</th><th>Qty</th><th>Monthly</th><th>One-time</th><th>Duration</th><th>Contract value</th></tr></thead><tbody>{current?.items.map((item) => <tr key={item.id}><td><strong>{item.serviceName}</strong><small className="table-subtext">{item.productCode}</small></td><td>{item.quantity.toString()} {item.unit}</td><td>{money.format(item.monthlyCharge.toNumber())}</td><td>{money.format(item.oneTimeCharge.toNumber())}</td><td>{item.durationMonths} months</td><td>{money.format(item.lineContractValue.toNumber())}</td></tr>)}</tbody></table></div></section>

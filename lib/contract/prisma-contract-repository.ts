@@ -5,7 +5,7 @@ import type { ContractEditInput, ContractItemInput } from "./contracts";
 import type { ContractRecord, ContractRepository } from "./contract-service";
 
 type Tx = Prisma.TransactionClient;
-const include = { status: { select: { terminal: true, reportingCategory: true } }, versions: { orderBy: { versionNumber: "desc" as const }, take: 1, include: { items: { orderBy: { sortOrder: "asc" as const } } } }, signatures: { where: { status: "VERIFIED", documentVersion: { malwareScanStatus: "CLEAN" } }, select: { partyCode: true } } } as const;
+const include = { status: { select: { terminal: true, reportingCategory: true } }, versions: { orderBy: { versionNumber: "desc" as const }, take: 1, include: { items: { orderBy: { sortOrder: "asc" as const } } } }, signatures: { where: { status: "VERIFIED", documentVersion: { malwareScanStatus: "CLEAN", deletedAt: null } }, select: { partyCode: true } } } as const;
 
 export function buildContractScopeWhere(context: AuthorizationContext): Prisma.ContractWhereInput {
   const units = authorizedOrganizationUnitIds(context);

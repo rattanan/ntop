@@ -35,6 +35,8 @@ describe("Contract detail workflow and evidence layout", () => {
     expect(page).toContain("SortableTableHeader");
     expect(page).toContain("PageNumberNavigation");
     expect(page).toContain("ไม่พบเอกสาร");
+    expect(page).toContain("deletedAt: null");
+    expect(page).toContain("ContractDocumentActions");
   });
 
   it("allows owners to see permitted transitions without a maker-checker filter", () => {

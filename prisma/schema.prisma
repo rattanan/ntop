@@ -3199,11 +3199,14 @@ model ContractDocumentVersion {
   malwareScanStatus String                  @db.VarChar(40)
   uploadedById      String
   createdAt         DateTime                @default(now())
+  deletedAt         DateTime?
+  deletedById       String?
   signatures        ContractSignature[]
   purchaseOrders    ContractPurchaseOrder[]
 
   @@unique([documentId, versionNumber])
   @@index([documentId, createdAt])
+  @@index([documentId, deletedAt, createdAt])
 }
 
 model ContractSignature {
