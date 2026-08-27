@@ -37,6 +37,13 @@ describe("Installation Site OpenStreetMap picker", () => {
     expect(styles).toContain(".installation-site-coordinates .control,.installation-map-button { height:var(--input-height);min-height:var(--input-height); }");
   });
 
+  it("keeps the Submit actions visible while search results make the dialog body scroll", () => {
+    const styles = read("app/globals.css");
+    expect(styles).toContain("display:grid;grid-template-rows:auto minmax(0,1fr) auto");
+    expect(styles).toContain(".installation-map-body { min-height:0;");
+    expect(styles).toContain(".installation-map-actions { position:relative;z-index:2;");
+  });
+
   it("proxies authenticated Nominatim searches with bounds, caching and rate limiting", () => {
     const route = read("app/api/v1/reference/places/route.ts");
     expect(route).toContain("getSession");

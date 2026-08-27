@@ -313,9 +313,6 @@ add_body(doc, "เมื่อแจ้งปัญหา ให้แนบช�
 doc.core_properties.title = "คู่มือผู้ใช้งาน NTOP สำหรับ Admin"
 doc.core_properties.subject = "Administration operating guide"
 doc.core_properties.author = "NTOP Product Team"
-update = OxmlElement("w:updateFields")
-update.set(qn("w:val"), "true")
-doc.settings._element.append(update)
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
 doc.save(OUT)

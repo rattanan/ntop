@@ -109,8 +109,13 @@ def add_field(paragraph, instruction):
     display.text = "1"
     end = OxmlElement("w:fldChar")
     end.set(qn("w:fldCharType"), "end")
+    # A complex Word field must be composed of runs. Placing fldChar or
+    # instrText directly under w:p is accepted by LibreOffice but rejected by
+    # Microsoft Word as invalid OOXML.
     for element in (begin, text, separate, display, end):
-        paragraph._p.append(element)
+        run = OxmlElement("w:r")
+        run.append(element)
+        paragraph._p.append(run)
 
 
 def keep_with_next(paragraph):
@@ -538,14 +543,10 @@ add_bullets(doc, [
     "docs/end-to-end-sales-flow-audit.md และ docs/NTOP-User-Manual-TH.docx",
 ])
 
-# Core metadata and update fields on open.
+# Core metadata. Word updates PAGE fields when the document is opened/printed.
 doc.core_properties.title = "คู่มือผู้ใช้งาน NTOP สำหรับ Sales"
 doc.core_properties.subject = "Sales operating guide"
 doc.core_properties.author = "NTOP Product Team"
-settings = doc.settings._element
-update = OxmlElement("w:updateFields")
-update.set(qn("w:val"), "true")
-settings.append(update)
 
 if os.environ.get("NTOP_SKIP_SALES_SAVE") != "1":
     OUT.parent.mkdir(parents=True, exist_ok=True)

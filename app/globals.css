@@ -182,13 +182,13 @@ button, input, select, textarea { font: inherit; } a { color: inherit; text-deco
 .installation-site-coordinates .control,.installation-map-button { height:var(--input-height);min-height:var(--input-height); }
 .installation-map-button { align-self:end;border-radius:8px;white-space:nowrap; }
 .installation-map-button svg { width:16px;height:16px; }
-.installation-map-dialog { width:min(920px,calc(100vw - 28px));max-height:min(820px,calc(100vh - 28px));padding:0;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--card);color:var(--foreground);box-shadow:0 28px 90px rgb(0 0 0 / .34); }
+.installation-map-dialog { width:min(920px,calc(100vw - 28px));max-height:min(820px,calc(100vh - 28px));display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:0;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--card);color:var(--foreground);box-shadow:0 28px 90px rgb(0 0 0 / .34); }
 .installation-map-dialog::backdrop { background:rgb(6 10 16 / .68);backdrop-filter:blur(3px); }
 .installation-map-head { min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 20px;border-bottom:1px solid var(--border); }
 .installation-map-head>div { min-width:0;display:grid;gap:3px; }
 .installation-map-head strong { font-size:17px; }
 .installation-map-head small { color:var(--muted-foreground);font-size:11px;line-height:1.45; }
-.installation-map-body { display:grid;gap:13px;padding:18px 20px;overflow:auto; }
+.installation-map-body { min-height:0;display:grid;gap:13px;padding:18px 20px;overflow:auto; }
 .installation-map-search { display:grid;gap:7px; }
 .installation-map-search>label { font-size:12px;font-weight:750; }
 .installation-map-search>div { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px; }
@@ -206,7 +206,7 @@ button, input, select, textarea { font: inherit; } a { color: inherit; text-deco
 .installation-map-place { display:flex;align-items:flex-start;gap:7px;margin:0;color:var(--muted-foreground);font-size:11px;line-height:1.5; }
 .installation-map-place svg { width:15px;height:15px;flex:none;margin-top:1px;color:#b92c27; }
 .installation-map-message { margin:0; }
-.installation-map-actions { display:flex;justify-content:flex-end;gap:9px;padding:14px 20px;border-top:1px solid var(--border); }
+.installation-map-actions { position:relative;z-index:2;display:flex;justify-content:flex-end;gap:9px;padding:14px 20px;border-top:1px solid var(--border);background:var(--card); }
 [data-theme="dark"] .installation-map-dialog { background:var(--card); }
 @media(max-width:700px){.installation-site-coordinates{grid-template-columns:1fr 1fr}.installation-map-button{grid-column:1/-1;justify-content:center}.installation-map-search>div{grid-template-columns:1fr}.installation-map-search button{width:100%}.installation-map-canvas{min-height:290px;height:44vh}.installation-map-dialog{max-height:calc(100vh - 16px)}.installation-map-body{padding:14px}.installation-map-actions{padding:12px 14px}.installation-map-result{grid-template-columns:1fr}}
 
