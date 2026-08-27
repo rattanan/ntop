@@ -25,10 +25,9 @@ async function main() {
   } else {
     throw new Error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD before seeding.");
   }
-  const surveyCategoryCodes = new Set(["BROADBAND_INTERNET","FIBER_BROADBAND","DEDICATED_INTERNET","LEASED_LINE","MPLS","IP_VPN","SD_WAN","METRO_ETHERNET","DOMESTIC_DATA_NETWORK","INTERNATIONAL_DATA_NETWORK","DATA_CENTER_CONNECTIVITY","CLOUD_CONNECTIVITY"]);
-  const categoryNames:Record<string,string>={BROADBAND_INTERNET:"Broadband Internet",FIBER_BROADBAND:"Fiber Broadband",DEDICATED_INTERNET:"Dedicated Internet Access",LEASED_LINE:"Leased Line",MPLS:"MPLS",IP_VPN:"IP VPN",SD_WAN:"SD-WAN",METRO_ETHERNET:"Metro Ethernet",DOMESTIC_DATA_NETWORK:"Domestic Data Network",INTERNATIONAL_DATA_NETWORK:"International Data Network",CLOUD_CONNECTIVITY:"Cloud Connectivity",DATA_CENTER_CONNECTIVITY:"Data Center Connectivity",CLOUD:"Cloud",CYBERSECURITY:"Cybersecurity",MANAGED_SERVICE:"Managed Service",VOICE:"Voice",MOBILE:"Mobile",IOT:"IoT",PROFESSIONAL_SERVICE:"Professional Service",DIGITAL_PLATFORM:"Digital Platform",DATA_AI:"Data and AI",OTHER:"Other"};
+  const categoryNames:Record<string,string>={BROADBAND:"Broadband",DATACOM:"Datacom",HARD_INFRASTRUCTURE:"Hard Infrastructure",INTERNATIONAL:"International",SATELLITE:"Satellite",VOICE:"Voice"};
   let categoryOrder=0;
-  for(const[code,name]of Object.entries(categoryNames)){const requires=surveyCategoryCodes.has(code);await prisma.serviceCategoryConfig.upsert({where:{code},update:{name,requiresSiteSurvey:requires,requiresBoq:requires,requiresPhysicalInstallation:requires,active:true,displayOrder:categoryOrder},create:{code,name,requiresSiteSurvey:requires,requiresBoq:requires,requiresPhysicalInstallation:requires,displayOrder:categoryOrder}});categoryOrder+=10;}
+  for(const[code,name]of Object.entries(categoryNames)){await prisma.serviceCategoryConfig.upsert({where:{code},update:{},create:{code,name,requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false,displayOrder:categoryOrder}});categoryOrder+=10;}
   const solutionReferenceSeeds:Record<string,readonly (readonly [string,string])[]>={
     SOLUTION_CATEGORY:[["NETWORK","Network & Connectivity"],["CLOUD","Cloud"],["CYBERSECURITY","Cybersecurity"],["DATA_CENTER","Data Center"],["MANAGED_SERVICE","Managed Service"],["UNIFIED_COMMUNICATIONS","Unified Communications"],["IOT","IoT"],["DATA_AI","Data & AI"],["OTHER","Other"]],
     COMPONENT_TYPE:[["CIRCUIT","Circuit / Link"],["ROUTER","Router"],["SWITCH","Switch"],["FIREWALL","Firewall"],["ACCESS_POINT","Wireless Access Point"],["SERVER","Server"],["STORAGE","Storage"],["SOFTWARE","Software"],["LICENSE","License"],["MANAGED_SERVICE","Managed Service"],["OTHER","Other"]],
@@ -197,10 +196,10 @@ async function main() {
   permissionMatrix.TEAM_MANAGER.push("forecast.target.manage", "forecast.snapshot.create");
   for(const [roleCode,codes] of Object.entries(permissionMatrix))for(const permissionCode of codes)await prisma.rolePermissionGrant.upsert({where:{roleCode_permissionCode:{roleCode,permissionCode}},update:{},create:{roleCode,permissionCode}});
   const productSeeds=[
-    {code:"NT-BB-1000",name:"NT Broadband Internet 1 Gbps",category:"Broadband",serviceCategoryCode:"BROADBAND_INTERNET",listPrice:"25000.0000",standardCost:"12000.0000",requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true},
-    {code:"NT-DIA-1000",name:"NT Dedicated Internet 1 Gbps",category:"Data Network",serviceCategoryCode:"DEDICATED_INTERNET",listPrice:"85000.0000",standardCost:"45000.0000",requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true},
-    {code:"NT-MPLS-100",name:"NT MPLS 100 Mbps",category:"Data Network",serviceCategoryCode:"MPLS",listPrice:"42000.0000",standardCost:"23000.0000",requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true},
-    {code:"NT-CLOUD-MANAGED",name:"NT Managed Cloud Service",category:"Cloud",serviceCategoryCode:"CLOUD",listPrice:"30000.0000",standardCost:"18000.0000",requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false},
+    {code:"NT-BB-1000",name:"NT Broadband Internet 1 Gbps",category:"Broadband",serviceCategoryCode:"BROADBAND",listPrice:"25000.0000",standardCost:"12000.0000",requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false},
+    {code:"NT-DIA-1000",name:"NT Dedicated Internet 1 Gbps",category:"Datacom",serviceCategoryCode:"DATACOM",listPrice:"85000.0000",standardCost:"45000.0000",requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false},
+    {code:"NT-MPLS-100",name:"NT MPLS 100 Mbps",category:"Datacom",serviceCategoryCode:"DATACOM",listPrice:"42000.0000",standardCost:"23000.0000",requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false},
+    {code:"NT-CLOUD-MANAGED",name:"NT Managed Cloud Service",category:"Cloud",serviceCategoryCode:null,listPrice:"30000.0000",standardCost:"18000.0000",requiresSiteSurvey:false,requiresBoq:false,requiresPhysicalInstallation:false},
   ];
   for(const product of productSeeds){const data={...product,costConfirmedAt:new Date("2026-01-01T00:00:00Z")};await prisma.product.upsert({where:{code:product.code},update:data,create:data});}
   const customerSegments = [

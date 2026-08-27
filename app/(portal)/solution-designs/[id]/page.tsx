@@ -37,13 +37,13 @@ export default async function SolutionDetail({ params }: { params: Promise<{ id:
   const roleCodes = [...new Set(authorization.assignments.map((assignment) => assignment.role))];
   const [categories, products, requirements, referenceOptions, provinces, configuredBoqManage, configuredSolutionManage, technicalApprovalEnabled, commercialApprovalEnabled] = await Promise.all([
     prisma.serviceCategoryConfig.findMany({
-      where: { active: true },
-      select: { id: true, code: true, name: true, requiresSiteSurvey: true },
+      where: { active: true, deletedAt: null },
+      select: { id: true, code: true, name: true },
       orderBy: { displayOrder: "asc" },
     }),
     prisma.product.findMany({
-      where: { active: true, deletedAt: null, serviceCategoryCode: { not: null } },
-      select: { id: true, name: true, code: true, serviceCategoryCode: true },
+      where: { active: true, deletedAt: null },
+      select: { id: true, name: true, code: true, category: true, serviceCategoryCode: true },
       orderBy: { name: "asc" },
     }),
     prisma.opportunityRequirement.findMany({

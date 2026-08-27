@@ -48,7 +48,9 @@ Survey engineers may execute only requests assigned to their user ID. Technical/
 
 `ServiceCategoryConfig` stores survey, BOQ and physical-installation flags. `SolutionStatusDefinition` and `SolutionStatusTransition` use an `entityType` discriminator for `SOLUTION_DESIGN`, `SITE_SURVEY`, and `BOQ`. Required fields are evaluated server-side from configuration.
 
-Default survey-required categories include Broadband Internet, Fiber Broadband, Dedicated Internet, Leased Line, MPLS, IP VPN, SD-WAN, Metro Ethernet, domestic/international data networks, Cloud Connectivity and Data Center Connectivity.
+Service Category seed data is create-only after the first insert: repeated seed runs do not reactivate soft-deleted categories or overwrite administrator-managed survey, BOQ, physical-installation, active-state, name or display-order values. Solution Design lists only active, non-deleted categories. For backward compatibility, a legacy Product with no `serviceCategoryCode` can be selected only when its existing `category` exactly matches the selected Service Category code or name; explicitly mapped Products must continue to match by `serviceCategoryCode`.
+
+The approved default categories align with the existing Product Catalog groups: Broadband, Datacom, Hard Infrastructure, International, Satellite and Voice. Survey, BOQ and physical-installation gates default to off for all six categories; administrators may enable the rules later for a category when the business requirement is approved.
 
 ## NTSP integration contract
 

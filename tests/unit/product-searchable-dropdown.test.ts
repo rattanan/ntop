@@ -27,7 +27,7 @@ describe("searchable Product dropdowns", () => {
     const quotation = readFileSync("components/workflow-forms.tsx", "utf8");
     const proposal = readFileSync("components/proposal-forms.tsx", "utf8");
     const control = readFileSync("components/searchable-product-select.tsx", "utf8");
-    expect(presales).toContain("product.serviceCategoryCode===category?.code");
+    expect(presales).toContain("catalogItemBelongsToCategory(product,category)");
     expect(presales).toContain('disabled={!categoryId}');
     expect(presales).not.toContain("<SearchableProductSelect");
     expect(quotation).toContain("<SearchableProductSelect");

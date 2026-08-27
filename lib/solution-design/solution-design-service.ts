@@ -9,6 +9,7 @@ import { PERMISSIONS, permissionPolicy, type Permission } from "../authorization
 import { buildOpportunityScopeWhere } from "../opportunity/opportunity-query";
 import { prisma } from "../prisma";
 import { calculateBoqLine, calculateBoqTotals } from "./boq-calculator";
+import { catalogItemBelongsToCategory } from "./catalog-category";
 import type { NTSPSiteSurveyRequestV1, NTSPSiteSurveyResponseV1 } from "./contracts";
 import { siteSurveyProviderFromEnvironment } from "./site-survey-provider";
 import { createSolutionDesignSchema, installationSiteSchema, serviceItemSchema, surveyRequestSchema, surveyResultSchema, updateSolutionDesignSchema } from "./validation";
@@ -93,8 +94,8 @@ export async function updateSolutionDesign(actor:Actor,id:string,input:unknown,c
 export async function addSolutionService(actor:Actor,designId:string,input:unknown,correlationId:string) {
   const parsed=serviceItemSchema.safeParse(input);if(!parsed.success)throw new PresalesValidationError(parsed.error.issues.map(i=>i.path.join(".")));
   return prisma.$transaction(async tx=>{await requirePermission(actor,PERMISSIONS.solutionDesignManage,tx);const design=await accessibleDesign(actor,designId,tx);
-    const category=await tx.serviceCategoryConfig.findFirst({where:{id:parsed.data.serviceCategoryId,active:true},select:{id:true,code:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}});if(!category)throw new PresalesValidationError(["serviceCategoryId"]);
-    if(parsed.data.productId){const product=await tx.product.findFirst({where:{id:parsed.data.productId,active:true,deletedAt:null,serviceCategoryCode:category.code}});if(!product)throw new PresalesValidationError(["productId"]);}
+    const category=await tx.serviceCategoryConfig.findFirst({where:{id:parsed.data.serviceCategoryId,active:true,deletedAt:null},select:{id:true,code:true,name:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}});if(!category)throw new PresalesValidationError(["serviceCategoryId"]);
+    if(parsed.data.productId){const product=await tx.product.findFirst({where:{id:parsed.data.productId,active:true,deletedAt:null},select:{category:true,serviceCategoryCode:true}});if(!product||!catalogItemBelongsToCategory(product,category))throw new PresalesValidationError(["productId"]);}
     const item=await tx.solutionServiceItem.create({data:{...parsed.data,solutionDesignId:design.id,surveyRequired:category.requiresSiteSurvey,boqRequired:category.requiresBoq,physicalInstallationRequired:category.requiresPhysicalInstallation}});
     const services=await tx.solutionServiceItem.findMany({where:{solutionDesignId:designId},select:{surveyRequired:true}});const surveyRequired=services.some(s=>s.surveyRequired);
     await tx.solutionDesign.update({where:{id:designId},data:{surveyRequired,surveyRequirementReason:surveyRequired?"CONFIGURED_SERVICE_CATEGORY":null,updatedById:actor.id,version:{increment:1}}});

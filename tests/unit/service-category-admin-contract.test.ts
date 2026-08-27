@@ -22,12 +22,12 @@ describe("Service Category administration and Solution Design UX contract", () =
     const solutionService = read("lib/solution-design/solution-design-service.ts");
 
     expect(productPage).toContain("serviceCategoryConfig.findMany({where:{active:true,deletedAt:null}");
-    expect(solutionPage).not.toContain("serviceCategoryConfig.findMany({ where: { active: true, deletedAt: null }");
+    expect(solutionPage).toContain("where: { active: true, deletedAt: null }");
     expect(action).toContain("serviceCategoryConfig.findFirst({where:{code:p.data.serviceCategoryCode,active:true,deletedAt:null}");
     expect(productPage).toContain("select:{code:true,name:true,requiresSiteSurvey:true,requiresBoq:true}");
-    expect(solutionPage).toContain("select: { id: true, code: true, name: true, requiresSiteSurvey: true }");
+    expect(solutionPage).toContain("select: { id: true, code: true, name: true }");
     expect(action).toContain("select:{code:true,name:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}");
-    expect(solutionService).toContain("select:{id:true,code:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}");
+    expect(solutionService).toContain("select:{id:true,code:true,name:true,requiresSiteSurvey:true,requiresBoq:true,requiresPhysicalInstallation:true}");
     expect(solutionService).toContain("select:{code:true}");
   });
 
@@ -98,9 +98,15 @@ describe("Service Category administration and Solution Design UX contract", () =
   it("filters Catalog Item by selected Service Category in UI and server", () => {
     const form = read("components/presales-forms.tsx");
     const service = read("lib/solution-design/solution-design-service.ts");
-    expect(form).toContain("product.serviceCategoryCode===category?.code");
+    expect(form).toContain("catalogItemBelongsToCategory(product,category)");
     expect(form).toContain("เลือก Service category ก่อน");
-    expect(service).toContain("serviceCategoryCode:category.code");
+    expect(form).not.toContain('c.requiresSiteSurvey?" · Survey required"');
+    expect(service).toContain("catalogItemBelongsToCategory(product,category)");
+  });
+
+  it("does not resurrect or overwrite administrator-managed Service Categories during seed", () => {
+    const seed = read("prisma/seed.ts");
+    expect(seed).toContain("serviceCategoryConfig.upsert({where:{code},update:{},create:");
   });
 
   it("shows one described Solution panel at a time and can create an idempotent BOQ draft", () => {
