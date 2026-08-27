@@ -182,7 +182,8 @@ button, input, select, textarea { font: inherit; } a { color: inherit; text-deco
 .installation-site-coordinates .control,.installation-map-button { height:var(--input-height);min-height:var(--input-height); }
 .installation-map-button { align-self:end;border-radius:8px;white-space:nowrap; }
 .installation-map-button svg { width:16px;height:16px; }
-.installation-map-dialog { width:min(920px,calc(100vw - 28px));max-height:min(820px,calc(100vh - 28px));display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:0;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--card);color:var(--foreground);box-shadow:0 28px 90px rgb(0 0 0 / .34); }
+.installation-map-dialog { width:min(920px,calc(100vw - 28px));max-height:min(820px,calc(100vh - 28px));padding:0;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--card);color:var(--foreground);box-shadow:0 28px 90px rgb(0 0 0 / .34); }
+.installation-map-dialog[open] { display:grid;grid-template-rows:auto minmax(0,1fr) auto; }
 .installation-map-dialog::backdrop { background:rgb(6 10 16 / .68);backdrop-filter:blur(3px); }
 .installation-map-head { min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 20px;border-bottom:1px solid var(--border); }
 .installation-map-head>div { min-width:0;display:grid;gap:3px; }

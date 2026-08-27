@@ -39,7 +39,8 @@ describe("Installation Site OpenStreetMap picker", () => {
 
   it("keeps the Submit actions visible while search results make the dialog body scroll", () => {
     const styles = read("app/globals.css");
-    expect(styles).toContain("display:grid;grid-template-rows:auto minmax(0,1fr) auto");
+    expect(styles).toContain(".installation-map-dialog[open] { display:grid;grid-template-rows:auto minmax(0,1fr) auto; }");
+    expect(styles).not.toMatch(/\.installation-map-dialog \{[^}]*display:grid/);
     expect(styles).toContain(".installation-map-body { min-height:0;");
     expect(styles).toContain(".installation-map-actions { position:relative;z-index:2;");
   });
